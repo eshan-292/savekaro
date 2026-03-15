@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BijliSmart - AI Electricity Bill Optimizer | SaveKaro</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+    .brand-green { color: #10B981; }
+    .bg-brand { background-color: #10B981; }
+    .bg-brand-light { background-color: #D1FAE5; }
+    .border-brand { border-color: #10B981; }
+    .ring-brand:focus { --tw-ring-color: #10B981; }
+    input[type=range] { accent-color: #10B981; }
+    select, input[type=number] { -moz-appearance: textfield; }
+    .tip-card { transition: transform 0.15s; }
+    .tip-card:hover { transform: translateY(-2px); }
+    .fade-in { animation: fadeIn 0.5s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+    .loader { border: 4px solid #e5e7eb; border-top-color: #10B981; border-radius: 50%; width: 36px; height: 36px; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+  <!-- NAV -->
+  <nav class="bg-white border-b border-gray-200 sticky top-0 z-50">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+      <a href="/" class="flex items-center gap-2 text-xl font-bold brand-green">
+        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+        SaveKaro
+      </a>
+      <span class="text-sm text-gray-500">BijliSmart</span>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <header class="bg-gradient-to-br from-emerald-50 to-green-100 py-10 px-4 text-center">
+    <div class="max-w-3xl mx-auto">
+      <h1 class="text-3xl md:text-4xl font-extrabold text-gray-900 mb-2">
+        <span class="brand-green">BijliSmart</span> — AI Electricity Bill Optimizer
+      </h1>
+      <p class="text-gray-600 text-lg">Find out exactly where your electricity goes and how to cut your bill by up to 40%.</p>
+    </div>
+  </header>
+
+  <!-- MAIN CONTENT -->
+  <main class="max-w-5xl mx-auto px-4 py-8">
+
+    <!-- Quick Estimate Presets -->
+    <section id="presetsSection" class="mb-6">
+      <h2 class="text-lg font-bold text-gray-800 mb-3">Quick Estimate</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <button onclick="loadPreset('bachelor')" class="text-left bg-white rounded-xl border-2 border-gray-200 hover:border-emerald-400 hover:bg-emerald-50 p-4 transition">
+          <p class="font-semibold text-gray-800">1 BHK Bachelor</p>
+          <p class="text-xs text-gray-500 mt-1">Fan, lights, fridge, TV. Minimal usage.</p>
+          <p class="text-xs text-emerald-600 font-medium mt-1">~150 units/month</p>
+        </button>
+        <button onclick="loadPreset('family')" class="text-left bg-white rounded-xl border-2 border-gray-200 hover:border-emerald-400 hover:bg-emerald-50 p-4 transition">
+          <p class="font-semibold text-gray-800">2 BHK Family</p>
+          <p class="text-xs text-gray-500 mt-1">AC, fans, lights, fridge, TV, geyser. Standard setup.</p>
+          <p class="text-xs text-emerald-600 font-medium mt-1">~350 units/month</p>
+        </button>
+        <button onclick="loadPreset('premium')" class="text-left bg-white rounded-xl border-2 border-gray-200 hover:border-emerald-400 hover:bg-emerald-50 p-4 transition">
+          <p class="font-semibold text-gray-800">3 BHK Premium</p>
+          <p class="text-xs text-gray-500 mt-1">2 ACs, fans, lights, fridge, TV, geyser, washer. Heavy usage.</p>
+          <p class="text-xs text-emerald-600 font-medium mt-1">~600 units/month</p>
+        </button>
+      </div>
+    </section>
+
+    <!-- INPUT FORM -->
+    <section id="formSection" class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 md:p-8">
+      <h2 class="text-xl font-bold text-gray-800 mb-6">Tell us about your electricity usage</h2>
+
+      <form id="bijliForm" class="space-y-8">
+
+        <!-- Row 1: State & Bill -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">State / City</label>
+            <select id="state" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 ring-brand">
+              <option value="delhi">Delhi</option>
+              <option value="maharashtra">Maharashtra</option>
+              <option value="karnataka">Karnataka</option>
+              <option value="tamilnadu">Tamil Nadu</option>
+              <option value="up">Uttar Pradesh</option>
+              <option value="gujarat">Gujarat</option>
+              <option value="rajasthan">Rajasthan</option>
+              <option value="mp">Madhya Pradesh</option>
+              <option value="telangana">Telangana</option>
+              <option value="kerala">Kerala</option>
+              <option value="westbengal">West Bengal</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Monthly Bill Amount (approx.)</label>
+            <div class="relative">
+              <span class="absolute left-3 top-2.5 text-gray-400 text-sm">&#8377;</span>
+              <input type="number" id="monthlyBill" placeholder="2500" min="0" max="50000" class="w-full border border-gray-300 rounded-lg pl-7 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 ring-brand">
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Units Consumed (kWh)</label>
+            <input type="number" id="unitsConsumed" placeholder="350" min="0" max="5000" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 ring-brand">
+          </div>
+        </div>
+
+        <!-- House & Family -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">House Size</label>
+            <select id="houseSize" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 ring-brand">
+              <option value="1bhk">1 BHK</option>
+              <option value="2bhk" selected>2 BHK</option>
+              <option value="3bhk">3 BHK</option>
+              <option value="4bhk">4 BHK+</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Family Size</label>
+            <input type="number" id="familySize" value="4" min="1" max="12" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 ring-brand">
+          </div>
+        </div>
+
+        <hr class="border-gray-200">
+
+        <!-- APPLIANCES -->
+        <h3 class="text-lg font-semibold text-gray-800">Appliance Details</h3>
+
+        <!-- AC -->
+        <div class="bg-gray-50 rounded-xl p-5 space-y-4">
+          <div class="flex items-center justify-between">
+            <h4 class="font-medium text-gray-700">\u2744\uFE0F Air Conditioner (AC)</h4>
+            <label class="flex items-center gap-2 text-sm text-gray-600">
+              Count:
+              <input type="number" id="acCount" value="1" min="0" max="6" class="w-16 border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 ring-brand">
+            </label>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="text-xs text-gray-500">AC Type</label>
+              <select id="acType" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 ring-brand">
+                <option value="1ton_3star">1 Ton 3-Star</option>
+                <option value="1ton_5star">1 Ton 5-Star</option>
+                <option value="1.5ton_3star" selected>1.5 Ton 3-Star</option>
+                <option value="1.5ton_5star">1.5 Ton 5-Star</option>
+                <option value="2ton_3star">2 Ton 3-Star</option>
+                <option value="2ton_5star">2 Ton 5-Star</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-xs text-gray-500">Hours/day usage</label>
+              <input type="number" id="acHours" value="8" min="0" max="24" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 ring-brand">
+            </div>
+          </div>
+        </div>
+
+        <!-- Fans -->
+        <div class="bg-gray-50 rounded-xl p-5 space-y-4">
+          <div class="flex items-center justify-between">
+            <h4 class="font-medium text-gray-700">\uD83C\uDF00 Ceiling Fans</h4>
+            <label class="flex items-center gap-2 text-sm text-gray-600">
+              Count:
+              <input type="number" id="fanCount" value="3" min="0" max="10" class="w-16 border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 ring-brand">
+            </label>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="text-xs text-gray-500">Fan Type</label>
+              <select id="fanType" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 ring-brand">
+                <option value="regular" selected>Regular (75W)</option>
+                <option value="bldc">BLDC Energy-Saving (28W)</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-xs text-gray-500">Hours/day</label>
+              <input type="number" id="fanHours" value="12" min="0" max="24" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 ring-brand">
+            </div>
+          </div>
+        </div>
+
+        <!-- Lights -->
+        <div class="bg-gray-50 rounded-xl p-5 space-y-4">
+          <div class="flex items-center justify-between">
+            <h4 class="font-medium text-gray-700">\uD83D\uDCA1 Lights</h4>
+            <label class="flex items-center gap-2 text-sm text-gray-600">
+              Count:
+              <input type="number" id="lightCount" value="8" min="0" max="30" class="w-16 border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 ring-brand">
+            </label>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="text-xs text-gray-500">Light Type</label>
+              <select id="lightType" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 ring-brand">
+                <option value="led_9w" selected>LED 9W</option>
+                <option value="led_12w">LED 12W</option>
+                <option value="cfl">CFL 23W</option>
+                <option value="tubelight">Tube Light 36W</option>
+                <option value="tubelight_led">LED Tube Light 18W</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-xs text-gray-500">Hours/day</label>
+              <input type="number" id="lightHours" value="6" min="0" max="24" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 ring-brand">
+            </div>
+          </div>
+        </div>
+
+        <!-- Geyser -->
+        <div class="bg-gray-50 rounded-xl p-5 space-y-4">
+          <div class="flex items-center justify-between">
+            <h4 class="font-medium text-gray-700">\uD83D\uDEBF Geyser / Water Heater</h4>
+            <label class="flex items-center gap-2 text-sm">
+              <input type="checkbox" id="hasGeyser" class="rounded text-emerald-500 focus:ring-emerald-500" checked>
+              <span class="text-gray-600">I have a geyser</span>
+            </label>
+          </div>
+          <div id="geyserDetails" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="text-xs text-gray-500">Type</label>
+              <select id="geyserType" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 ring-brand">
+                <option value="storage_15l" selected>Storage 15L</option>
+                <option value="storage_25l">Storage 25L</option>
+                <option value="instant">Instant Geyser</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-xs text-gray-500">Usage (minutes/day)</label>
+              <input type="number" id="geyserMinutes" value="30" min="5" max="120" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 ring-brand">
+            </div>
+          </div>
+        </div>
+
+        <!-- Refrigerator -->
+        <div class="bg-gray-50 rounded-xl p-5 space-y-4">
+          <div class="flex items-center justify-between">
+            <h4 class="font-medium text-gray-700">\uD83E\uDDCA Refrigerator</h4>
+            <label class="flex items-center gap-2 text-sm">
+              <input type="checkbox" id="hasFridge" class="rounded text-emerald-500 focus:ring-emerald-500" checked>
+              <span class="text-gray-600">I have a fridge</span>
+            </label>
+          </div>
+          <div id="fridgeDetails">
+            <label class="text-xs text-gray-500">Fridge Type</label>
+            <select id="fridgeType" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 ring-brand">
+              <option value="single_3star">Single Door 3-Star</option>
+              <option value="single_5star">Single Door 5-Star</option>
+              <option value="double_3star" selected>Double Door 3-Star</option>
+              <option value="double_5star">Double Door 5-Star</option>
+              <option value="sidebyside">Side-by-Side</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Washing Machine -->
+        <div class="bg-gray-50 rounded-xl p-5 space-y-4">
+          <div class="flex items-center justify-between">
+            <h4 class="font-medium text-gray-700">\uD83D\uDC55 Washing Machine</h4>
+            <label class="flex items-center gap-2 text-sm">
+              <input type="checkbox" id="hasWM" class="rounded text-emerald-500 focus:ring-emerald-500">
+              <span class="text-gray-600">I have a washing machine</span>
+            </label>
+          </div>
+          <div id="wmDetails" class="grid grid-cols-1 md:grid-cols-2 gap-4 hidden">
+            <div>
+              <label class="text-xs text-gray-500">Type</label>
+              <select id="wmType" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 ring-brand">
+                <option value="semi_auto">Semi-Automatic</option>
+                <option value="top_load" selected>Top Load Fully-Auto</option>
+                <option value="front_load">Front Load</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-xs text-gray-500">Loads per week</label>
+              <input type="number" id="wmLoadsPerWeek" value="3" min="1" max="14" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 ring-brand">
+            </div>
+          </div>
+        </div>
+
+        <!-- TV -->
+        <div class="bg-gray-50 rounded-xl p-5 space-y-4">
+          <div class="flex items-center justify-between">
+            <h4 class="font-medium text-gray-700">\uD83D\uDCFA Television</h4>
+            <label class="flex items-center gap-2 text-sm">
+              <input type="checkbox" id="hasTV" class="rounded text-emerald-500 focus:ring-emerald-500" checked>
+              <span class="text-gray-600">I have a TV</span>
+            </label>
+          </div>
+          <div id="tvDetails" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="text-xs text-gray-500">TV Size</label>
+              <select id="tvType" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 ring-brand">
+                <option value="led_32">32 inch LED</option>
+                <option value="led_43" selected>43 inch LED</option>
+                <option value="led_55">55 inch LED</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-xs text-gray-500">Hours/day</label>
+              <input type="number" id="tvHours" value="4" min="0" max="24" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 ring-brand">
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" class="w-full bg-brand text-white font-semibold py-3 rounded-xl text-lg hover:bg-emerald-600 transition-colors focus:outline-none focus:ring-4 focus:ring-emerald-200">
+          Analyze My Bill &rarr;
+        </button>
+      </form>
+    </section>
+
+    <!-- LOADING -->
+    <div id="loadingSection" class="hidden py-16 text-center">
+      <div class="loader mx-auto mb-4"></div>
+      <p class="text-gray-500">Analyzing your electricity usage...</p>
+    </div>
+
+    <!-- RESULTS DASHBOARD -->
+    <section id="resultsSection" class="hidden fade-in space-y-8 mt-8">
+
+      <!-- Summary Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="bg-white rounded-xl border border-gray-200 p-5 text-center shadow-sm">
+          <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Current Bill</p>
+          <p id="resBill" class="text-3xl font-extrabold text-gray-800"></p>
+          <p id="resUnits" class="text-sm text-gray-500 mt-1"></p>
+        </div>
+        <div class="bg-emerald-50 rounded-xl border border-emerald-200 p-5 text-center shadow-sm">
+          <p class="text-xs text-emerald-600 uppercase tracking-wide mb-1">Optimized Bill</p>
+          <p id="resOptBill" class="text-3xl font-extrabold text-emerald-700"></p>
+          <p id="resMonthlySave" class="text-sm text-emerald-600 mt-1"></p>
+        </div>
+        <div class="bg-green-50 rounded-xl border border-green-200 p-5 text-center shadow-sm">
+          <p class="text-xs text-green-600 uppercase tracking-wide mb-1">Yearly Savings</p>
+          <p id="resYearlySave" class="text-3xl font-extrabold text-green-700"></p>
+          <p id="resRate" class="text-sm text-gray-500 mt-1"></p>
+        </div>
+      </div>
+
+      <!-- Neighbor Comparison -->
+      <div id="neighborComparison" class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-5"></div>
+
+      <!-- Subsidy Note -->
+      <div id="subsidyNote" class="hidden bg-blue-50 border border-blue-200 rounded-xl px-5 py-3 text-sm text-blue-700"></div>
+
+      <!-- Appliance Breakdown -->
+      <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+        <h3 class="text-lg font-bold text-gray-800 mb-4">Appliance-wise Bill Breakdown</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <canvas id="pieChart" width="320" height="320" class="mx-auto"></canvas>
+          </div>
+          <div id="breakdownList" class="space-y-2"></div>
+        </div>
+      </div>
+
+      <!-- Tariff Slab Info -->
+      <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+        <h3 class="text-lg font-bold text-gray-800 mb-3">Your State Tariff Slabs</h3>
+        <p id="stateName" class="text-sm text-gray-500 mb-3"></p>
+        <div id="tariffTable" class="overflow-x-auto"></div>
+      </div>
+
+      <!-- Money Saving Tips -->
+      <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+        <h3 class="text-lg font-bold text-gray-800 mb-4">Top Money-Saving Tips (Ranked by Impact)</h3>
+        <div id="tipsList" class="space-y-3"></div>
+      </div>
+
+      <!-- Solar ROI -->
+      <div class="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-2xl border border-yellow-200 shadow-sm p-6">
+        <h3 class="text-lg font-bold text-gray-800 mb-2">Solar Panel ROI Calculator</h3>
+        <p id="solarNote" class="text-gray-700 mb-4"></p>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4" id="solarCards"></div>
+      </div>
+
+      <!-- Monthly/Yearly Projection -->
+      <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+        <h3 class="text-lg font-bold text-gray-800 mb-4">Savings Projection</h3>
+        <canvas id="barChart" width="700" height="300" class="w-full"></canvas>
+      </div>
+
+      <!-- Share on Social Card -->
+      <div id="shareCard" class="bg-gradient-to-br from-emerald-500 to-green-600 rounded-2xl p-6 text-white text-center shadow-lg">
+        <p class="text-lg font-bold mb-1" id="shareCardText">I can save money on electricity with BijliSmart by SaveKaro! \u26A1</p>
+        <p class="text-sm text-white/80 mb-4">Screenshot this card or share directly!</p>
+        <div class="flex justify-center gap-3">
+          <button onclick="shareOnWhatsApp()" class="flex items-center gap-2 bg-white/20 hover:bg-white/30 text-white px-5 py-2.5 rounded-xl font-semibold transition">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+            Share on WhatsApp
+          </button>
+        </div>
+      </div>
+
+      <div class="text-center pt-4 pb-8">
+        <button onclick="resetForm()" class="px-6 py-3 border-2 border-brand rounded-xl font-semibold brand-green hover:bg-emerald-50 transition-colors">
+          Analyze Again
+        </button>
+      </div>
+    </section>
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="bg-white border-t border-gray-200 py-6 text-center text-sm text-gray-400">
+    <a href="/" class="font-semibold brand-green">SaveKaro</a> &mdash; Smart tools to save your hard-earned money.
+  </footer>
+
+<script>
+// Store last results for sharing
+let lastResultData = null;
+
+// Average bills by state & house size (approximate monthly in INR)
+const avgBills = {
+  delhi:       { '1bhk': 1200, '2bhk': 2800, '3bhk': 4500, '4bhk': 6000 },
+  maharashtra: { '1bhk': 1400, '2bhk': 3200, '3bhk': 5200, '4bhk': 7000 },
+  karnataka:   { '1bhk': 1100, '2bhk': 2600, '3bhk': 4200, '4bhk': 5800 },
+  tamilnadu:   { '1bhk': 900,  '2bhk': 2200, '3bhk': 3800, '4bhk': 5200 },
+  up:          { '1bhk': 1000, '2bhk': 2500, '3bhk': 4000, '4bhk': 5500 },
+  gujarat:     { '1bhk': 1100, '2bhk': 2700, '3bhk': 4300, '4bhk': 5900 },
+  rajasthan:   { '1bhk': 1200, '2bhk': 2900, '3bhk': 4600, '4bhk': 6200 },
+  mp:          { '1bhk': 1000, '2bhk': 2400, '3bhk': 3900, '4bhk': 5400 },
+  telangana:   { '1bhk': 1100, '2bhk': 2600, '3bhk': 4200, '4bhk': 5700 },
+  kerala:      { '1bhk': 900,  '2bhk': 2100, '3bhk': 3500, '4bhk': 4800 },
+  westbengal:  { '1bhk': 1000, '2bhk': 2300, '3bhk': 3700, '4bhk': 5100 },
+};
+
+const stateNames = {
+  delhi: 'Delhi', maharashtra: 'Maharashtra', karnataka: 'Karnataka',
+  tamilnadu: 'Tamil Nadu', up: 'Uttar Pradesh', gujarat: 'Gujarat',
+  rajasthan: 'Rajasthan', mp: 'Madhya Pradesh', telangana: 'Telangana',
+  kerala: 'Kerala', westbengal: 'West Bengal',
+};
+
+// Quick Presets
+function loadPreset(type) {
+  if (type === 'bachelor') {
+    document.getElementById('houseSize').value = '1bhk';
+    document.getElementById('familySize').value = 1;
+    document.getElementById('monthlyBill').value = 1200;
+    document.getElementById('unitsConsumed').value = 150;
+    document.getElementById('acCount').value = 0;
+    document.getElementById('acHours').value = 0;
+    document.getElementById('fanCount').value = 2;
+    document.getElementById('fanType').value = 'regular';
+    document.getElementById('fanHours').value = 10;
+    document.getElementById('lightCount').value = 4;
+    document.getElementById('lightType').value = 'led_9w';
+    document.getElementById('lightHours').value = 5;
+    document.getElementById('hasGeyser').checked = false;
+    document.getElementById('geyserDetails').classList.add('hidden');
+    document.getElementById('hasFridge').checked = true;
+    document.getElementById('fridgeDetails').classList.remove('hidden');
+    document.getElementById('fridgeType').value = 'single_3star';
+    document.getElementById('hasWM').checked = false;
+    document.getElementById('wmDetails').classList.add('hidden');
+    document.getElementById('hasTV').checked = true;
+    document.getElementById('tvDetails').classList.remove('hidden');
+    document.getElementById('tvType').value = 'led_32';
+    document.getElementById('tvHours').value = 3;
+  } else if (type === 'family') {
+    document.getElementById('houseSize').value = '2bhk';
+    document.getElementById('familySize').value = 4;
+    document.getElementById('monthlyBill').value = 2800;
+    document.getElementById('unitsConsumed').value = 350;
+    document.getElementById('acCount').value = 1;
+    document.getElementById('acType').value = '1.5ton_3star';
+    document.getElementById('acHours').value = 8;
+    document.getElementById('fanCount').value = 3;
+    document.getElementById('fanType').value = 'regular';
+    document.getElementById('fanHours').value = 12;
+    document.getElementById('lightCount').value = 8;
+    document.getElementById('lightType').value = 'led_9w';
+    document.getElementById('lightHours').value = 6;
+    document.getElementById('hasGeyser').checked = true;
+    document.getElementById('geyserDetails').classList.remove('hidden');
+    document.getElementById('geyserType').value = 'storage_15l';
+    document.getElementById('geyserMinutes').value = 30;
+    document.getElementById('hasFridge').checked = true;
+    document.getElementById('fridgeDetails').classList.remove('hidden');
+    document.getElementById('fridgeType').value = 'double_3star';
+    document.getElementById('hasWM').checked = false;
+    document.getElementById('wmDetails').classList.add('hidden');
+    document.getElementById('hasTV').checked = true;
+    document.getElementById('tvDetails').classList.remove('hidden');
+    document.getElementById('tvType').value = 'led_43';
+    document.getElementById('tvHours').value = 4;
+  } else if (type === 'premium') {
+    document.getElementById('houseSize').value = '3bhk';
+    document.getElementById('familySize').value = 5;
+    document.getElementById('monthlyBill').value = 5500;
+    document.getElementById('unitsConsumed').value = 600;
+    document.getElementById('acCount').value = 2;
+    document.getElementById('acType').value = '1.5ton_3star';
+    document.getElementById('acHours').value = 10;
+    document.getElementById('fanCount').value = 5;
+    document.getElementById('fanType').value = 'regular';
+    document.getElementById('fanHours').value = 14;
+    document.getElementById('lightCount').value = 12;
+    document.getElementById('lightType').value = 'led_12w';
+    document.getElementById('lightHours').value = 7;
+    document.getElementById('hasGeyser').checked = true;
+    document.getElementById('geyserDetails').classList.remove('hidden');
+    document.getElementById('geyserType').value = 'storage_25l';
+    document.getElementById('geyserMinutes').value = 45;
+    document.getElementById('hasFridge').checked = true;
+    document.getElementById('fridgeDetails').classList.remove('hidden');
+    document.getElementById('fridgeType').value = 'double_3star';
+    document.getElementById('hasWM').checked = true;
+    document.getElementById('wmDetails').classList.remove('hidden');
+    document.getElementById('wmType').value = 'front_load';
+    document.getElementById('wmLoadsPerWeek').value = 5;
+    document.getElementById('hasTV').checked = true;
+    document.getElementById('tvDetails').classList.remove('hidden');
+    document.getElementById('tvType').value = 'led_55';
+    document.getElementById('tvHours').value = 5;
+  }
+  // Scroll to form
+  document.getElementById('formSection').scrollIntoView({ behavior: 'smooth' });
+}
+
+// WhatsApp share for BijliSmart
+function shareOnWhatsApp() {
+  if (!lastResultData) return;
+  const d = lastResultData;
+  const text = encodeURIComponent(
+    `I can save \u20B9${d.yearlySaving.toLocaleString('en-IN')}/year on my electricity bill with BijliSmart by SaveKaro! \u26A1\nCurrent bill: \u20B9${d.currentBill.toLocaleString('en-IN')}/month \u2192 Optimized: \u20B9${d.optimizedBill.toLocaleString('en-IN')}/month\nCheck yours: https://savekaro.in/bijli-smart`
+  );
+  window.open('https://wa.me/?text=' + text, '_blank');
+}
+
+// Toggle sections based on checkboxes
+document.getElementById('hasGeyser').addEventListener('change', e => {
+  document.getElementById('geyserDetails').classList.toggle('hidden', !e.target.checked);
+});
+document.getElementById('hasFridge').addEventListener('change', e => {
+  document.getElementById('fridgeDetails').classList.toggle('hidden', !e.target.checked);
+});
+document.getElementById('hasWM').addEventListener('change', e => {
+  document.getElementById('wmDetails').classList.toggle('hidden', !e.target.checked);
+});
+document.getElementById('hasTV').addEventListener('change', e => {
+  document.getElementById('tvDetails').classList.toggle('hidden', !e.target.checked);
+});
+
+// FORM SUBMIT
+document.getElementById('bijliForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+
+  const payload = {
+    state: v('state'),
+    monthlyBill: v('monthlyBill'),
+    unitsConsumed: v('unitsConsumed'),
+    acCount: v('acCount'),
+    acType: v('acType'),
+    acHours: v('acHours'),
+    fanCount: v('fanCount'),
+    fanType: v('fanType'),
+    fanHours: v('fanHours'),
+    lightCount: v('lightCount'),
+    lightType: v('lightType'),
+    lightHours: v('lightHours'),
+    hasGeyser: document.getElementById('hasGeyser').checked,
+    geyserType: v('geyserType'),
+    geyserMinutes: v('geyserMinutes'),
+    hasFridge: document.getElementById('hasFridge').checked,
+    fridgeType: v('fridgeType'),
+    hasWM: document.getElementById('hasWM').checked,
+    wmType: v('wmType'),
+    wmLoadsPerWeek: v('wmLoadsPerWeek'),
+    houseSize: v('houseSize'),
+    familySize: v('familySize'),
+    hasTV: document.getElementById('hasTV').checked,
+    tvType: v('tvType'),
+    tvHours: v('tvHours'),
+  };
+
+  document.getElementById('formSection').classList.add('hidden');
+  document.getElementById('loadingSection').classList.remove('hidden');
+
+  try {
+    const res = await fetch('/api/bijli-smart/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const json = await res.json();
+    if (json.success) {
+      setTimeout(() => renderResults(json.data), 600);
+    } else {
+      alert('Error: ' + (json.error || 'Analysis failed'));
+      resetForm();
+    }
+  } catch (err) {
+    alert('Network error. Please try again.');
+    resetForm();
+  }
+});
+
+function v(id) { return document.getElementById(id).value; }
+
+function resetForm() {
+  document.getElementById('formSection').classList.remove('hidden');
+  document.getElementById('presetsSection').classList.remove('hidden');
+  document.getElementById('loadingSection').classList.add('hidden');
+  document.getElementById('resultsSection').classList.add('hidden');
+  lastResultData = null;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ============================================================
+// RENDER RESULTS
+// ============================================================
+function renderResults(d) {
+  lastResultData = d;
+  document.getElementById('loadingSection').classList.add('hidden');
+  document.getElementById('presetsSection').classList.add('hidden');
+  const sec = document.getElementById('resultsSection');
+  sec.classList.remove('hidden');
+  window.scrollTo({ top: sec.offsetTop - 80, behavior: 'smooth' });
+
+  // Summary
+  document.getElementById('resBill').textContent = `\u20B9${d.currentBill.toLocaleString('en-IN')}`;
+  document.getElementById('resUnits').textContent = `${d.currentUnits} units @ \u20B9${d.effectiveRate}/unit`;
+  document.getElementById('resOptBill').textContent = `\u20B9${d.optimizedBill.toLocaleString('en-IN')}`;
+  document.getElementById('resMonthlySave').textContent = `Saving \u20B9${d.totalPossibleSaving.toLocaleString('en-IN')}/month`;
+  document.getElementById('resYearlySave').textContent = `\u20B9${d.yearlySaving.toLocaleString('en-IN')}`;
+  document.getElementById('resRate').textContent = `Effective rate: \u20B9${d.effectiveRate}/kWh`;
+
+  // Subsidy note
+  const sn = document.getElementById('subsidyNote');
+  if (d.subsidyNote) { sn.textContent = d.subsidyNote; sn.classList.remove('hidden'); }
+  else sn.classList.add('hidden');
+
+  // Neighbor comparison
+  const stateKey = document.getElementById('state').value;
+  const houseSizeKey = document.getElementById('houseSize').value;
+  const avgBill = avgBills[stateKey] && avgBills[stateKey][houseSizeKey] ? avgBills[stateKey][houseSizeKey] : 2500;
+  const stateLbl = stateNames[stateKey] || stateKey;
+  const houseLbl = houseSizeKey.toUpperCase();
+  const diff = d.currentBill - avgBill;
+  const comparison = diff > 0 ? 'above' : 'below';
+  const diffAbs = Math.abs(diff);
+  const nc = document.getElementById('neighborComparison');
+  nc.innerHTML = `
+    <h3 class="text-sm font-bold text-gray-800 mb-2">\uD83C\uDFE0 How do you compare?</h3>
+    <p class="text-sm text-gray-700">Average <strong>${stateLbl}</strong> household with <strong>${houseLbl}</strong> pays <strong>\u20B9${avgBill.toLocaleString('en-IN')}/month</strong>.</p>
+    <p class="text-sm text-gray-700 mt-1">You pay <strong>\u20B9${d.currentBill.toLocaleString('en-IN')}/month</strong>. You're <span class="font-bold ${diff > 0 ? 'text-red-600' : 'text-emerald-600'}">\u20B9${diffAbs.toLocaleString('en-IN')} ${comparison} average</span>.</p>
+  `;
+
+  // Update share card
+  document.getElementById('shareCardText').textContent = `I can save \u20B9${d.yearlySaving.toLocaleString('en-IN')}/year on electricity with BijliSmart by SaveKaro! \u26A1`;
+
+  // Appliance breakdown list
+  const bl = document.getElementById('breakdownList');
+  bl.innerHTML = '';
+  d.applianceBreakdown.forEach(a => {
+    bl.innerHTML += `<div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+      <div>
+        <p class="font-medium text-gray-800 text-sm">${a.name}</p>
+        <p class="text-xs text-gray-500">${a.units} kWh/month</p>
+      </div>
+      <span class="font-bold text-gray-700">\u20B9${a.cost.toLocaleString('en-IN')}</span>
+    </div>`;
+  });
+
+  // Pie chart
+  drawPieChart(d.applianceBreakdown);
+
+  // Tariff table
+  document.getElementById('stateName').textContent = d.state;
+  const tt = document.getElementById('tariffTable');
+  let thtml = '<table class="w-full text-sm"><thead><tr class="text-left text-gray-500 border-b"><th class="py-2 pr-4">Slab (Units)</th><th class="py-2 pr-4">Rate (\u20B9/kWh)</th><th class="py-2 pr-4">Your Units</th><th class="py-2">Cost (\u20B9)</th></tr></thead><tbody>';
+  d.tariffBreakdown.forEach(s => {
+    thtml += `<tr class="border-b border-gray-100"><td class="py-2 pr-4">${s.range}</td><td class="py-2 pr-4">\u20B9${s.rate}</td><td class="py-2 pr-4">${s.units}</td><td class="py-2">\u20B9${s.cost}</td></tr>`;
+  });
+  thtml += `<tr class="font-semibold"><td class="py-2 pr-4" colspan="3">Fixed Charges</td><td class="py-2">\u20B9${d.fixedCharge}</td></tr>`;
+  thtml += '</tbody></table>';
+  tt.innerHTML = thtml;
+
+  // Tips with upgrade recommendations
+  const upgradeLinks = {
+    'ac': { label: '5-Star Inverter AC', url: 'https://www.amazon.in/s?k=5+star+inverter+ac' },
+    '5-star': { label: '5-Star Appliances', url: 'https://www.amazon.in/s?k=5+star+energy+efficient+appliances' },
+    'bldc': { label: 'BLDC Energy Saving Fan', url: 'https://www.amazon.in/s?k=BLDC+ceiling+fan+energy+saving' },
+    'fan': { label: 'BLDC Energy Saving Fan', url: 'https://www.amazon.in/s?k=BLDC+ceiling+fan+energy+saving' },
+    'led': { label: 'LED Bulbs & Tube Lights', url: 'https://www.amazon.in/s?k=LED+bulb+9W+energy+saving' },
+    'light': { label: 'LED Bulbs & Tube Lights', url: 'https://www.amazon.in/s?k=LED+bulb+9W+energy+saving' },
+    'geyser': { label: 'Instant Geyser', url: 'https://www.amazon.in/s?k=instant+geyser+energy+saving' },
+    'solar': { label: 'Solar Water Heater', url: 'https://www.amazon.in/s?k=solar+water+heater' },
+    'fridge': { label: '5-Star Refrigerator', url: 'https://www.amazon.in/s?k=5+star+refrigerator+inverter' },
+    'refrigerator': { label: '5-Star Refrigerator', url: 'https://www.amazon.in/s?k=5+star+refrigerator+inverter' },
+    'washing': { label: 'Front Load Washing Machine', url: 'https://www.amazon.in/s?k=front+load+washing+machine+energy+efficient' },
+    'inverter': { label: 'Inverter Appliances', url: 'https://www.amazon.in/s?k=inverter+appliances+energy+saving' },
+    'stabilizer': { label: 'Voltage Stabilizer', url: 'https://www.amazon.in/s?k=voltage+stabilizer+energy+saving' },
+  };
+
+  function getUpgradeLink(tipText) {
+    const lower = tipText.toLowerCase();
+    for (const [keyword, info] of Object.entries(upgradeLinks)) {
+      if (lower.includes(keyword)) return info;
+    }
+    return null;
+  }
+
+  const tl = document.getElementById('tipsList');
+  tl.innerHTML = '';
+  d.tips.forEach((t, i) => {
+    const impactColor = t.impact === 'high' ? 'bg-red-100 text-red-700' : t.impact === 'medium' ? 'bg-yellow-100 text-yellow-700' : 'bg-blue-100 text-blue-700';
+    const upgrade = getUpgradeLink(t.tip);
+    const upgradeHtml = upgrade ? `<a href="${upgrade.url}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium mt-1">Top pick: ${upgrade.label} on Amazon \u2192</a>` : '';
+    tl.innerHTML += `<div class="tip-card flex items-start gap-4 p-4 bg-gray-50 rounded-xl border border-gray-100">
+      <span class="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-brand text-white text-sm font-bold">${i+1}</span>
+      <div class="flex-1">
+        <p class="text-sm text-gray-800">${t.tip}</p>
+        <div class="flex items-center gap-3 mt-1.5">
+          <span class="text-sm font-bold brand-green">Save \u20B9${t.savingPerMonth.toLocaleString('en-IN')}/month</span>
+          <span class="text-xs px-2 py-0.5 rounded-full ${impactColor}">${t.impact} impact</span>
+        </div>
+        ${upgradeHtml}
+      </div>
+    </div>`;
+  });
+
+  // Solar
+  const s = d.solar;
+  document.getElementById('solarNote').textContent = s.note;
+  const sc = document.getElementById('solarCards');
+  sc.innerHTML = `
+    <div class="bg-white rounded-xl p-4 text-center border border-yellow-200">
+      <p class="text-xs text-gray-500">System Size</p>
+      <p class="text-xl font-bold text-gray-800">${s.recommendedKw} kW</p>
+    </div>
+    <div class="bg-white rounded-xl p-4 text-center border border-yellow-200">
+      <p class="text-xs text-gray-500">Net Cost (after subsidy)</p>
+      <p class="text-xl font-bold text-gray-800">\u20B9${(s.netCost/100000).toFixed(1)}L</p>
+      <p class="text-xs text-green-600">Subsidy: \u20B9${(s.subsidy/1000).toFixed(0)}K</p>
+    </div>
+    <div class="bg-white rounded-xl p-4 text-center border border-yellow-200">
+      <p class="text-xs text-gray-500">Payback Period</p>
+      <p class="text-xl font-bold text-gray-800">${s.paybackYears} years</p>
+    </div>
+    <div class="bg-white rounded-xl p-4 text-center border border-yellow-200">
+      <p class="text-xs text-gray-500">Lifetime Savings</p>
+      <p class="text-xl font-bold text-green-700">\u20B9${(s.lifetimeSaving/100000).toFixed(1)}L</p>
+      <p class="text-xs text-gray-500">over ${s.lifetimeYears} years</p>
+    </div>`;
+
+  // Bar chart - savings projection
+  drawBarChart(d);
+}
+
+// ============================================================
+// PIE CHART (canvas)
+// ============================================================
+function drawPieChart(breakdown) {
+  const canvas = document.getElementById('pieChart');
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = 320 * dpr;
+  canvas.height = 320 * dpr;
+  ctx.scale(dpr, dpr);
+
+  const colors = ['#10B981','#3B82F6','#F59E0B','#EF4444','#8B5CF6','#EC4899','#06B6D4','#F97316','#6366F1','#14B8A6'];
+  const total = breakdown.reduce((s, a) => s + a.cost, 0);
+  const cx = 160, cy = 145, r = 110;
+
+  let startAngle = -Math.PI / 2;
+  breakdown.forEach((a, i) => {
+    const slice = (a.cost / total) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, r, startAngle, startAngle + slice);
+    ctx.fillStyle = colors[i % colors.length];
+    ctx.fill();
+
+    // Label
+    if (slice > 0.15) {
+      const mid = startAngle + slice / 2;
+      const lx = cx + Math.cos(mid) * (r * 0.65);
+      const ly = cy + Math.sin(mid) * (r * 0.65);
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 11px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(Math.round(a.cost/total*100) + '%', lx, ly);
+    }
+    startAngle += slice;
+  });
+
+  // Inner circle for donut
+  ctx.beginPath();
+  ctx.arc(cx, cy, 50, 0, Math.PI * 2);
+  ctx.fillStyle = '#fff';
+  ctx.fill();
+  ctx.fillStyle = '#374151';
+  ctx.font = 'bold 16px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('\u20B9' + total.toLocaleString('en-IN'), cx, cy + 5);
+
+  // Legend
+  const legendY = 280;
+  const cols = Math.min(breakdown.length, 4);
+  const colW = 320 / cols;
+  breakdown.slice(0, 8).forEach((a, i) => {
+    const col = i % cols;
+    const row = Math.floor(i / cols);
+    const lx = col * colW + 5;
+    const ly = legendY + row * 16;
+    ctx.fillStyle = colors[i % colors.length];
+    ctx.fillRect(lx, ly, 8, 8);
+    ctx.fillStyle = '#6B7280';
+    ctx.font = '10px sans-serif';
+    ctx.textAlign = 'left';
+    const label = a.name.length > 12 ? a.name.substring(0, 12) + '..' : a.name;
+    ctx.fillText(label, lx + 11, ly + 8);
+  });
+}
+
+// ============================================================
+// BAR CHART — Savings projection (canvas)
+// ============================================================
+function drawBarChart(d) {
+  const canvas = document.getElementById('barChart');
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const W = 700, H = 300;
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
+  canvas.style.width = '100%';
+  canvas.style.height = H + 'px';
+  ctx.scale(dpr, dpr);
+
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const currentBill = d.currentBill;
+  const optimized = d.optimizedBill;
+  const barW = 22;
+  const gap = (W - 60) / 12;
+  const maxVal = currentBill * 1.1;
+  const chartH = 220;
+  const baseY = 260;
+
+  // Grid lines
+  ctx.strokeStyle = '#E5E7EB';
+  ctx.lineWidth = 0.5;
+  for (let i = 0; i <= 4; i++) {
+    const y = baseY - (chartH / 4) * i;
+    ctx.beginPath(); ctx.moveTo(50, y); ctx.lineTo(W - 10, y); ctx.stroke();
+    ctx.fillStyle = '#9CA3AF';
+    ctx.font = '10px sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText('\u20B9' + Math.round(maxVal / 4 * i).toLocaleString('en-IN'), 46, y + 3);
+  }
+
+  months.forEach((m, i) => {
+    const x = 60 + i * gap;
+    // Seasonal variation
+    const seasonal = [0.9, 0.85, 0.95, 1.1, 1.2, 1.15, 1.05, 1.0, 0.95, 0.9, 0.85, 0.88];
+    const curr = Math.round(currentBill * seasonal[i]);
+    const opt = Math.round(optimized * seasonal[i]);
+    const hCurr = (curr / maxVal) * chartH;
+    const hOpt = (opt / maxVal) * chartH;
+
+    // Current bar
+    ctx.fillStyle = '#FCA5A5';
+    ctx.beginPath();
+    roundedRect(ctx, x, baseY - hCurr, barW, hCurr, 3);
+    ctx.fill();
+
+    // Optimized bar
+    ctx.fillStyle = '#6EE7B7';
+    ctx.beginPath();
+    roundedRect(ctx, x + barW + 2, baseY - hOpt, barW, hOpt, 3);
+    ctx.fill();
+
+    // Month label
+    ctx.fillStyle = '#6B7280';
+    ctx.font = '10px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(m, x + barW + 1, baseY + 14);
+  });
+
+  // Legend
+  ctx.fillStyle = '#FCA5A5';
+  ctx.fillRect(W - 220, 10, 12, 12);
+  ctx.fillStyle = '#6B7280';
+  ctx.font = '11px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('Current Bill', W - 204, 20);
+  ctx.fillStyle = '#6EE7B7';
+  ctx.fillRect(W - 120, 10, 12, 12);
+  ctx.fillStyle = '#6B7280';
+  ctx.fillText('Optimized', W - 104, 20);
+}
+
+function roundedRect(ctx, x, y, w, h, rad) {
+  if (h < rad * 2) rad = h / 2;
+  ctx.moveTo(x + rad, y);
+  ctx.lineTo(x + w - rad, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + rad);
+  ctx.lineTo(x + w, y + h);
+  ctx.lineTo(x, y + h);
+  ctx.lineTo(x, y + rad);
+  ctx.quadraticCurveTo(x, y, x + rad, y);
+}
+</script>
+</body>
+</html>

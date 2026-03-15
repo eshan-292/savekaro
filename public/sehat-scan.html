@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SehatScan — AI Blood Test Report Analyzer | SaveKaro</title>
+  <meta name="description" content="Upload your blood test report. Get instant AI explanation of every parameter. Free, private, and built for Indians.">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --green-50: #ecfdf5; --green-100: #d1fae5; --green-200: #a7f3d0;
+      --green-300: #6ee7b7; --green-400: #34d399; --green-500: #10B981;
+      --green-600: #059669; --green-700: #047857; --green-800: #065f46;
+      --gray-50: #f9fafb; --gray-100: #f3f4f6; --gray-200: #e5e7eb;
+      --gray-300: #d1d5db; --gray-400: #9ca3af; --gray-500: #6b7280;
+      --gray-600: #4b5563; --gray-700: #374151; --gray-800: #1f2937;
+      --gray-900: #111827; --white: #ffffff;
+      --red-50: #fef2f2; --red-100: #fee2e2; --red-500: #ef4444; --red-600: #dc2626; --red-700: #b91c1c;
+      --yellow-50: #fffbeb; --yellow-100: #fef3c7; --yellow-500: #f59e0b; --yellow-600: #d97706;
+      --blue-50: #eff6ff; --blue-500: #3b82f6; --blue-600: #2563eb;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: var(--gray-800); background: var(--gray-50);
+      line-height: 1.6; -webkit-font-smoothing: antialiased;
+    }
+
+    .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+
+    /* NAV */
+    nav {
+      background: rgba(255,255,255,0.95); backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--gray-200); padding: 16px 0;
+      position: sticky; top: 0; z-index: 100;
+    }
+    nav .container { display: flex; align-items: center; justify-content: space-between; }
+    .logo { font-size: 1.5rem; font-weight: 800; color: var(--green-600); text-decoration: none; }
+    .logo span { color: var(--gray-800); }
+    .nav-right { display: flex; gap: 20px; align-items: center; }
+    .nav-right a { color: var(--gray-600); text-decoration: none; font-size: 0.9rem; font-weight: 500; }
+    .nav-right a:hover { color: var(--green-600); }
+    .back-link { display: flex; align-items: center; gap: 6px; }
+
+    /* HEADER */
+    .page-header {
+      padding: 48px 0 32px;
+      text-align: center;
+      background: linear-gradient(180deg, var(--white) 0%, var(--gray-50) 100%);
+    }
+    .page-header .badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--green-100); color: var(--green-700);
+      padding: 6px 16px; border-radius: 100px;
+      font-size: 0.8rem; font-weight: 600; margin-bottom: 16px;
+    }
+    .page-header h1 {
+      font-size: 2.2rem; font-weight: 800; color: var(--gray-900);
+      margin-bottom: 12px; letter-spacing: -0.5px;
+    }
+    .page-header h1 .emoji { font-style: normal; }
+    .page-header p { color: var(--gray-500); font-size: 1rem; max-width: 560px; margin: 0 auto; }
+
+    /* PRIVACY BADGE */
+    .privacy-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--green-50); border: 1px solid var(--green-200);
+      padding: 10px 20px; border-radius: 12px;
+      margin: 20px auto 0; font-size: 0.85rem; color: var(--green-700); font-weight: 600;
+    }
+    .privacy-badge .shield { font-size: 1.2rem; }
+
+    /* UPLOAD SECTION */
+    .upload-section {
+      padding: 32px 0 48px;
+    }
+    .upload-card {
+      background: var(--white); border-radius: 20px;
+      border: 1px solid var(--gray-200); padding: 40px;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+      max-width: 700px; margin: 0 auto;
+    }
+    .upload-tabs {
+      display: flex; gap: 0; margin-bottom: 24px;
+      border: 1px solid var(--gray-200); border-radius: 12px; overflow: hidden;
+    }
+    .upload-tab {
+      flex: 1; padding: 12px; text-align: center; cursor: pointer;
+      font-size: 0.9rem; font-weight: 600; color: var(--gray-500);
+      background: var(--gray-50); transition: all 0.2s; border: none; font-family: inherit;
+    }
+    .upload-tab.active { background: var(--green-500); color: var(--white); }
+    .upload-tab:hover:not(.active) { background: var(--gray-100); }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* Drop zone */
+    .drop-zone {
+      border: 2px dashed var(--gray-300); border-radius: 16px;
+      padding: 48px 24px; text-align: center; cursor: pointer;
+      transition: all 0.3s; background: var(--gray-50);
+    }
+    .drop-zone:hover, .drop-zone.dragover {
+      border-color: var(--green-400); background: var(--green-50);
+    }
+    .drop-zone .upload-icon { font-size: 3rem; margin-bottom: 12px; display: block; }
+    .drop-zone h3 { font-size: 1.1rem; color: var(--gray-700); margin-bottom: 8px; }
+    .drop-zone p { color: var(--gray-500); font-size: 0.85rem; }
+    .drop-zone .browse-btn {
+      display: inline-block; margin-top: 16px;
+      background: var(--green-500); color: var(--white);
+      padding: 10px 24px; border-radius: 10px;
+      font-weight: 600; font-size: 0.9rem;
+    }
+    .file-input { display: none; }
+
+    /* Text input */
+    .text-input {
+      width: 100%;
+      min-height: 200px;
+      padding: 16px;
+      border: 1px solid var(--gray-300);
+      border-radius: 12px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.85rem;
+      resize: vertical;
+      line-height: 1.6;
+    }
+    .text-input:focus { outline: none; border-color: var(--green-400); }
+    .text-hint {
+      margin-top: 8px; font-size: 0.8rem; color: var(--gray-400);
+      line-height: 1.5;
+    }
+
+    /* Options row */
+    .options-row {
+      display: flex; gap: 16px; margin-top: 20px; flex-wrap: wrap;
+    }
+    .option-group { flex: 1; min-width: 140px; }
+    .option-group label {
+      display: block; font-size: 0.8rem; font-weight: 600;
+      color: var(--gray-600); margin-bottom: 6px;
+    }
+    .option-group select {
+      width: 100%; padding: 10px 12px;
+      border: 1px solid var(--gray-300); border-radius: 8px;
+      font-family: inherit; font-size: 0.9rem;
+    }
+    .analyze-btn {
+      width: 100%; padding: 14px; margin-top: 20px;
+      background: var(--green-500); color: var(--white);
+      border: none; border-radius: 12px;
+      font-size: 1rem; font-weight: 700;
+      cursor: pointer; font-family: inherit;
+      transition: background 0.2s;
+    }
+    .analyze-btn:hover { background: var(--green-600); }
+    .analyze-btn:disabled {
+      background: var(--gray-300); cursor: not-allowed;
+    }
+    .demo-link {
+      display: block; text-align: center; margin-top: 12px;
+      color: var(--green-600); font-size: 0.85rem; cursor: pointer;
+      text-decoration: underline; background: none; border: none;
+      font-family: inherit;
+    }
+
+    /* LOADING */
+    .loading {
+      display: none; text-align: center; padding: 60px 20px;
+    }
+    .loading.active { display: block; }
+    .spinner {
+      width: 48px; height: 48px; border: 4px solid var(--gray-200);
+      border-top-color: var(--green-500); border-radius: 50%;
+      animation: spin 0.8s linear infinite; margin: 0 auto 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading p { color: var(--gray-600); font-size: 1rem; }
+
+    /* RESULTS DASHBOARD */
+    .results {
+      display: none; padding: 0 0 80px;
+    }
+    .results.active { display: block; }
+
+    /* Health Score */
+    .score-section {
+      text-align: center; padding: 40px 0 32px;
+    }
+    .score-ring {
+      position: relative; width: 180px; height: 180px; margin: 0 auto 16px;
+    }
+    .score-ring svg { transform: rotate(-90deg); }
+    .score-ring .bg { stroke: var(--gray-200); }
+    .score-ring .fill { transition: stroke-dashoffset 1.5s ease; }
+    .score-value {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      font-size: 3rem; font-weight: 900;
+    }
+    .score-label { font-size: 0.9rem; color: var(--gray-500); margin-top: 4px; }
+    .score-summary {
+      max-width: 600px; margin: 16px auto 0;
+      font-size: 1rem; color: var(--gray-600); line-height: 1.6;
+    }
+
+    /* Alert banner */
+    .alert-banner {
+      max-width: 700px; margin: 0 auto 24px;
+      padding: 16px 20px; border-radius: 12px;
+      display: flex; align-items: flex-start; gap: 12px;
+      font-size: 0.9rem; line-height: 1.5;
+    }
+    .alert-banner.critical {
+      background: var(--red-50); border: 1px solid var(--red-100); color: var(--red-700);
+    }
+    .alert-banner.warning {
+      background: var(--yellow-50); border: 1px solid var(--yellow-100); color: var(--yellow-600);
+    }
+    .alert-banner .alert-icon { font-size: 1.3rem; flex-shrink: 0; }
+
+    /* Category tabs */
+    .cat-tabs {
+      display: flex; gap: 8px; flex-wrap: wrap;
+      justify-content: center; margin-bottom: 32px;
+      padding: 0 16px;
+    }
+    .cat-tab {
+      padding: 8px 18px; border-radius: 100px;
+      border: 1px solid var(--gray-300); background: var(--white);
+      font-size: 0.85rem; font-weight: 600; color: var(--gray-600);
+      cursor: pointer; transition: all 0.2s; font-family: inherit;
+    }
+    .cat-tab.active, .cat-tab:hover {
+      background: var(--green-500); color: var(--white); border-color: var(--green-500);
+    }
+    .cat-score {
+      display: inline-block; margin-left: 6px;
+      font-size: 0.75rem; opacity: 0.8;
+    }
+
+    /* Parameter cards */
+    .params-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 16px;
+    }
+    .param-card {
+      background: var(--white); border: 1px solid var(--gray-200);
+      border-radius: 14px; padding: 20px;
+      transition: box-shadow 0.2s;
+    }
+    .param-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+    .param-card.status-normal { border-left: 4px solid var(--green-500); }
+    .param-card.status-warning { border-left: 4px solid var(--yellow-500); }
+    .param-card.status-critical { border-left: 4px solid var(--red-500); }
+
+    .param-header {
+      display: flex; justify-content: space-between; align-items: flex-start;
+      margin-bottom: 12px;
+    }
+    .param-name { font-weight: 700; font-size: 0.95rem; color: var(--gray-800); }
+    .param-status {
+      font-size: 0.75rem; font-weight: 600; padding: 3px 10px;
+      border-radius: 100px;
+    }
+    .param-status.normal { background: var(--green-100); color: var(--green-700); }
+    .param-status.warning { background: var(--yellow-100); color: var(--yellow-600); }
+    .param-status.critical { background: var(--red-100); color: var(--red-700); }
+
+    .param-value-row {
+      display: flex; align-items: baseline; gap: 8px; margin-bottom: 8px;
+    }
+    .param-value { font-size: 1.5rem; font-weight: 800; }
+    .param-value.normal { color: var(--green-600); }
+    .param-value.warning { color: var(--yellow-600); }
+    .param-value.critical { color: var(--red-600); }
+    .param-unit { font-size: 0.85rem; color: var(--gray-500); }
+    .param-range { font-size: 0.8rem; color: var(--gray-400); }
+
+    /* Range bar */
+    .range-bar {
+      height: 6px; background: var(--gray-200); border-radius: 3px;
+      margin: 10px 0; position: relative; overflow: visible;
+    }
+    .range-bar .normal-zone {
+      position: absolute; height: 100%; background: var(--green-200);
+      border-radius: 3px;
+    }
+    .range-bar .marker {
+      position: absolute; top: -5px;
+      width: 16px; height: 16px; border-radius: 50%;
+      border: 3px solid var(--white); box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+      transform: translateX(-50%);
+    }
+    .range-bar .marker.normal { background: var(--green-500); }
+    .range-bar .marker.warning { background: var(--yellow-500); }
+    .range-bar .marker.critical { background: var(--red-500); }
+
+    .param-explanation {
+      font-size: 0.85rem; color: var(--gray-600); line-height: 1.6;
+      margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--gray-100);
+    }
+    .param-tags {
+      display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px;
+    }
+    .param-tag {
+      font-size: 0.75rem; padding: 3px 10px; border-radius: 6px;
+      background: var(--gray-100); color: var(--gray-600);
+    }
+    .param-tag.doctor { background: var(--blue-50); color: var(--blue-600); }
+    .param-tag.diet { background: var(--green-50); color: var(--green-700); }
+
+    /* Recommendations */
+    .reco-section {
+      margin-top: 40px; max-width: 700px; margin-left: auto; margin-right: auto;
+    }
+    .reco-section h2 {
+      font-size: 1.4rem; font-weight: 700; margin-bottom: 20px;
+      text-align: center;
+    }
+    .reco-card {
+      background: var(--white); border: 1px solid var(--gray-200);
+      border-radius: 14px; padding: 20px; margin-bottom: 12px;
+      display: flex; gap: 14px; align-items: flex-start;
+    }
+    .reco-card .reco-icon { font-size: 1.5rem; flex-shrink: 0; }
+    .reco-card .reco-text { font-size: 0.9rem; color: var(--gray-700); line-height: 1.6; }
+
+    /* Action buttons */
+    .action-buttons {
+      display: flex; gap: 12px; justify-content: center;
+      margin-top: 40px; flex-wrap: wrap; padding-bottom: 20px;
+    }
+    .action-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 12px 24px; border-radius: 12px;
+      font-weight: 600; font-size: 0.9rem; cursor: pointer;
+      text-decoration: none; border: none; font-family: inherit;
+      transition: all 0.2s;
+    }
+    .action-btn.primary {
+      background: var(--green-500); color: var(--white);
+    }
+    .action-btn.primary:hover { background: var(--green-600); }
+    .action-btn.secondary {
+      background: var(--white); color: var(--gray-700);
+      border: 1px solid var(--gray-300);
+    }
+    .action-btn.secondary:hover { border-color: var(--green-400); color: var(--green-600); }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .page-header h1 { font-size: 1.6rem; }
+      .upload-card { padding: 24px; }
+      .params-grid { grid-template-columns: 1fr; }
+      .score-ring { width: 140px; height: 140px; }
+      .score-value { font-size: 2.2rem; }
+      .options-row { flex-direction: column; }
+      .action-buttons { flex-direction: column; align-items: stretch; }
+    }
+
+    /* Disclaimer */
+    .disclaimer {
+      max-width: 700px; margin: 32px auto 0;
+      padding: 16px 20px; background: var(--yellow-50);
+      border: 1px solid var(--yellow-100); border-radius: 12px;
+      font-size: 0.8rem; color: var(--yellow-600); text-align: center;
+      line-height: 1.6;
+    }
+
+    /* WhatsApp button */
+    .action-btn.whatsapp {
+      background: #25D366; color: var(--white);
+    }
+    .action-btn.whatsapp:hover { background: #1da851; }
+
+    /* PDF / Print button */
+    .action-btn.pdf {
+      background: var(--blue-600); color: var(--white);
+    }
+    .action-btn.pdf:hover { background: #1d4ed8; }
+
+    /* Compare CTA */
+    .compare-cta {
+      max-width: 700px; margin: 24px auto 0;
+      padding: 18px 24px; background: var(--green-50);
+      border: 1px dashed var(--green-300); border-radius: 14px;
+      text-align: center; font-size: 0.9rem; color: var(--green-700);
+      line-height: 1.6;
+    }
+    .compare-cta strong { font-weight: 700; }
+
+    /* Indian Diet Tips Section */
+    .diet-tips-section {
+      margin-top: 40px; max-width: 700px; margin-left: auto; margin-right: auto;
+    }
+    .diet-tips-section h2 {
+      font-size: 1.4rem; font-weight: 700; margin-bottom: 20px; text-align: center;
+    }
+    .diet-tip-card {
+      background: var(--white); border: 1px solid var(--green-200);
+      border-radius: 14px; padding: 18px 20px; margin-bottom: 12px;
+      display: flex; gap: 14px; align-items: flex-start;
+    }
+    .diet-tip-card .tip-icon { font-size: 1.5rem; flex-shrink: 0; }
+    .diet-tip-card .tip-text { font-size: 0.9rem; color: var(--gray-700); line-height: 1.6; }
+    .diet-tip-card .tip-text strong { color: var(--green-700); }
+
+    /* Loading animation text */
+    .loading-text {
+      color: var(--gray-600); font-size: 1rem;
+      animation: pulse-text 1.5s ease-in-out infinite;
+    }
+    @keyframes pulse-text {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    /* Print styles */
+    @media print {
+      nav, .upload-section, .loading, .action-buttons, .compare-cta,
+      .demo-link, .analyze-btn, .privacy-badge, .page-header,
+      .cat-tabs { display: none !important; }
+      .results { display: block !important; padding: 0; }
+      .results .container { max-width: 100%; }
+      .score-section { padding: 20px 0; }
+      .params-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
+      .param-card { break-inside: avoid; page-break-inside: avoid; border: 1px solid #ccc; }
+      .disclaimer { margin-top: 20px; }
+      body { background: white; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <div class="container">
+      <a href="/" class="logo">Save<span>Karo</span></a>
+      <div class="nav-right">
+        <a href="/" class="back-link">← Back to Home</a>
+        <a href="/api/sehat-scan/parameters" target="_blank">All Parameters</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- HEADER -->
+  <section class="page-header">
+    <div class="container">
+      <div class="badge">🩸 Free AI Health Tool</div>
+      <h1>SehatScan — Blood Test Report Analyzer</h1>
+      <p>Upload your blood test report (PDF or photo). Get instant AI explanation of every parameter in simple Hindi-English.</p>
+      <div class="privacy-badge">
+        <span class="shield">🛡️</span>
+        Your data is 100% private and never stored. Reports are deleted immediately after analysis.
+      </div>
+    </div>
+  </section>
+
+  <!-- UPLOAD -->
+  <section class="upload-section" id="upload-section">
+    <div class="container">
+      <div class="upload-card">
+        <div class="upload-tabs">
+          <button class="upload-tab active" onclick="switchTab('file')">📄 Upload Report</button>
+          <button class="upload-tab" onclick="switchTab('text')">📝 Paste Text</button>
+        </div>
+
+        <!-- File upload -->
+        <div class="tab-content active" id="tab-file">
+          <div class="drop-zone" id="drop-zone">
+            <span class="upload-icon">📋</span>
+            <h3>Drop your blood test report here</h3>
+            <p>Supports PDF, PNG, JPG (max 10MB)</p>
+            <span class="browse-btn">Browse Files</span>
+          </div>
+          <input type="file" class="file-input" id="file-input" accept=".pdf,.png,.jpg,.jpeg,.webp">
+          <div id="file-name" style="margin-top:12px;font-size:0.9rem;color:var(--green-600);font-weight:600;display:none;"></div>
+        </div>
+
+        <!-- Text paste -->
+        <div class="tab-content" id="tab-text">
+          <textarea class="text-input" id="report-text" placeholder="Paste your blood test report text here...
+
+Example:
+Hemoglobin    11.2    g/dL    13.0 - 17.5
+WBC Count     7500    cells/µL    4000 - 11000
+Fasting Sugar 118     mg/dL    70 - 100
+Cholesterol   228     mg/dL    0 - 200
+SGPT          52      U/L      0 - 40
+TSH           5.8     mIU/L    0.4 - 4.0
+Vitamin D     14      ng/mL    30 - 100
+Vitamin B12   165     pg/mL    200 - 900"></textarea>
+          <p class="text-hint">Tip: Copy-paste the table from your lab report PDF. Include parameter names and values. The AI will figure out the rest.</p>
+        </div>
+
+        <!-- Options -->
+        <div class="options-row">
+          <div class="option-group">
+            <label>Gender</label>
+            <select id="gender">
+              <option value="default">Prefer not to say</option>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+            </select>
+          </div>
+          <div class="option-group">
+            <label>Age</label>
+            <select id="age">
+              <option value="25">18-30</option>
+              <option value="35" selected>30-45</option>
+              <option value="50">45-60</option>
+              <option value="65">60+</option>
+            </select>
+          </div>
+        </div>
+
+        <button class="analyze-btn" id="analyze-btn" onclick="analyzeReport()">
+          🔍 Analyze My Report — Free
+        </button>
+        <button class="demo-link" onclick="loadDemo()">
+          No report? Try with a demo report to see how it works →
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- LOADING -->
+  <section class="loading" id="loading">
+    <div class="container">
+      <div class="spinner"></div>
+      <p class="loading-text" id="loading-text">Reading your report...</p>
+      <p style="font-size:0.85rem;color:var(--gray-400);margin-top:8px;">This usually takes 10-15 seconds</p>
+    </div>
+  </section>
+
+  <!-- RESULTS -->
+  <section class="results" id="results">
+    <div class="container">
+
+      <!-- Health Score -->
+      <div class="score-section">
+        <div class="score-ring">
+          <svg width="100%" height="100%" viewBox="0 0 180 180">
+            <circle class="bg" cx="90" cy="90" r="78" fill="none" stroke-width="12"/>
+            <circle class="fill" id="score-circle" cx="90" cy="90" r="78" fill="none" stroke-width="12"
+              stroke-linecap="round"
+              stroke-dasharray="490" stroke-dashoffset="490"/>
+          </svg>
+          <div class="score-value" id="score-value">0</div>
+        </div>
+        <div class="score-label">Overall Health Score</div>
+        <div class="score-summary" id="score-summary"></div>
+      </div>
+
+      <!-- Alerts -->
+      <div id="alerts-container"></div>
+
+      <!-- Category tabs -->
+      <div class="cat-tabs" id="cat-tabs"></div>
+
+      <!-- Parameter cards -->
+      <div class="params-grid" id="params-grid"></div>
+
+      <!-- Recommendations -->
+      <div class="reco-section">
+        <h2>What To Do Next</h2>
+        <div id="reco-list"></div>
+      </div>
+
+      <!-- Indian Diet Tips -->
+      <div class="diet-tips-section" id="diet-tips-section" style="display:none;">
+        <h2>Indian Diet Tips Based on Your Report</h2>
+        <div id="diet-tips-list"></div>
+      </div>
+
+      <!-- Action buttons -->
+      <div class="action-buttons">
+        <button class="action-btn primary" onclick="shareReport()">📤 Share with Doctor</button>
+        <button class="action-btn whatsapp" onclick="shareOnWhatsApp()">💬 Share on WhatsApp</button>
+        <button class="action-btn pdf" onclick="downloadPDF()">📄 Download PDF Report</button>
+        <button class="action-btn secondary" onclick="printReport()">🖨️ Print Summary</button>
+        <button class="action-btn secondary" onclick="resetPage()">🔄 Analyze Another Report</button>
+      </div>
+
+      <!-- Compare CTA -->
+      <div class="compare-cta">
+        <strong>Want to track changes over time?</strong><br>
+        Save your report and compare with future tests. See how your health improves with every checkup.<br>
+        <span style="font-size:0.8rem;color:var(--green-500);font-weight:600;margin-top:4px;display:inline-block;">Coming soon!</span>
+      </div>
+
+      <!-- Disclaimer -->
+      <div class="disclaimer">
+        <strong>Medical Disclaimer:</strong> SehatScan is an AI-powered educational tool, not a medical device. It does not replace professional medical advice, diagnosis, or treatment. Always consult a qualified healthcare provider for medical decisions. Reference ranges may vary between labs.
+      </div>
+
+    </div>
+  </section>
+
+  <script>
+    let currentFile = null;
+    let currentAnalysis = null;
+    let loadingInterval = null;
+
+    // Loading text cycling
+    const loadingMessages = [
+      'Reading your report...',
+      'Checking 86 parameters...',
+      'Comparing with normal ranges...',
+      'Generating health score...'
+    ];
+    function startLoadingText() {
+      let idx = 0;
+      const el = document.getElementById('loading-text');
+      if (el) el.textContent = loadingMessages[0];
+      loadingInterval = setInterval(() => {
+        idx = (idx + 1) % loadingMessages.length;
+        if (el) el.textContent = loadingMessages[idx];
+      }, 2500);
+    }
+    function stopLoadingText() {
+      if (loadingInterval) { clearInterval(loadingInterval); loadingInterval = null; }
+    }
+
+    // Tab switching
+    function switchTab(tab) {
+      document.querySelectorAll('.upload-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+      if (tab === 'file') {
+        document.querySelectorAll('.upload-tab')[0].classList.add('active');
+        document.getElementById('tab-file').classList.add('active');
+      } else {
+        document.querySelectorAll('.upload-tab')[1].classList.add('active');
+        document.getElementById('tab-text').classList.add('active');
+      }
+    }
+
+    // File upload handling
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('file-input');
+
+    dropZone.addEventListener('click', () => fileInput.click());
+
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('dragover');
+    });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      if (e.dataTransfer.files.length) {
+        handleFile(e.dataTransfer.files[0]);
+      }
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files.length) handleFile(e.target.files[0]);
+    });
+
+    function handleFile(file) {
+      currentFile = file;
+      const fn = document.getElementById('file-name');
+      fn.style.display = 'block';
+      fn.textContent = '✅ ' + file.name + ' (' + (file.size / 1024).toFixed(0) + ' KB)';
+    }
+
+    // Analyze
+    async function analyzeReport() {
+      const btn = document.getElementById('analyze-btn');
+      btn.disabled = true;
+      btn.textContent = 'Analyzing...';
+
+      const gender = document.getElementById('gender').value;
+      const age = document.getElementById('age').value;
+      const reportText = document.getElementById('report-text').value;
+
+      document.getElementById('upload-section').style.display = 'none';
+      document.getElementById('loading').classList.add('active');
+      startLoadingText();
+
+      try {
+        let response;
+
+        if (reportText.trim()) {
+          response = await fetch('/api/sehat-scan/analyze', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ reportText, gender, age })
+          });
+        } else if (currentFile) {
+          const formData = new FormData();
+          formData.append('report', currentFile);
+          formData.append('gender', gender);
+          formData.append('age', age);
+          response = await fetch('/api/sehat-scan/analyze', {
+            method: 'POST',
+            body: formData
+          });
+        } else {
+          // Demo mode
+          response = await fetch('/api/sehat-scan/demo');
+        }
+
+        const data = await response.json();
+
+        if (data.success) {
+          currentAnalysis = data.analysis;
+          renderResults(data.analysis, data.message);
+        } else {
+          alert('Analysis failed: ' + (data.error || 'Unknown error'));
+          resetPage();
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Something went wrong. Please try again.');
+        resetPage();
+      }
+
+      btn.disabled = false;
+      btn.textContent = '🔍 Analyze My Report — Free';
+    }
+
+    function loadDemo() {
+      document.getElementById('upload-section').style.display = 'none';
+      document.getElementById('loading').classList.add('active');
+      startLoadingText();
+      fetch('/api/sehat-scan/demo')
+        .then(r => r.json())
+        .then(data => {
+          currentAnalysis = data.analysis;
+          renderResults(data.analysis, 'Showing demo analysis with a sample report.');
+        })
+        .catch(() => {
+          alert('Failed to load demo.');
+          resetPage();
+        });
+    }
+
+    function renderResults(analysis, message) {
+      stopLoadingText();
+      document.getElementById('loading').classList.remove('active');
+      document.getElementById('results').classList.add('active');
+
+      // Score
+      const score = analysis.overallScore;
+      const scoreEl = document.getElementById('score-value');
+      const circle = document.getElementById('score-circle');
+      const circumference = 490;
+      const offset = circumference - (circumference * score / 100);
+
+      let scoreColor = '#10B981';
+      if (score < 50) scoreColor = '#ef4444';
+      else if (score < 75) scoreColor = '#f59e0b';
+
+      circle.style.stroke = scoreColor;
+      scoreEl.style.color = scoreColor;
+
+      // Animate score
+      setTimeout(() => {
+        circle.style.strokeDashoffset = offset;
+        animateCounter(scoreEl, 0, score, 1200);
+      }, 300);
+
+      document.getElementById('score-summary').innerHTML = analysis.summary +
+        (message ? '<br><span style="font-size:0.85rem;color:var(--gray-400);">' + message + '</span>' : '');
+
+      // Alerts
+      const alertsContainer = document.getElementById('alerts-container');
+      alertsContainer.innerHTML = '';
+      if (analysis.criticalFlags.length > 0) {
+        alertsContainer.innerHTML = `
+          <div class="alert-banner critical">
+            <span class="alert-icon">🚨</span>
+            <div><strong>Critical Findings:</strong><br>${analysis.criticalFlags.join('<br>')}</div>
+          </div>`;
+      }
+
+      // Category tabs
+      const categories = Object.keys(analysis.categories);
+      const catTabsEl = document.getElementById('cat-tabs');
+      catTabsEl.innerHTML = '<button class="cat-tab active" onclick="filterCategory(\'all\')">All</button>';
+      categories.forEach(cat => {
+        const catData = analysis.categories[cat];
+        const emoji = getCategoryEmoji(cat);
+        catTabsEl.innerHTML += `<button class="cat-tab" onclick="filterCategory('${cat}')">${emoji} ${cat} <span class="cat-score">${catData.score}/100</span></button>`;
+      });
+
+      // Parameter cards
+      renderParams(analysis.parameters);
+
+      // Recommendations
+      const recoList = document.getElementById('reco-list');
+      recoList.innerHTML = '';
+      const recoIcons = ['🩺', '🥗', '💧', '🏃', '🔬', '🧘', '💊', '📋'];
+      analysis.recommendations.forEach((reco, i) => {
+        recoList.innerHTML += `
+          <div class="reco-card">
+            <span class="reco-icon">${recoIcons[i % recoIcons.length]}</span>
+            <span class="reco-text">${reco}</span>
+          </div>`;
+      });
+
+      // Indian Diet Tips
+      renderDietTips(analysis.parameters);
+    }
+
+    function renderDietTips(params) {
+      const dietTipsMap = {
+        'Hemoglobin': { low: { icon: '🥬', tip: '<strong>Low Hemoglobin?</strong> Add palak (spinach), chana (chickpeas), jaggery (gur), beetroot, and dates (khajoor) to your daily diet. Cook in iron kadhai for extra iron. Pair with amla or lemon for better iron absorption.' },
+                        high: { icon: '💧', tip: '<strong>High Hemoglobin?</strong> Stay well hydrated. Drink plenty of nimbu paani and coconut water. Reduce red meat intake and consult your doctor.' }},
+        'Vitamin D': { low: { icon: '☀️', tip: '<strong>Low Vitamin D?</strong> Get 20-30 mins of morning sunlight (before 10 AM). Include dahi (curd), paneer, eggs, and mushrooms. Consider ragi (nachni) roti which is calcium-rich and helps with Vitamin D.' },
+                       high: { icon: '☀️', tip: '<strong>High Vitamin D?</strong> Reduce supplements if taking any. Consult doctor for dose adjustment.' }},
+        'Vitamin B12': { low: { icon: '🥛', tip: '<strong>Low B12?</strong> Include dahi, paneer, doodh (milk), eggs daily. For vegetarians, try fortified soy milk or nutritional yeast. Fermented foods like idli, dosa batter also help.' },
+                         high: { icon: '🥛', tip: '<strong>High B12?</strong> Usually not harmful but consult your doctor to rule out liver issues.' }},
+        'Fasting Sugar': { high: { icon: '🍚', tip: '<strong>High Blood Sugar?</strong> Replace white rice with brown rice or roti. Add methi (fenugreek) seeds soaked overnight in water. Use karela (bitter gourd), jamun (Indian blackberry), and dalchini (cinnamon) chai. Avoid maida, refined sugar, and packaged juices.' },
+                           low: { icon: '🍯', tip: '<strong>Low Blood Sugar?</strong> Eat small frequent meals. Keep glucose biscuits handy. Include chana, rajma, and complex carbs in your diet.' }},
+        'Cholesterol': { high: { icon: '🫒', tip: '<strong>High Cholesterol?</strong> Use mustard oil or til (sesame) oil instead of dalda/vanaspati. Add oats, flax seeds (alsi), and walnuts (akhrot) to your breakfast. Eat garlic (lahsun) daily. Reduce ghee and full-fat dairy. Include methi seeds and haldi (turmeric) in cooking.' },
+                         low: { icon: '🥜', tip: '<strong>Low Cholesterol?</strong> Include healthy fats: ghee in moderation, nuts, seeds, and avocado.' }},
+        'SGPT': { high: { icon: '🌿', tip: '<strong>High Liver Enzymes (SGPT)?</strong> Avoid alcohol completely. Reduce oily and fried foods (samosa, pakora). Add haldi doodh (turmeric milk) before bed. Include amla, papaya, and green vegetables. Avoid painkillers without doctor advice.' }},
+        'TSH': { high: { icon: '🦋', tip: '<strong>Hypothyroid (High TSH)?</strong> Avoid raw goitrogens: cook gobi (cauliflower), patta gobhi (cabbage), soy before eating. Include iodized salt, eggs, and dairy. Selenium-rich foods: Brazil nuts, sunflower seeds, and mushrooms help thyroid function.' },
+                 low: { icon: '🦋', tip: '<strong>Hyperthyroid (Low TSH)?</strong> Include anti-inflammatory foods: haldi, adrak (ginger), and green leafy vegetables. Avoid excess iodine. Eat goitrogen-rich foods: broccoli, cabbage (patta gobhi) as they may help.' }},
+        'Uric Acid': { high: { icon: '🚫', tip: '<strong>High Uric Acid?</strong> Avoid rajma, chole, mushrooms, and organ meats. Drink 3-4 litres of water daily. Add nimbu paani, coconut water, and cherries. Reduce paneer and dal intake temporarily.' }},
+        'Iron': { low: { icon: '🫘', tip: '<strong>Low Iron?</strong> Eat palak, chana, rajma, moong dal, and jaggery regularly. Cook in iron kadhai/tawa. Have amla or lime with meals (Vitamin C helps iron absorption). Avoid chai/coffee right after meals as it blocks iron absorption.' }},
+        'Calcium': { low: { icon: '🥛', tip: '<strong>Low Calcium?</strong> Include ragi (nachni) roti/dosa, til (sesame) seeds, dahi, paneer, and doodh daily. Dried figs (anjeer) and almonds (badam) are excellent sources. Soak almonds overnight for better absorption.' }}
+      };
+
+      const tips = [];
+      params.forEach(p => {
+        const mapping = dietTipsMap[p.name];
+        if (!mapping) return;
+        if (p.status === 'normal') return;
+        const direction = p.status.includes('high') || p.status.includes('critical_high') ? 'high' : 'low';
+        const tipData = mapping[direction] || mapping['high'] || mapping['low'];
+        if (tipData) tips.push(tipData);
+      });
+
+      const section = document.getElementById('diet-tips-section');
+      const list = document.getElementById('diet-tips-list');
+      if (tips.length === 0) {
+        section.style.display = 'none';
+        return;
+      }
+      section.style.display = 'block';
+      list.innerHTML = tips.map(t => `
+        <div class="diet-tip-card">
+          <span class="tip-icon">${t.icon}</span>
+          <span class="tip-text">${t.tip}</span>
+        </div>
+      `).join('');
+    }
+
+    function renderParams(params) {
+      const grid = document.getElementById('params-grid');
+      grid.innerHTML = '';
+
+      // Sort by severity: critical first, then warning, then normal
+      const severityOrder = { critical: 0, warning: 1, normal: 2 };
+      const sorted = [...params].sort((a, b) => {
+        const aKey = a.status.startsWith('critical') ? 'critical' : (a.status === 'normal' ? 'normal' : 'warning');
+        const bKey = b.status.startsWith('critical') ? 'critical' : (b.status === 'normal' ? 'normal' : 'warning');
+        return severityOrder[aKey] - severityOrder[bKey];
+      });
+
+      sorted.forEach(p => {
+        const statusClass = p.status === 'normal' ? 'normal' :
+          p.status.startsWith('critical') ? 'critical' : 'warning';
+        const statusLabel = p.status === 'normal' ? 'Normal' :
+          p.status.startsWith('critical') ? 'Critical' :
+          p.status.includes('high') ? 'High' : 'Low';
+
+        // Range bar calculations
+        const range = p.normalRange.split(' - ').map(Number);
+        const rangeMin = range[0] || 0;
+        const rangeMax = range[1] || range[0] * 2;
+        const displayMin = Math.max(0, rangeMin * 0.5);
+        const displayMax = rangeMax * 1.5;
+        const totalRange = displayMax - displayMin;
+        const normalStart = ((rangeMin - displayMin) / totalRange) * 100;
+        const normalWidth = ((rangeMax - rangeMin) / totalRange) * 100;
+        let markerPos = ((p.value - displayMin) / totalRange) * 100;
+        markerPos = Math.max(2, Math.min(98, markerPos));
+
+        grid.innerHTML += `
+          <div class="param-card status-${statusClass}" data-category="${p.category}">
+            <div class="param-header">
+              <span class="param-name">${p.statusEmoji} ${p.name}</span>
+              <span class="param-status ${statusClass}">${statusLabel}</span>
+            </div>
+            <div class="param-value-row">
+              <span class="param-value ${statusClass}">${p.value}</span>
+              <span class="param-unit">${p.unit}</span>
+            </div>
+            <div class="param-range">Normal: ${p.normalRange} ${p.unit}</div>
+            <div class="range-bar">
+              <div class="normal-zone" style="left:${normalStart}%;width:${normalWidth}%"></div>
+              <div class="marker ${statusClass}" style="left:${markerPos}%"></div>
+            </div>
+            <div class="param-explanation">${p.explanation}</div>
+            ${p.status !== 'normal' ? `
+              <div class="param-tags">
+                <span class="param-tag doctor">👨‍⚕️ ${p.doctor}</span>
+              </div>` : ''}
+          </div>`;
+      });
+    }
+
+    function filterCategory(cat) {
+      document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
+      event.target.classList.add('active');
+
+      if (cat === 'all') {
+        renderParams(currentAnalysis.parameters);
+      } else {
+        renderParams(currentAnalysis.parameters.filter(p => p.category === cat));
+      }
+    }
+
+    function getCategoryEmoji(cat) {
+      const map = {
+        'Blood Count': '🩸',
+        'Diabetes': '🍬',
+        'Lipid Profile': '❤️',
+        'Liver Function': '🫁',
+        'Kidney Function': '🫘',
+        'Thyroid': '🦋',
+        'Vitamins': '💊',
+        'Other': '🔬'
+      };
+      return map[cat] || '📊';
+    }
+
+    function animateCounter(el, start, end, duration) {
+      let startTime = null;
+      function step(timestamp) {
+        if (!startTime) startTime = timestamp;
+        const progress = Math.min((timestamp - startTime) / duration, 1);
+        el.textContent = Math.round(progress * (end - start) + start);
+        if (progress < 1) requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+    }
+
+    function resetPage() {
+      document.getElementById('upload-section').style.display = 'block';
+      document.getElementById('loading').classList.remove('active');
+      document.getElementById('results').classList.remove('active');
+      currentFile = null;
+      document.getElementById('file-input').value = '';
+      document.getElementById('file-name').style.display = 'none';
+      document.getElementById('report-text').value = '';
+      window.scrollTo(0, 0);
+    }
+
+    function shareReport() {
+      if (!currentAnalysis) return;
+      const text = generateSummaryText();
+      if (navigator.share) {
+        navigator.share({ title: 'SehatScan Health Report', text });
+      } else {
+        navigator.clipboard.writeText(text).then(() => {
+          alert('Report summary copied to clipboard! You can paste and share it with your doctor.');
+        });
+      }
+    }
+
+    function printReport() {
+      window.print();
+    }
+
+    function shareOnWhatsApp() {
+      if (!currentAnalysis) return;
+      const a = currentAnalysis;
+      let text = `*SEHAT SCAN - Health Report Summary*\n\n`;
+      text += `Overall Health Score: *${a.overallScore}/100*\n`;
+      text += `${a.summary}\n\n`;
+      const abnormal = a.parameters.filter(p => p.status !== 'normal');
+      if (abnormal.length > 0) {
+        text += `*Parameters needing attention:*\n`;
+        abnormal.forEach(p => {
+          text += `${p.statusEmoji} ${p.name}: ${p.value} ${p.unit} (Normal: ${p.normalRange})\n`;
+        });
+      }
+      text += `\n_Analyzed by SehatScan on SaveKaro (savekaro.in)_\n`;
+      text += `_Free AI Blood Test Analyzer - try it yourself!_`;
+      const url = 'https://wa.me/?text=' + encodeURIComponent(text);
+      window.open(url, '_blank');
+    }
+
+    function downloadPDF() {
+      window.print();
+    }
+
+    function generateSummaryText() {
+      if (!currentAnalysis) return '';
+      let text = 'SEHAT SCAN — HEALTH REPORT SUMMARY\n';
+      text += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
+      text += `Overall Health Score: ${currentAnalysis.overallScore}/100\n`;
+      text += `${currentAnalysis.summary}\n\n`;
+
+      text += 'PARAMETERS:\n';
+      currentAnalysis.parameters.forEach(p => {
+        text += `${p.statusEmoji} ${p.name}: ${p.value} ${p.unit} (Normal: ${p.normalRange})\n`;
+        if (p.status !== 'normal') {
+          text += `  → ${p.explanation}\n`;
+        }
+      });
+
+      text += '\nRECOMMENDATIONS:\n';
+      currentAnalysis.recommendations.forEach((r, i) => {
+        text += `${i + 1}. ${r}\n`;
+      });
+
+      text += '\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
+      text += 'Generated by SehatScan (savekaro.in)\n';
+      text += 'This is not a medical diagnosis. Consult your doctor.\n';
+      return text;
+    }
+  </script>
+
+</body>
+</html>

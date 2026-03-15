@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ThaaliScore - Indian Food Nutrition Scanner | SaveKaro</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+    body { font-family: 'Inter', sans-serif; }
+    .brand-green { color: #10B981; }
+    .bg-brand { background-color: #10B981; }
+    .bg-brand-light { background-color: #D1FAE5; }
+    .border-brand { border-color: #10B981; }
+    .fade-in { animation: fadeIn 0.3s ease-in; }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+    .dish-card:hover { border-color: #10B981; box-shadow: 0 2px 8px rgba(16,185,129,0.15); }
+    .dish-card { transition: all 0.2s ease; }
+    .score-ring { transition: stroke-dashoffset 0.5s ease; }
+    .tab-active { border-bottom: 3px solid #10B981; color: #10B981; font-weight: 600; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+  <!-- Header -->
+  <header class="bg-white shadow-sm sticky top-0 z-50">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+      <a href="/" class="flex items-center gap-2">
+        <span class="text-2xl font-extrabold brand-green">Save</span><span class="text-2xl font-extrabold text-gray-800">Karo</span>
+      </a>
+      <nav class="hidden md:flex gap-6 text-sm font-medium text-gray-600">
+        <a href="/" class="hover:text-gray-900">Home</a>
+        <a href="/sasta-ilaaj" class="hover:text-gray-900">SastaIlaaj</a>
+        <a href="/thaali-score" class="brand-green font-semibold">ThaaliScore</a>
+        <a href="/sehat-scan" class="hover:text-gray-900">SehatScan</a>
+        <a href="/bijli-smart" class="hover:text-gray-900">BijliSmart</a>
+        <a href="/sabse-sasta" class="hover:text-gray-900">SabseSasta</a>
+      </nav>
+      <button id="mobileMenuBtn" class="md:hidden p-2">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+    </div>
+    <div id="mobileMenu" class="hidden md:hidden bg-white border-t px-4 py-3 space-y-2">
+      <a href="/" class="block text-gray-600 hover:text-gray-900">Home</a>
+      <a href="/sasta-ilaaj" class="block text-gray-600 hover:text-gray-900">SastaIlaaj</a>
+      <a href="/thaali-score" class="block brand-green font-semibold">ThaaliScore</a>
+      <a href="/sehat-scan" class="block text-gray-600 hover:text-gray-900">SehatScan</a>
+      <a href="/bijli-smart" class="block text-gray-600 hover:text-gray-900">BijliSmart</a>
+      <a href="/sabse-sasta" class="block text-gray-600 hover:text-gray-900">SabseSasta</a>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <section class="bg-gradient-to-br from-emerald-50 to-teal-50 py-10 md:py-14">
+    <div class="max-w-4xl mx-auto px-4 text-center">
+      <div class="inline-flex items-center gap-2 bg-white rounded-full px-4 py-1.5 text-sm font-medium text-emerald-700 shadow-sm mb-5">
+        <span class="text-lg">🍽️</span> Indian Food Nutrition Scanner
+      </div>
+      <h1 class="text-3xl md:text-5xl font-extrabold text-gray-900 mb-3">ThaaliScore</h1>
+      <p class="text-lg text-gray-600 max-w-2xl mx-auto">
+        Build your Indian thali and get instant nutrition analysis. Track calories, protein, and get healthier swap suggestions.
+      </p>
+    </div>
+  </section>
+
+  <!-- Diet Goal Selector -->
+  <div class="max-w-4xl mx-auto px-4 pt-6">
+    <div class="bg-white rounded-xl shadow-sm p-4 mb-4">
+      <p class="text-sm font-semibold text-gray-700 mb-2">I want to:</p>
+      <div class="flex flex-wrap gap-2">
+        <button onclick="setDietGoal('lose')" id="goalLose" class="diet-goal-btn text-xs px-4 py-2 rounded-full border-2 border-gray-200 text-gray-600 hover:border-emerald-400 transition font-medium">Lose Weight</button>
+        <button onclick="setDietGoal('maintain')" id="goalMaintain" class="diet-goal-btn text-xs px-4 py-2 rounded-full border-2 border-emerald-500 bg-emerald-50 text-emerald-700 font-medium">Maintain</button>
+        <button onclick="setDietGoal('gain')" id="goalGain" class="diet-goal-btn text-xs px-4 py-2 rounded-full border-2 border-gray-200 text-gray-600 hover:border-emerald-400 transition font-medium">Gain Muscle</button>
+        <button onclick="setDietGoal('diabetes')" id="goalDiabetes" class="diet-goal-btn text-xs px-4 py-2 rounded-full border-2 border-gray-200 text-gray-600 hover:border-emerald-400 transition font-medium">Manage Diabetes</button>
+      </div>
+      <p id="goalDescription" class="text-xs text-gray-400 mt-2">Daily target: 2000 calories</p>
+    </div>
+  </div>
+
+  <!-- Mode Tabs -->
+  <div class="max-w-4xl mx-auto px-4 pt-2">
+    <div class="flex border-b">
+      <button onclick="switchMode('build')" id="tabBuild" class="px-6 py-3 text-sm font-medium tab-active">
+        🍛 Build Your Plate
+      </button>
+      <button onclick="switchMode('photo')" id="tabPhoto" class="px-6 py-3 text-sm font-medium text-gray-500 hover:text-gray-700">
+        📷 Photo Mode
+      </button>
+      <button onclick="switchMode('tracker')" id="tabTracker" class="px-6 py-3 text-sm font-medium text-gray-500 hover:text-gray-700">
+        📊 Daily Tracker
+      </button>
+    </div>
+  </div>
+
+  <!-- Build Mode -->
+  <section id="buildMode" class="max-w-4xl mx-auto px-4 py-6">
+    <!-- Search -->
+    <div class="bg-white rounded-xl shadow-sm p-4 mb-4">
+      <div class="flex gap-3">
+        <div class="flex-1 relative">
+          <svg class="absolute left-3 top-3 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+          <input id="dishSearch" type="text" placeholder="Search Indian dishes (e.g., paneer, dosa, biryani...)" class="w-full pl-10 pr-4 py-2.5 border-2 border-gray-200 rounded-xl focus:border-emerald-500 focus:ring-0 focus:outline-none" autocomplete="off">
+        </div>
+      </div>
+      <!-- Quick category filters -->
+      <div class="flex flex-wrap gap-2 mt-3">
+        <button onclick="filterCategory('')" class="text-xs bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full font-medium">All</button>
+        <button onclick="filterCategory('Breakfast')" class="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full hover:bg-emerald-50">Breakfast</button>
+        <button onclick="filterCategory('North Indian')" class="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full hover:bg-emerald-50">North Indian</button>
+        <button onclick="filterCategory('South Indian')" class="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full hover:bg-emerald-50">South Indian</button>
+        <button onclick="filterCategory('Dals')" class="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full hover:bg-emerald-50">Dals</button>
+        <button onclick="filterCategory('Rice/Breads')" class="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full hover:bg-emerald-50">Rice/Breads</button>
+        <button onclick="filterCategory('Snacks')" class="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full hover:bg-emerald-50">Snacks</button>
+        <button onclick="filterCategory('Sweets')" class="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full hover:bg-emerald-50">Sweets</button>
+        <button onclick="filterCategory('Non-Veg')" class="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full hover:bg-emerald-50">Non-Veg</button>
+        <button onclick="filterCategory('Drinks')" class="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full hover:bg-emerald-50">Drinks</button>
+        <button onclick="filterCategory('Sides')" class="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full hover:bg-emerald-50">Sides</button>
+      </div>
+    </div>
+
+    <!-- Quick Thali Templates -->
+    <div id="thaliTemplates" class="bg-white rounded-xl shadow-sm p-4 mb-4">
+      <h3 class="text-sm font-bold text-gray-800 mb-3">Quick Thali Templates</h3>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+        <button onclick="loadThaliTemplate('healthy_north')" class="text-left p-3 rounded-lg border-2 border-gray-100 hover:border-emerald-400 hover:bg-emerald-50 transition">
+          <p class="text-sm font-semibold text-gray-800">Healthy North Indian</p>
+          <p class="text-xs text-gray-400 mt-1">Dal, Roti, Sabzi, Raita, Salad</p>
+        </button>
+        <button onclick="loadThaliTemplate('south_breakfast')" class="text-left p-3 rounded-lg border-2 border-gray-100 hover:border-emerald-400 hover:bg-emerald-50 transition">
+          <p class="text-sm font-semibold text-gray-800">South Indian Breakfast</p>
+          <p class="text-xs text-gray-400 mt-1">Idli, Sambar, Chutney, Coffee</p>
+        </button>
+        <button onclick="loadThaliTemplate('high_protein')" class="text-left p-3 rounded-lg border-2 border-gray-100 hover:border-emerald-400 hover:bg-emerald-50 transition">
+          <p class="text-sm font-semibold text-gray-800">High Protein Thali</p>
+          <p class="text-xs text-gray-400 mt-1">Chicken Curry, Dal, Brown Rice, Curd</p>
+        </button>
+        <button onclick="loadThaliTemplate('weight_loss')" class="text-left p-3 rounded-lg border-2 border-gray-100 hover:border-emerald-400 hover:bg-emerald-50 transition">
+          <p class="text-sm font-semibold text-gray-800">Weight Loss Thali</p>
+          <p class="text-xs text-gray-400 mt-1">Salad, Grilled Chicken, Dal, Roti</p>
+        </button>
+      </div>
+    </div>
+
+    <!-- Popular Dishes / Search Results -->
+    <div id="popularDishesHeader" class="mb-2">
+      <h3 class="text-sm font-bold text-gray-700">Popular Dishes</h3>
+    </div>
+    <div id="dishSearchResults" class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6"></div>
+
+    <!-- My Plate -->
+    <div id="myPlateSection" class="hidden">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+          <span>🍽️</span> My Plate
+          <span id="plateCount" class="text-sm bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full"></span>
+        </h2>
+        <button onclick="clearPlate()" class="text-sm text-red-500 hover:text-red-700">Clear All</button>
+      </div>
+      <div id="myPlateItems" class="flex flex-wrap gap-2 mb-4"></div>
+      <!-- Serving size legend -->
+      <p id="servingSizeLegend" class="hidden text-xs text-gray-400 mb-3">Click serving buttons to adjust portion size per dish.</p>
+      <button onclick="analyzeMyPlate()" class="w-full bg-brand text-white py-3 rounded-xl font-semibold hover:bg-emerald-600 transition text-base">
+        Analyze My Thali
+      </button>
+    </div>
+  </section>
+
+  <!-- Photo Mode -->
+  <section id="photoMode" class="hidden max-w-4xl mx-auto px-4 py-6">
+    <div class="bg-white rounded-xl shadow-sm p-8 text-center">
+      <div class="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
+        <svg class="w-10 h-10 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+      </div>
+      <h3 class="text-xl font-bold text-gray-900 mb-2">Upload Your Meal Photo</h3>
+      <p class="text-gray-500 mb-4">AI food recognition coming soon! For now, upload your photo and we'll help you identify the dishes.</p>
+      <label class="cursor-pointer inline-flex items-center gap-2 bg-brand text-white px-6 py-3 rounded-xl font-semibold hover:bg-emerald-600 transition">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+        Choose Photo
+        <input type="file" accept="image/*" class="hidden" onchange="handleMealPhoto(this)">
+      </label>
+      <div id="mealPhotoPreview" class="hidden mt-6">
+        <img id="mealPhotoImg" src="" alt="Meal" class="max-w-xs mx-auto rounded-xl shadow border mb-4">
+        <p class="text-sm text-gray-500 mb-3">Now search and add the dishes you see in your photo:</p>
+        <button onclick="switchMode('build')" class="bg-emerald-100 text-emerald-700 px-5 py-2 rounded-lg font-medium hover:bg-emerald-200 transition">
+          Go to Build Your Plate
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Daily Tracker Mode -->
+  <section id="trackerMode" class="hidden max-w-4xl mx-auto px-4 py-6">
+    <div class="grid md:grid-cols-3 gap-4 mb-6">
+      <div class="bg-white rounded-xl shadow-sm p-4">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-semibold text-gray-800">🌅 Breakfast</h3>
+          <button onclick="addMealToTracker('breakfast')" class="text-emerald-600 text-sm hover:underline">+ Add</button>
+        </div>
+        <div id="trackerBreakfast" class="space-y-1 text-sm text-gray-600"></div>
+        <p id="trackerBreakfastCal" class="text-xs text-gray-400 mt-2 font-medium"></p>
+      </div>
+      <div class="bg-white rounded-xl shadow-sm p-4">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-semibold text-gray-800">🌞 Lunch</h3>
+          <button onclick="addMealToTracker('lunch')" class="text-emerald-600 text-sm hover:underline">+ Add</button>
+        </div>
+        <div id="trackerLunch" class="space-y-1 text-sm text-gray-600"></div>
+        <p id="trackerLunchCal" class="text-xs text-gray-400 mt-2 font-medium"></p>
+      </div>
+      <div class="bg-white rounded-xl shadow-sm p-4">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-semibold text-gray-800">🌙 Dinner</h3>
+          <button onclick="addMealToTracker('dinner')" class="text-emerald-600 text-sm hover:underline">+ Add</button>
+        </div>
+        <div id="trackerDinner" class="space-y-1 text-sm text-gray-600"></div>
+        <p id="trackerDinnerCal" class="text-xs text-gray-400 mt-2 font-medium"></p>
+      </div>
+    </div>
+    <!-- Daily Totals -->
+    <div id="dailyTotals" class="hidden bg-white rounded-xl shadow-sm p-6">
+      <h3 class="font-bold text-gray-900 mb-4 text-lg">Daily Summary</h3>
+      <div id="dailyTotalsContent"></div>
+    </div>
+
+    <!-- Tracker Add Modal -->
+    <div id="trackerModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-end md:items-center justify-center">
+      <div class="bg-white w-full md:w-96 md:rounded-xl rounded-t-xl p-5 max-h-[80vh] overflow-y-auto">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-bold text-gray-900" id="trackerModalTitle">Add to Breakfast</h3>
+          <button onclick="closeTrackerModal()" class="text-gray-400 hover:text-gray-600">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <input id="trackerSearch" type="text" placeholder="Search dishes..." class="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-emerald-500 focus:outline-none mb-3" autocomplete="off">
+        <div id="trackerSearchResults" class="space-y-2 max-h-60 overflow-y-auto"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Analysis Results -->
+  <section id="analysisResults" class="hidden max-w-4xl mx-auto px-4 py-6">
+    <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+      <!-- Score Header -->
+      <div id="scoreHeader" class="p-6 bg-gradient-to-r from-emerald-500 to-teal-500 text-white"></div>
+
+      <!-- Nutrition Grid -->
+      <div class="p-6">
+        <h3 class="font-bold text-gray-900 mb-4">Nutrition Breakdown</h3>
+        <div id="nutritionGrid" class="grid grid-cols-5 gap-3 mb-6"></div>
+
+        <!-- Pie Chart -->
+        <div class="flex flex-col md:flex-row gap-6 mb-6">
+          <div class="flex-1">
+            <h4 class="font-semibold text-gray-700 mb-3">Macro Split</h4>
+            <canvas id="macroChart" width="240" height="240" class="mx-auto"></canvas>
+          </div>
+          <div class="flex-1">
+            <h4 class="font-semibold text-gray-700 mb-3">% of Daily Allowance (RDA)</h4>
+            <div id="rdaBars"></div>
+          </div>
+        </div>
+
+        <!-- Walking Equivalent -->
+        <div id="walkingInfo" class="bg-amber-50 rounded-xl p-4 mb-6 flex items-center gap-3"></div>
+
+        <!-- Meal Rating -->
+        <div id="mealRatings" class="mb-6"></div>
+
+        <!-- Healthier Swaps -->
+        <div id="swapsSection" class="hidden mb-6">
+          <h4 class="font-semibold text-gray-700 mb-3">💡 Healthier Swap Suggestions</h4>
+          <div id="swapsList" class="space-y-2"></div>
+        </div>
+
+        <!-- Per-Dish Breakdown -->
+        <div>
+          <h4 class="font-semibold text-gray-700 mb-3">Per-Dish Details</h4>
+          <div id="perDishList" class="space-y-2"></div>
+        </div>
+
+        <!-- WhatsApp Share -->
+        <div class="mt-6 pt-4 border-t border-gray-100">
+          <button id="whatsappShareBtn" onclick="shareOnWhatsApp()" class="w-full flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 text-white py-3 rounded-xl font-semibold transition">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+            Share My Thali Score on WhatsApp
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="bg-gray-900 text-gray-400 py-8 mt-8">
+    <div class="max-w-4xl mx-auto px-4 text-center">
+      <p class="text-sm">ThaaliScore by <span class="text-white font-semibold">SaveKaro</span> — Know your plate, eat smarter</p>
+      <p class="text-xs mt-2">Nutritional values are approximate per standard serving. Actual values may vary.</p>
+    </div>
+  </footer>
+
+  <script>
+    // State
+    let myPlate = [];
+    let currentCategory = '';
+    let trackerMeals = { breakfast: [], lunch: [], dinner: [] };
+    let trackerAddingTo = '';
+    let currentDietGoal = 'maintain';
+    let lastAnalysisData = null;
+
+    const dietGoals = {
+      lose:     { label: 'Lose Weight', calories: 1500, desc: 'Daily target: 1500 calories (calorie deficit)' },
+      maintain: { label: 'Maintain', calories: 2000, desc: 'Daily target: 2000 calories' },
+      gain:     { label: 'Gain Muscle', calories: 2500, desc: 'Daily target: 2500 calories (calorie surplus, high protein)' },
+      diabetes: { label: 'Manage Diabetes', calories: 1800, desc: 'Daily target: 1800 calories (low carbs, low sugar)' },
+    };
+
+    function setDietGoal(goal) {
+      currentDietGoal = goal;
+      document.querySelectorAll('.diet-goal-btn').forEach(btn => {
+        btn.className = 'diet-goal-btn text-xs px-4 py-2 rounded-full border-2 border-gray-200 text-gray-600 hover:border-emerald-400 transition font-medium';
+      });
+      const activeBtn = document.getElementById('goal' + goal.charAt(0).toUpperCase() + goal.slice(1));
+      if (activeBtn) activeBtn.className = 'diet-goal-btn text-xs px-4 py-2 rounded-full border-2 border-emerald-500 bg-emerald-50 text-emerald-700 font-medium';
+      document.getElementById('goalDescription').textContent = dietGoals[goal].desc;
+      // Re-render analysis if available
+      if (lastAnalysisData) renderAnalysis(lastAnalysisData);
+    }
+
+    // Quick Thali Templates
+    const thaliTemplates = {
+      healthy_north: [
+        { id: 901, name: 'Dal Tadka', cal: 180, category: 'Dals', veg: true, serving: 1 },
+        { id: 902, name: 'Roti', cal: 120, category: 'Rice/Breads', veg: true, serving: 1 },
+        { id: 903, name: 'Mixed Veg Sabzi', cal: 130, category: 'North Indian', veg: true, serving: 1 },
+        { id: 904, name: 'Raita', cal: 70, category: 'Sides', veg: true, serving: 1 },
+        { id: 905, name: 'Green Salad', cal: 35, category: 'Sides', veg: true, serving: 1 },
+      ],
+      south_breakfast: [
+        { id: 906, name: 'Idli (2 pcs)', cal: 130, category: 'South Indian', veg: true, serving: 1 },
+        { id: 907, name: 'Sambar', cal: 120, category: 'South Indian', veg: true, serving: 1 },
+        { id: 908, name: 'Coconut Chutney', cal: 60, category: 'Sides', veg: true, serving: 1 },
+        { id: 909, name: 'Filter Coffee', cal: 90, category: 'Drinks', veg: true, serving: 1 },
+      ],
+      high_protein: [
+        { id: 910, name: 'Chicken Curry', cal: 320, category: 'Non-Veg', veg: false, serving: 1 },
+        { id: 911, name: 'Dal Fry', cal: 190, category: 'Dals', veg: true, serving: 1 },
+        { id: 912, name: 'Brown Rice', cal: 180, category: 'Rice/Breads', veg: true, serving: 1 },
+        { id: 913, name: 'Curd', cal: 80, category: 'Sides', veg: true, serving: 1 },
+      ],
+      weight_loss: [
+        { id: 914, name: 'Green Salad', cal: 35, category: 'Sides', veg: true, serving: 1 },
+        { id: 915, name: 'Grilled Chicken', cal: 220, category: 'Non-Veg', veg: false, serving: 1 },
+        { id: 916, name: 'Dal', cal: 160, category: 'Dals', veg: true, serving: 1 },
+        { id: 917, name: 'Roti', cal: 120, category: 'Rice/Breads', veg: true, serving: 1 },
+      ],
+    };
+
+    function loadThaliTemplate(templateKey) {
+      myPlate = thaliTemplates[templateKey].map(d => ({ ...d }));
+      updateMyPlate();
+      searchDishes();
+    }
+
+    // Popular dishes for initial load
+    const popularDishes = [
+      { id: 101, name: 'Dal Tadka', cal: 180, category: 'Dals', veg: true, serving: '1 bowl', healthScore: 8 },
+      { id: 102, name: 'Roti', cal: 120, category: 'Rice/Breads', veg: true, serving: '2 pcs', healthScore: 7 },
+      { id: 103, name: 'Paneer Butter Masala', cal: 380, category: 'North Indian', veg: true, serving: '1 bowl', healthScore: 4 },
+      { id: 104, name: 'Chicken Biryani', cal: 490, category: 'Non-Veg', veg: false, serving: '1 plate', healthScore: 5 },
+      { id: 105, name: 'Masala Dosa', cal: 290, category: 'South Indian', veg: true, serving: '1 dosa', healthScore: 6 },
+      { id: 106, name: 'Idli (2 pcs)', cal: 130, category: 'Breakfast', veg: true, serving: '2 pcs', healthScore: 8 },
+      { id: 107, name: 'Chole Bhature', cal: 520, category: 'North Indian', veg: true, serving: '1 plate', healthScore: 3 },
+      { id: 108, name: 'Sambar', cal: 120, category: 'South Indian', veg: true, serving: '1 bowl', healthScore: 9 },
+      { id: 109, name: 'Rajma Chawal', cal: 410, category: 'North Indian', veg: true, serving: '1 plate', healthScore: 6 },
+      { id: 110, name: 'Poha', cal: 180, category: 'Breakfast', veg: true, serving: '1 bowl', healthScore: 7 },
+      { id: 111, name: 'Raita', cal: 70, category: 'Sides', veg: true, serving: '1 bowl', healthScore: 8 },
+      { id: 112, name: 'Gulab Jamun', cal: 175, category: 'Sweets', veg: true, serving: '2 pcs', healthScore: 2 },
+    ];
+
+    // Serving size adjuster
+    function adjustServing(dishId, multiplier) {
+      const dish = myPlate.find(d => d.id === dishId);
+      if (dish) {
+        dish.serving = multiplier;
+        updateMyPlate();
+      }
+    }
+
+    // WhatsApp share
+    function shareOnWhatsApp() {
+      if (!lastAnalysisData) return;
+      const d = lastAnalysisData;
+      const goalCalories = dietGoals[currentDietGoal].calories;
+      const text = encodeURIComponent(
+        `My lunch thali scored ${d.avgHealthScore}/10 on ThaaliScore! \uD83C\uDF5B Total: ${d.totals.cal} calories (Goal: ${goalCalories} cal/day). Check your meal's nutrition at SaveKaro!\nhttps://savekaro.in/thaali-score`
+      );
+      window.open('https://wa.me/?text=' + text, '_blank');
+    }
+
+    // Mobile menu
+    document.getElementById('mobileMenuBtn').addEventListener('click', () => {
+      document.getElementById('mobileMenu').classList.toggle('hidden');
+    });
+
+    // Mode switching
+    function switchMode(mode) {
+      ['build','photo','tracker'].forEach(m => {
+        document.getElementById(m + 'Mode').classList.toggle('hidden', m !== mode);
+        const tab = document.getElementById('tab' + m.charAt(0).toUpperCase() + m.slice(1));
+        if (m === mode) tab.classList.add('tab-active');
+        else { tab.classList.remove('tab-active'); tab.className = tab.className.replace('tab-active','').trim(); }
+      });
+    }
+
+    // Dish search with debounce
+    let searchTimer;
+    document.getElementById('dishSearch').addEventListener('input', () => {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(searchDishes, 200);
+    });
+
+    async function searchDishes() {
+      const q = document.getElementById('dishSearch').value.trim();
+      const header = document.getElementById('popularDishesHeader');
+
+      // If no search query, show popular dishes
+      if (!q && !currentCategory) {
+        header.classList.remove('hidden');
+        header.querySelector('h3').textContent = 'Popular Dishes';
+        renderDishResults(popularDishes);
+        return;
+      }
+
+      if (q) {
+        header.classList.remove('hidden');
+        header.querySelector('h3').textContent = 'Search Results';
+      } else {
+        header.classList.remove('hidden');
+        header.querySelector('h3').textContent = currentCategory || 'Popular Dishes';
+      }
+
+      let url = '/api/thaali-score/search?q=' + encodeURIComponent(q);
+      try {
+        const res = await fetch(url);
+        const data = await res.json();
+        let results = data.results || [];
+        if (currentCategory) results = results.filter(d => d.category === currentCategory);
+        if (results.length === 0 && !q) {
+          // Fallback to popular dishes filtered by category
+          let filtered = popularDishes;
+          if (currentCategory) filtered = popularDishes.filter(d => d.category === currentCategory);
+          renderDishResults(filtered);
+        } else {
+          renderDishResults(results);
+        }
+      } catch(e) {
+        // Fallback to popular dishes on network error
+        let filtered = popularDishes;
+        if (currentCategory) filtered = popularDishes.filter(d => d.category === currentCategory);
+        renderDishResults(filtered);
+      }
+    }
+
+    function filterCategory(cat) {
+      currentCategory = cat;
+      searchDishes();
+    }
+
+    function renderDishResults(results) {
+      const container = document.getElementById('dishSearchResults');
+      if (results.length === 0) {
+        container.innerHTML = '<p class="col-span-2 text-center text-gray-400 py-4">No dishes found. Try another search.</p>';
+        return;
+      }
+      container.innerHTML = results.map(d => {
+        const inPlate = myPlate.some(p => p.id === d.id);
+        const vegBadge = d.veg
+          ? '<span class="w-4 h-4 border border-green-600 rounded-sm flex items-center justify-center"><span class="w-2 h-2 bg-green-600 rounded-full"></span></span>'
+          : '<span class="w-4 h-4 border border-red-600 rounded-sm flex items-center justify-center"><span class="w-2 h-2 bg-red-600 rounded-full"></span></span>';
+        const scoreColor = d.healthScore >= 7 ? 'text-emerald-600' : d.healthScore >= 4 ? 'text-amber-600' : 'text-red-500';
+        return `
+          <div class="dish-card bg-white rounded-lg border-2 ${inPlate ? 'border-emerald-400 bg-emerald-50' : 'border-gray-100'} p-3 cursor-pointer" onclick="toggleDish(${d.id}, '${d.name.replace(/'/g,"\\'")}', ${d.cal}, '${d.category}', ${d.veg})">
+            <div class="flex items-start justify-between">
+              <div class="flex items-center gap-2">
+                ${vegBadge}
+                <div>
+                  <p class="font-semibold text-gray-800 text-sm">${d.name}</p>
+                  <p class="text-xs text-gray-400">${d.category} &middot; ${d.serving}</p>
+                </div>
+              </div>
+              <div class="text-right">
+                <p class="font-bold text-sm text-gray-700">${d.cal} cal</p>
+                <p class="text-xs ${scoreColor} font-medium">${d.healthScore}/10</p>
+              </div>
+            </div>
+            ${inPlate ? '<p class="text-xs text-emerald-600 font-medium mt-1 text-right">Added to plate</p>' : ''}
+          </div>
+        `;
+      }).join('');
+    }
+
+    function toggleDish(id, name, cal, category, veg) {
+      const idx = myPlate.findIndex(d => d.id === id);
+      if (idx >= 0) myPlate.splice(idx, 1);
+      else myPlate.push({ id, name, cal, category, veg, serving: 1 });
+      updateMyPlate();
+      searchDishes(); // refresh to show updated state
+    }
+
+    function updateMyPlate() {
+      const section = document.getElementById('myPlateSection');
+      const items = document.getElementById('myPlateItems');
+      const count = document.getElementById('plateCount');
+
+      if (myPlate.length === 0) {
+        section.classList.add('hidden');
+        return;
+      }
+
+      section.classList.remove('hidden');
+      document.getElementById('servingSizeLegend').classList.remove('hidden');
+      const totalCal = myPlate.reduce((s, d) => s + Math.round(d.cal * (d.serving || 1)), 0);
+      count.textContent = myPlate.length + ' items \u00B7 ' + totalCal + ' cal';
+      items.innerHTML = myPlate.map(d => {
+        const sv = d.serving || 1;
+        const adjCal = Math.round(d.cal * sv);
+        return `
+        <div class="bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2 flex flex-col gap-1 text-sm">
+          <div class="flex items-center gap-2">
+            <span class="font-medium text-emerald-800">${d.name}</span>
+            <span class="text-xs text-emerald-500">${adjCal}cal${sv !== 1 ? ' (' + sv + 'x)' : ''}</span>
+            <button onclick="event.stopPropagation(); toggleDish(${d.id}, '${d.name.replace(/'/g,"\\'")}', ${d.cal}, '${d.category}', ${d.veg})" class="text-emerald-400 hover:text-red-500 ml-1">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+          </div>
+          <div class="flex gap-1">
+            ${[0.5, 1, 1.5, 2].map(m => `<button onclick="event.stopPropagation(); adjustServing(${d.id}, ${m})" class="text-xs px-2 py-0.5 rounded-full ${sv === m ? 'bg-emerald-500 text-white' : 'bg-white text-emerald-600 border border-emerald-200 hover:bg-emerald-100'} transition">${m}x</button>`).join('')}
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    function clearPlate() {
+      myPlate = [];
+      updateMyPlate();
+      searchDishes();
+      document.getElementById('analysisResults').classList.add('hidden');
+      document.getElementById('servingSizeLegend').classList.add('hidden');
+      lastAnalysisData = null;
+    }
+
+    async function analyzeMyPlate() {
+      if (myPlate.length === 0) return;
+      try {
+        const res = await fetch('/api/thaali-score/analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ dishes: myPlate.map(d => d.id) })
+        });
+        const data = await res.json();
+        renderAnalysis(data);
+      } catch(e) { console.error(e); }
+    }
+
+    function renderAnalysis(data) {
+      lastAnalysisData = data;
+      const section = document.getElementById('analysisResults');
+      section.classList.remove('hidden');
+
+      // Score Header with emoji-based visual rating
+      const score = data.avgHealthScore;
+      let scoreEmoji, scoreBg, scoreLabel;
+      if (score >= 8) { scoreEmoji = '\uD83C\uDF1F'; scoreBg = 'from-emerald-500 to-green-500'; scoreLabel = 'Excellent!'; }
+      else if (score >= 6) { scoreEmoji = '\uD83D\uDE0A'; scoreBg = 'from-emerald-500 to-teal-500'; scoreLabel = 'Good'; }
+      else if (score >= 4) { scoreEmoji = '\uD83E\uDD14'; scoreBg = 'from-amber-500 to-orange-500'; scoreLabel = 'Needs Improvement'; }
+      else { scoreEmoji = '\u26A0\uFE0F'; scoreBg = 'from-red-500 to-rose-500'; scoreLabel = 'Unhealthy'; }
+
+      const goalCalories = dietGoals[currentDietGoal].calories;
+      const calPct = Math.round((data.totals.cal / goalCalories) * 100);
+
+      document.getElementById('scoreHeader').className = `p-6 bg-gradient-to-r ${scoreBg} text-white`;
+      document.getElementById('scoreHeader').innerHTML = `
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-white/70 text-sm mb-1">Your Thali Health Score</p>
+            <p class="text-5xl font-extrabold">${scoreEmoji} ${data.avgHealthScore}<span class="text-2xl font-normal">/10</span></p>
+            <p class="text-white/80 text-sm mt-1 font-medium">${scoreLabel}</p>
+          </div>
+          <div class="text-right">
+            <p class="text-3xl font-bold">${data.totals.cal}</p>
+            <p class="text-white/70 text-sm">Total Calories</p>
+            <p class="text-white/80 text-xs mt-1">${calPct}% of ${goalCalories} cal goal (${dietGoals[currentDietGoal].label})</p>
+          </div>
+        </div>
+      `;
+
+      // Nutrition Grid
+      const nutrients = [
+        { label: 'Calories', value: data.totals.cal, unit: 'kcal', color: 'bg-orange-100 text-orange-800' },
+        { label: 'Protein', value: data.totals.protein, unit: 'g', color: 'bg-blue-100 text-blue-800' },
+        { label: 'Carbs', value: data.totals.carbs, unit: 'g', color: 'bg-yellow-100 text-yellow-800' },
+        { label: 'Fat', value: data.totals.fat, unit: 'g', color: 'bg-red-100 text-red-800' },
+        { label: 'Fiber', value: data.totals.fiber, unit: 'g', color: 'bg-green-100 text-green-800' },
+      ];
+      document.getElementById('nutritionGrid').innerHTML = nutrients.map(n => `
+        <div class="${n.color} rounded-xl p-3 text-center">
+          <p class="text-2xl font-bold">${n.value}</p>
+          <p class="text-xs font-medium">${n.unit}</p>
+          <p class="text-xs mt-1 opacity-70">${n.label}</p>
+        </div>
+      `).join('');
+
+      // Pie Chart
+      drawPieChart(data.totals);
+
+      // RDA Bars
+      const rdaItems = [
+        { label: 'Calories', pct: data.rdaPercent.cal, color: '#F97316' },
+        { label: 'Protein', pct: data.rdaPercent.protein, color: '#3B82F6' },
+        { label: 'Carbs', pct: data.rdaPercent.carbs, color: '#EAB308' },
+        { label: 'Fat', pct: data.rdaPercent.fat, color: '#EF4444' },
+        { label: 'Fiber', pct: data.rdaPercent.fiber, color: '#22C55E' },
+      ];
+      document.getElementById('rdaBars').innerHTML = rdaItems.map(r => `
+        <div class="mb-3">
+          <div class="flex justify-between text-xs mb-1">
+            <span class="text-gray-600">${r.label}</span>
+            <span class="font-semibold" style="color:${r.color}">${r.pct}%</span>
+          </div>
+          <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
+            <div class="h-full rounded-full transition-all duration-500" style="width:${Math.min(r.pct,100)}%;background:${r.color}"></div>
+          </div>
+        </div>
+      `).join('');
+
+      // Walking Info
+      document.getElementById('walkingInfo').innerHTML = `
+        <span class="text-3xl">🚶</span>
+        <div>
+          <p class="font-semibold text-amber-800">This thali = walking <strong>${data.walkingMinutes} minutes</strong> to burn off</p>
+          <p class="text-sm text-amber-600">That's about ${(data.walkingMinutes / 60).toFixed(1)} hours of moderate walking</p>
+        </div>
+      `;
+
+      // Meal Ratings with goal-specific advice
+      let goalAdvice = [];
+      if (currentDietGoal === 'lose') {
+        if (data.totals.cal > 500) goalAdvice.push({ icon: '\u26A0\uFE0F', text: 'This meal is quite heavy for a weight loss plan. Try reducing portions or swapping high-cal items.', color: 'bg-amber-50 text-amber-800' });
+        if (data.totals.fat > 20) goalAdvice.push({ icon: '\uD83D\uDCA1', text: 'High fat content. Consider grilled options instead of fried.', color: 'bg-blue-50 text-blue-800' });
+      } else if (currentDietGoal === 'gain') {
+        if (data.totals.protein < 20) goalAdvice.push({ icon: '\uD83D\uDCAA', text: 'Add more protein! Include dal, paneer, chicken, or eggs for muscle building.', color: 'bg-blue-50 text-blue-800' });
+        if (data.totals.cal < 400) goalAdvice.push({ icon: '\u2B06\uFE0F', text: 'This meal is low-calorie for muscle gain. Add brown rice, nuts, or a protein shake.', color: 'bg-amber-50 text-amber-800' });
+      } else if (currentDietGoal === 'diabetes') {
+        if (data.totals.carbs > 60) goalAdvice.push({ icon: '\u26A0\uFE0F', text: 'This meal is too high in carbs for diabetes management. Reduce rice/roti portions.', color: 'bg-red-50 text-red-800' });
+        goalAdvice.push({ icon: '\uD83D\uDCA1', text: 'Prefer high-fiber, low-GI foods like dal, green veggies, and whole grains.', color: 'bg-blue-50 text-blue-800' });
+      }
+
+      document.getElementById('mealRatings').innerHTML = `
+        <h4 class="font-semibold text-gray-700 mb-2">\uD83C\uDFAF Meal Rating</h4>
+        ${data.ratings.map(r => {
+          const isGood = r.includes('Well-balanced') || r.includes('Good job');
+          const ratingEmoji = isGood ? '\u2705' : '\u26A0\uFE0F';
+          const ratingBg = isGood ? 'bg-emerald-50 border-emerald-200' : 'bg-amber-50 border-amber-200';
+          return `<div class="flex items-start gap-2 mb-2 p-2 rounded-lg ${ratingBg} border">
+            <span class="text-sm mt-0.5">${ratingEmoji}</span>
+            <p class="text-sm text-gray-700">${r}</p>
+          </div>`;
+        }).join('')}
+        ${goalAdvice.length > 0 ? `
+          <h4 class="font-semibold text-gray-700 mt-4 mb-2">\uD83C\uDFAF ${dietGoals[currentDietGoal].label} Tips</h4>
+          ${goalAdvice.map(a => `
+            <div class="flex items-start gap-2 mb-2 p-2 rounded-lg ${a.color} border border-gray-100">
+              <span class="text-sm mt-0.5">${a.icon}</span>
+              <p class="text-sm">${a.text}</p>
+            </div>
+          `).join('')}
+        ` : ''}
+      `;
+
+      // Swaps
+      if (data.healthierSwaps && data.healthierSwaps.length > 0) {
+        document.getElementById('swapsSection').classList.remove('hidden');
+        document.getElementById('swapsList').innerHTML = data.healthierSwaps.map(s => `
+          <div class="bg-emerald-50 rounded-lg p-3 flex items-start gap-2">
+            <span class="text-sm mt-0.5">🔄</span>
+            <div>
+              <p class="text-sm font-medium text-emerald-800">${s.dish}</p>
+              <p class="text-sm text-emerald-600">${s.suggestion}</p>
+            </div>
+          </div>
+        `).join('');
+      } else {
+        document.getElementById('swapsSection').classList.add('hidden');
+      }
+
+      // Per-dish list
+      document.getElementById('perDishList').innerHTML = data.dishes.map(d => {
+        const scoreColor = d.healthScore >= 7 ? 'bg-emerald-100 text-emerald-700' : d.healthScore >= 4 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700';
+        const vitStr = d.vitamins.slice(0, 4).join(', ');
+        return `
+          <div class="bg-gray-50 rounded-lg p-3 flex items-center justify-between">
+            <div>
+              <p class="font-medium text-gray-800 text-sm">${d.name}</p>
+              <p class="text-xs text-gray-400">${d.serving} &middot; ${vitStr}</p>
+            </div>
+            <div class="flex items-center gap-3">
+              <div class="text-right text-xs">
+                <p class="font-bold text-gray-700">${d.nutrition.cal} cal</p>
+                <p class="text-gray-400">P:${d.nutrition.protein}g C:${d.nutrition.carbs}g F:${d.nutrition.fat}g</p>
+              </div>
+              <span class="${scoreColor} text-xs font-bold px-2 py-1 rounded-full">${d.healthScore}/10</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      section.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // Draw Pie Chart
+    function drawPieChart(totals) {
+      const canvas = document.getElementById('macroChart');
+      const ctx = canvas.getContext('2d');
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = 240 * dpr;
+      canvas.height = 240 * dpr;
+      ctx.scale(dpr, dpr);
+
+      const proteinCal = totals.protein * 4;
+      const carbsCal = totals.carbs * 4;
+      const fatCal = totals.fat * 9;
+      const total = proteinCal + carbsCal + fatCal || 1;
+
+      const slices = [
+        { label: 'Protein', value: proteinCal, color: '#3B82F6' },
+        { label: 'Carbs', value: carbsCal, color: '#EAB308' },
+        { label: 'Fat', value: fatCal, color: '#EF4444' },
+      ];
+
+      const cx = 120, cy = 100, r = 80;
+      let startAngle = -Math.PI / 2;
+
+      slices.forEach(s => {
+        const sliceAngle = (s.value / total) * 2 * Math.PI;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.arc(cx, cy, r, startAngle, startAngle + sliceAngle);
+        ctx.closePath();
+        ctx.fillStyle = s.color;
+        ctx.fill();
+        startAngle += sliceAngle;
+      });
+
+      // White center
+      ctx.beginPath();
+      ctx.arc(cx, cy, 45, 0, Math.PI * 2);
+      ctx.fillStyle = '#fff';
+      ctx.fill();
+
+      // Center text
+      ctx.fillStyle = '#1F2937';
+      ctx.font = 'bold 16px Inter, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(totals.cal + ' cal', cx, cy + 5);
+
+      // Legend
+      const legendY = 200;
+      ctx.font = '11px Inter, sans-serif';
+      slices.forEach((s, i) => {
+        const lx = 20 + i * 80;
+        ctx.fillStyle = s.color;
+        ctx.fillRect(lx, legendY, 10, 10);
+        ctx.fillStyle = '#6B7280';
+        ctx.fillText(s.label + ' ' + Math.round((s.value/total)*100) + '%', lx + 14, legendY + 9);
+      });
+    }
+
+    // Photo mode
+    function handleMealPhoto(input) {
+      if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          document.getElementById('mealPhotoImg').src = e.target.result;
+          document.getElementById('mealPhotoPreview').classList.remove('hidden');
+        };
+        reader.readAsDataURL(input.files[0]);
+      }
+    }
+
+    // Tracker
+    function addMealToTracker(meal) {
+      trackerAddingTo = meal;
+      document.getElementById('trackerModalTitle').textContent = 'Add to ' + meal.charAt(0).toUpperCase() + meal.slice(1);
+      document.getElementById('trackerModal').classList.remove('hidden');
+      document.getElementById('trackerSearch').value = '';
+      document.getElementById('trackerSearchResults').innerHTML = '';
+      document.getElementById('trackerSearch').focus();
+    }
+
+    function closeTrackerModal() {
+      document.getElementById('trackerModal').classList.add('hidden');
+    }
+
+    document.getElementById('trackerSearch').addEventListener('input', async function() {
+      const q = this.value.trim();
+      if (q.length < 1) { document.getElementById('trackerSearchResults').innerHTML = ''; return; }
+      try {
+        const res = await fetch('/api/thaali-score/search?q=' + encodeURIComponent(q));
+        const data = await res.json();
+        document.getElementById('trackerSearchResults').innerHTML = (data.results || []).slice(0, 10).map(d => `
+          <button onclick="addTrackerDish(${d.id}, '${d.name.replace(/'/g,"\\'")}', ${d.cal})" class="w-full text-left px-3 py-2 rounded-lg hover:bg-emerald-50 flex justify-between items-center border border-gray-100">
+            <span class="text-sm font-medium text-gray-800">${d.name}</span>
+            <span class="text-xs text-gray-500">${d.cal} cal</span>
+          </button>
+        `).join('');
+      } catch(e) { console.error(e); }
+    });
+
+    function addTrackerDish(id, name, cal) {
+      trackerMeals[trackerAddingTo].push({ id, name, cal });
+      closeTrackerModal();
+      renderTracker();
+    }
+
+    function renderTracker() {
+      let totalCal = 0;
+      ['breakfast','lunch','dinner'].forEach(meal => {
+        const container = document.getElementById('tracker' + meal.charAt(0).toUpperCase() + meal.slice(1));
+        const calEl = document.getElementById('tracker' + meal.charAt(0).toUpperCase() + meal.slice(1) + 'Cal');
+        const items = trackerMeals[meal];
+        if (items.length === 0) {
+          container.innerHTML = '<p class="text-gray-300 text-xs">No items yet</p>';
+          calEl.textContent = '';
+        } else {
+          container.innerHTML = items.map((d, i) => `
+            <div class="flex justify-between items-center">
+              <span>${d.name}</span>
+              <div class="flex items-center gap-2">
+                <span class="text-xs text-gray-400">${d.cal} cal</span>
+                <button onclick="removeTrackerItem('${meal}', ${i})" class="text-gray-300 hover:text-red-500">
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+              </div>
+            </div>
+          `).join('');
+          const mealCal = items.reduce((s, d) => s + d.cal, 0);
+          calEl.textContent = mealCal + ' cal total';
+          totalCal += mealCal;
+        }
+      });
+
+      // Daily totals
+      const allIds = [...trackerMeals.breakfast, ...trackerMeals.lunch, ...trackerMeals.dinner];
+      if (allIds.length > 0) {
+        document.getElementById('dailyTotals').classList.remove('hidden');
+        const allCal = allIds.reduce((s, d) => s + d.cal, 0);
+        const pct = Math.round((allCal / 2000) * 100);
+        const remaining = 2000 - allCal;
+        document.getElementById('dailyTotalsContent').innerHTML = `
+          <div class="grid grid-cols-3 gap-4 mb-4">
+            <div class="text-center">
+              <p class="text-2xl font-bold text-gray-900">${allCal}</p>
+              <p class="text-xs text-gray-500">Calories consumed</p>
+            </div>
+            <div class="text-center">
+              <p class="text-2xl font-bold ${remaining > 0 ? 'text-emerald-600' : 'text-red-500'}">${remaining > 0 ? remaining : 0}</p>
+              <p class="text-xs text-gray-500">Remaining</p>
+            </div>
+            <div class="text-center">
+              <p class="text-2xl font-bold text-blue-600">${pct}%</p>
+              <p class="text-xs text-gray-500">of daily target</p>
+            </div>
+          </div>
+          <div class="h-3 bg-gray-100 rounded-full overflow-hidden">
+            <div class="h-full rounded-full transition-all duration-500 ${pct > 100 ? 'bg-red-500' : 'bg-emerald-500'}" style="width:${Math.min(pct,100)}%"></div>
+          </div>
+          <p class="text-xs text-gray-400 mt-2 text-center">Based on 2000 cal daily target. ${allIds.length} items across ${Object.values(trackerMeals).filter(m => m.length > 0).length} meals.</p>
+        `;
+      } else {
+        document.getElementById('dailyTotals').classList.add('hidden');
+      }
+    }
+
+    function removeTrackerItem(meal, index) {
+      trackerMeals[meal].splice(index, 1);
+      renderTracker();
+    }
+
+    // Close tracker modal on backdrop click
+    document.getElementById('trackerModal').addEventListener('click', function(e) {
+      if (e.target === this) closeTrackerModal();
+    });
+
+    // Initial load: show some popular dishes
+    window.addEventListener('DOMContentLoaded', () => {
+      searchDishes();
+      renderTracker();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SastaIlaaj - Generic Medicine Finder | SaveKaro</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+    body { font-family: 'Inter', sans-serif; }
+    .brand-green { color: #10B981; }
+    .bg-brand { background-color: #10B981; }
+    .bg-brand-light { background-color: #D1FAE5; }
+    .border-brand { border-color: #10B981; }
+    .savings-badge { animation: pulse-green 2s infinite; }
+    @keyframes pulse-green {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(16,185,129,0.4); }
+      50% { box-shadow: 0 0 0 8px rgba(16,185,129,0); }
+    }
+    .fade-in { animation: fadeIn 0.3s ease-in; }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+    .result-card:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.1); }
+    .result-card { transition: all 0.2s ease; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+  <!-- Header -->
+  <header class="bg-white shadow-sm sticky top-0 z-50">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+      <a href="/" class="flex items-center gap-2">
+        <span class="text-2xl font-extrabold brand-green">Save</span><span class="text-2xl font-extrabold text-gray-800">Karo</span>
+      </a>
+      <nav class="hidden md:flex gap-6 text-sm font-medium text-gray-600">
+        <a href="/" class="hover:text-gray-900">Home</a>
+        <a href="/sasta-ilaaj" class="brand-green font-semibold">SastaIlaaj</a>
+        <a href="/thaali-score" class="hover:text-gray-900">ThaaliScore</a>
+        <a href="/sehat-scan" class="hover:text-gray-900">SehatScan</a>
+        <a href="/bijli-smart" class="hover:text-gray-900">BijliSmart</a>
+        <a href="/sabse-sasta" class="hover:text-gray-900">SabseSasta</a>
+      </nav>
+      <button id="mobileMenuBtn" class="md:hidden p-2">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+    </div>
+    <div id="mobileMenu" class="hidden md:hidden bg-white border-t px-4 py-3 space-y-2">
+      <a href="/" class="block text-gray-600 hover:text-gray-900">Home</a>
+      <a href="/sasta-ilaaj" class="block brand-green font-semibold">SastaIlaaj</a>
+      <a href="/thaali-score" class="block text-gray-600 hover:text-gray-900">ThaaliScore</a>
+      <a href="/sehat-scan" class="block text-gray-600 hover:text-gray-900">SehatScan</a>
+      <a href="/bijli-smart" class="block text-gray-600 hover:text-gray-900">BijliSmart</a>
+      <a href="/sabse-sasta" class="block text-gray-600 hover:text-gray-900">SabseSasta</a>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <section class="bg-gradient-to-br from-emerald-50 to-teal-50 py-12 md:py-16">
+    <div class="max-w-4xl mx-auto px-4 text-center">
+      <div class="inline-flex items-center gap-2 bg-white rounded-full px-4 py-1.5 text-sm font-medium text-emerald-700 shadow-sm mb-6">
+        <span class="text-lg">💊</span> India's Free Generic Medicine Finder
+      </div>
+      <h1 class="text-3xl md:text-5xl font-extrabold text-gray-900 mb-4">
+        SastaIlaaj
+      </h1>
+      <p class="text-lg md:text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
+        Find cheaper generic alternatives for your branded medicines. Same salt composition, same effectiveness — up to <span class="font-bold brand-green">90% savings</span>.
+      </p>
+
+      <!-- Search Box -->
+      <div class="max-w-2xl mx-auto">
+        <div class="bg-white rounded-2xl shadow-lg p-4 md:p-6">
+          <div class="flex flex-col md:flex-row gap-3">
+            <div class="flex-1 relative">
+              <svg class="absolute left-3 top-3.5 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+              <input id="searchInput" type="text" placeholder="Enter medicine name (e.g., Dolo 650, Thyronorm, Glycomet)" class="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-emerald-500 focus:ring-0 focus:outline-none text-base" autocomplete="off">
+            </div>
+            <button onclick="doSearch()" class="bg-brand text-white px-6 py-3 rounded-xl font-semibold hover:bg-emerald-600 transition flex items-center justify-center gap-2">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+              Search
+            </button>
+          </div>
+
+          <!-- Upload Prescription -->
+          <div class="mt-4 flex items-center justify-center gap-4">
+            <span class="text-sm text-gray-400">or</span>
+            <label class="cursor-pointer inline-flex items-center gap-2 text-sm font-medium text-emerald-600 hover:text-emerald-700 bg-emerald-50 px-4 py-2 rounded-lg">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+              Upload Prescription Photo
+              <input type="file" accept="image/*" class="hidden" onchange="handlePrescriptionUpload(this)">
+            </label>
+          </div>
+
+          <!-- Popular Searches -->
+          <div class="mt-4 flex flex-wrap gap-2 justify-center">
+            <span class="text-xs text-gray-400">Popular:</span>
+            <button onclick="quickSearch('Dolo 650')" class="text-xs bg-gray-100 hover:bg-emerald-50 text-gray-600 hover:text-emerald-700 px-3 py-1 rounded-full transition">Dolo 650</button>
+            <button onclick="quickSearch('Thyronorm')" class="text-xs bg-gray-100 hover:bg-emerald-50 text-gray-600 hover:text-emerald-700 px-3 py-1 rounded-full transition">Thyronorm</button>
+            <button onclick="quickSearch('Glycomet')" class="text-xs bg-gray-100 hover:bg-emerald-50 text-gray-600 hover:text-emerald-700 px-3 py-1 rounded-full transition">Glycomet</button>
+            <button onclick="quickSearch('Telma')" class="text-xs bg-gray-100 hover:bg-emerald-50 text-gray-600 hover:text-emerald-700 px-3 py-1 rounded-full transition">Telma</button>
+            <button onclick="quickSearch('Allegra')" class="text-xs bg-gray-100 hover:bg-emerald-50 text-gray-600 hover:text-emerald-700 px-3 py-1 rounded-full transition">Allegra</button>
+            <button onclick="quickSearch('Pan D')" class="text-xs bg-gray-100 hover:bg-emerald-50 text-gray-600 hover:text-emerald-700 px-3 py-1 rounded-full transition">Pan D</button>
+            <button onclick="quickSearch('Atorva')" class="text-xs bg-gray-100 hover:bg-emerald-50 text-gray-600 hover:text-emerald-700 px-3 py-1 rounded-full transition">Atorva</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Savings Counter -->
+  <div class="max-w-4xl mx-auto px-4 mt-6">
+    <div class="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-2xl p-6 text-center text-white shadow-lg">
+      <p class="text-sm font-medium opacity-90 mb-1">SaveKaro users have saved</p>
+      <p class="text-4xl md:text-5xl font-extrabold" id="savingsCounter">₹0 Cr</p>
+      <p class="text-sm opacity-75 mt-1">on medicines through generic alternatives</p>
+    </div>
+  </div>
+
+  <!-- Category Browse Pills -->
+  <div class="max-w-4xl mx-auto px-4 mt-6">
+    <div class="bg-white rounded-xl shadow-sm p-5">
+      <h3 class="text-sm font-semibold text-gray-700 mb-3">Browse by Category</h3>
+      <div class="flex flex-wrap gap-2" id="categoryPills">
+        <button onclick="browseCategory('Pain Relief')" class="text-sm bg-gray-100 hover:bg-emerald-50 text-gray-600 hover:text-emerald-700 px-4 py-2 rounded-full transition font-medium">💊 Pain Relief</button>
+        <button onclick="browseCategory('Diabetes')" class="text-sm bg-gray-100 hover:bg-emerald-50 text-gray-600 hover:text-emerald-700 px-4 py-2 rounded-full transition font-medium">🍬 Diabetes</button>
+        <button onclick="browseCategory('Blood Pressure')" class="text-sm bg-gray-100 hover:bg-emerald-50 text-gray-600 hover:text-emerald-700 px-4 py-2 rounded-full transition font-medium">❤️ Blood Pressure</button>
+        <button onclick="browseCategory('Thyroid')" class="text-sm bg-gray-100 hover:bg-emerald-50 text-gray-600 hover:text-emerald-700 px-4 py-2 rounded-full transition font-medium">🦋 Thyroid</button>
+        <button onclick="browseCategory('Cholesterol')" class="text-sm bg-gray-100 hover:bg-emerald-50 text-gray-600 hover:text-emerald-700 px-4 py-2 rounded-full transition font-medium">🫀 Cholesterol</button>
+        <button onclick="browseCategory('Antibiotics')" class="text-sm bg-gray-100 hover:bg-emerald-50 text-gray-600 hover:text-emerald-700 px-4 py-2 rounded-full transition font-medium">🦠 Antibiotics</button>
+        <button onclick="browseCategory('Gastric')" class="text-sm bg-gray-100 hover:bg-emerald-50 text-gray-600 hover:text-emerald-700 px-4 py-2 rounded-full transition font-medium">🫃 Gastric</button>
+        <button onclick="browseCategory('Allergy')" class="text-sm bg-gray-100 hover:bg-emerald-50 text-gray-600 hover:text-emerald-700 px-4 py-2 rounded-full transition font-medium">🤧 Allergy</button>
+        <button onclick="browseCategory('Vitamins')" class="text-sm bg-gray-100 hover:bg-emerald-50 text-gray-600 hover:text-emerald-700 px-4 py-2 rounded-full transition font-medium">💊 Vitamins</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- My Prescription Builder -->
+  <div id="prescriptionBuilder" class="hidden max-w-4xl mx-auto px-4 mt-6">
+    <div class="bg-white rounded-xl shadow-lg overflow-hidden border-2 border-emerald-200">
+      <div class="bg-emerald-50 px-5 py-4 border-b flex items-center justify-between">
+        <h3 class="text-lg font-bold text-emerald-800 flex items-center gap-2">
+          <span>📋</span> My Prescription
+        </h3>
+        <button onclick="clearPrescription()" class="text-xs text-gray-400 hover:text-red-500 transition">Clear All</button>
+      </div>
+      <div id="prescriptionItems" class="divide-y divide-gray-100"></div>
+      <div class="px-5 py-4 bg-gradient-to-r from-emerald-50 to-teal-50 border-t-2 border-emerald-200">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+          <div>
+            <p class="text-sm text-gray-600">Your prescription costs <strong class="text-gray-900" id="rxBrandTotal">₹0</strong>/month</p>
+            <p class="text-sm text-gray-600">With generics: <strong class="text-emerald-700" id="rxGenericTotal">₹0</strong>/month</p>
+            <p class="text-lg font-extrabold text-emerald-700 mt-1">You save <span id="rxMonthlySave">₹0</span>/month (<span id="rxYearlySave">₹0</span>/year!)</p>
+          </div>
+          <button onclick="sharePrescriptionOnWhatsApp()" class="bg-green-500 hover:bg-green-600 text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition flex items-center gap-2">
+            💬 Share My Savings on WhatsApp
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Prescription Upload Preview -->
+  <div id="prescriptionPreview" class="hidden max-w-4xl mx-auto px-4 mt-6">
+    <div class="bg-white rounded-xl shadow p-4 flex items-center gap-4">
+      <img id="prescriptionImg" src="" alt="Prescription" class="w-24 h-24 object-cover rounded-lg border">
+      <div>
+        <p class="font-semibold text-gray-800">Prescription uploaded</p>
+        <p class="text-sm text-gray-500">OCR scanning is coming soon. For now, please type the medicine names from your prescription above.</p>
+      </div>
+      <button onclick="document.getElementById('prescriptionPreview').classList.add('hidden')" class="ml-auto text-gray-400 hover:text-gray-600">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <section id="resultsSection" class="hidden max-w-4xl mx-auto px-4 py-8">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-xl font-bold text-gray-900">Search Results</h2>
+      <span id="resultCount" class="text-sm text-gray-500"></span>
+    </div>
+    <div id="resultsContainer"></div>
+  </section>
+
+  <!-- Salt Search Results -->
+  <section id="saltResultsSection" class="hidden max-w-4xl mx-auto px-4 py-4 mb-8">
+    <h3 class="text-lg font-bold text-gray-900 mb-3" id="saltResultsTitle"></h3>
+    <div id="saltResultsContainer" class="grid gap-3"></div>
+  </section>
+
+  <!-- How It Works -->
+  <section class="max-w-4xl mx-auto px-4 py-12" id="howItWorks">
+    <h2 class="text-2xl font-bold text-gray-900 mb-8 text-center">How Generic Medicines Save You Money</h2>
+    <div class="grid md:grid-cols-3 gap-6">
+      <div class="bg-white rounded-xl p-6 shadow-sm text-center">
+        <div class="w-14 h-14 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <span class="text-2xl">🔍</span>
+        </div>
+        <h3 class="font-semibold text-gray-800 mb-2">Search Your Medicine</h3>
+        <p class="text-sm text-gray-500">Enter the brand name from your prescription or upload a photo</p>
+      </div>
+      <div class="bg-white rounded-xl p-6 shadow-sm text-center">
+        <div class="w-14 h-14 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <span class="text-2xl">💊</span>
+        </div>
+        <h3 class="font-semibold text-gray-800 mb-2">Find Generic Alternatives</h3>
+        <p class="text-sm text-gray-500">Same salt composition, same effect — just a different (cheaper) brand</p>
+      </div>
+      <div class="bg-white rounded-xl p-6 shadow-sm text-center">
+        <div class="w-14 h-14 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <span class="text-2xl">🏥</span>
+        </div>
+        <h3 class="font-semibold text-gray-800 mb-2">Buy from Jan Aushadhi</h3>
+        <p class="text-sm text-gray-500">Visit your nearest Jan Aushadhi Kendra for the cheapest generic options</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Safety Note -->
+  <section class="max-w-4xl mx-auto px-4 pb-12">
+    <div class="bg-amber-50 border border-amber-200 rounded-xl p-5">
+      <div class="flex items-start gap-3">
+        <span class="text-xl mt-0.5">⚠️</span>
+        <div>
+          <h4 class="font-semibold text-amber-800 mb-1">Safety Note</h4>
+          <p class="text-sm text-amber-700">Generic medicines have the same salt composition and are equally effective as branded ones. They are approved by the same regulatory body (CDSCO). However, <strong>always consult your doctor before switching medicines</strong>. Some conditions may require specific brands.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Jan Aushadhi Store Finder (Placeholder) -->
+  <section id="storeFinderSection" class="hidden max-w-4xl mx-auto px-4 pb-12">
+    <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+      <div class="p-5 border-b">
+        <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+          <span>🏥</span> Nearest Jan Aushadhi Stores
+        </h3>
+        <p class="text-sm text-gray-500 mt-1">Find government-subsidized generic medicine stores near you</p>
+      </div>
+      <div class="bg-gray-100 h-64 flex items-center justify-center relative">
+        <div class="text-center">
+          <div class="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-3">
+            <svg class="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          </div>
+          <p class="font-medium text-gray-600">Map integration coming soon</p>
+          <p class="text-sm text-gray-400 mt-1">Visit <a href="http://janaushadhi.gov.in" target="_blank" class="text-emerald-600 underline">janaushadhi.gov.in</a> to find stores near you</p>
+          <a href="http://janaushadhi.gov.in/StoreLocator" target="_blank" class="inline-block mt-3 bg-brand text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-emerald-600 transition">Find Stores on Official Website</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="bg-gray-900 text-gray-400 py-8">
+    <div class="max-w-4xl mx-auto px-4 text-center">
+      <p class="text-sm">SastaIlaaj by <span class="text-white font-semibold">SaveKaro</span> — Helping India save on healthcare costs</p>
+      <p class="text-xs mt-2">Disclaimer: This tool is for informational purposes only. Always consult a qualified doctor before changing medications.</p>
+    </div>
+  </footer>
+
+  <script>
+    // Side effects data for popular medicines
+    const sideEffectsDB = {
+      'Paracetamol': ['Nausea or stomach upset', 'Skin rash (rare)', 'Liver damage (overdose)', 'Loss of appetite'],
+      'Dolo 650': ['Nausea or stomach upset', 'Skin rash (rare)', 'Liver damage (overdose)', 'Loss of appetite'],
+      'Ibuprofen': ['Stomach pain or acidity', 'Dizziness or headache', 'Increased blood pressure', 'Kidney issues with long-term use'],
+      'Metformin': ['Stomach upset or diarrhea', 'Metallic taste in mouth', 'Vitamin B12 deficiency (long-term)', 'Lactic acidosis (rare)'],
+      'Glycomet': ['Stomach upset or diarrhea', 'Metallic taste in mouth', 'Vitamin B12 deficiency (long-term)', 'Lactic acidosis (rare)'],
+      'Thyronorm': ['Headache', 'Weight changes', 'Increased heart rate', 'Sweating or heat sensitivity'],
+      'Levothyroxine': ['Headache', 'Weight changes', 'Increased heart rate', 'Sweating or heat sensitivity'],
+      'Atorvastatin': ['Muscle pain or weakness', 'Digestive issues', 'Headache', 'Liver enzyme elevation (rare)'],
+      'Atorva': ['Muscle pain or weakness', 'Digestive issues', 'Headache', 'Liver enzyme elevation (rare)'],
+      'Telmisartan': ['Dizziness', 'Back pain', 'Diarrhea', 'Low blood pressure'],
+      'Telma': ['Dizziness', 'Back pain', 'Diarrhea', 'Low blood pressure'],
+      'Amlodipine': ['Ankle swelling', 'Headache', 'Flushing', 'Dizziness'],
+      'Pantoprazole': ['Headache', 'Stomach pain', 'Nausea', 'Vitamin B12 deficiency (long-term)'],
+      'Pan D': ['Headache', 'Stomach pain', 'Nausea', 'Flatulence'],
+      'Fexofenadine': ['Headache', 'Drowsiness (mild)', 'Nausea', 'Back pain'],
+      'Allegra': ['Headache', 'Drowsiness (mild)', 'Nausea', 'Back pain'],
+      'Cetirizine': ['Drowsiness', 'Dry mouth', 'Headache', 'Stomach pain'],
+      'Omeprazole': ['Headache', 'Nausea', 'Stomach pain', 'Vitamin B12 deficiency (long-term)'],
+      'Azithromycin': ['Diarrhea', 'Nausea', 'Stomach pain', 'Headache'],
+      'Amoxicillin': ['Diarrhea', 'Nausea', 'Skin rash', 'Vomiting'],
+      'Ciprofloxacin': ['Nausea', 'Diarrhea', 'Dizziness', 'Tendon pain (rare)'],
+      'Losartan': ['Dizziness', 'Fatigue', 'Nasal congestion', 'Back pain'],
+      'Aspirin': ['Stomach irritation', 'Increased bleeding risk', 'Nausea', 'Heartburn'],
+      'Diclofenac': ['Stomach pain', 'Nausea', 'Diarrhea', 'Headache'],
+      'Clopidogrel': ['Bleeding', 'Bruising', 'Stomach pain', 'Headache']
+    };
+
+    // Prescription builder state
+    let prescriptionItems = [];
+
+    // Animated savings counter
+    function animateSavingsCounter() {
+      const el = document.getElementById('savingsCounter');
+      const target = 47.3;
+      const duration = 2000;
+      let start = null;
+      function step(ts) {
+        if (!start) start = ts;
+        const progress = Math.min((ts - start) / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        const val = (eased * target).toFixed(1);
+        el.textContent = '\u20B9' + val + ' Cr';
+        if (progress < 1) requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+    }
+
+    // Observe when counter scrolls into view
+    const counterObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          animateSavingsCounter();
+          counterObserver.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.5 });
+    window.addEventListener('DOMContentLoaded', () => {
+      const c = document.getElementById('savingsCounter');
+      if (c) counterObserver.observe(c);
+    });
+
+    // Mobile menu toggle
+    document.getElementById('mobileMenuBtn').addEventListener('click', () => {
+      document.getElementById('mobileMenu').classList.toggle('hidden');
+    });
+
+    // Search input: Enter key
+    document.getElementById('searchInput').addEventListener('keydown', e => {
+      if (e.key === 'Enter') doSearch();
+    });
+
+    // Live search with debounce
+    let debounceTimer;
+    document.getElementById('searchInput').addEventListener('input', () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        if (document.getElementById('searchInput').value.trim().length >= 2) doSearch();
+      }, 300);
+    });
+
+    function quickSearch(name) {
+      document.getElementById('searchInput').value = name;
+      doSearch();
+    }
+
+    function handlePrescriptionUpload(input) {
+      if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          document.getElementById('prescriptionImg').src = e.target.result;
+          document.getElementById('prescriptionPreview').classList.remove('hidden');
+        };
+        reader.readAsDataURL(input.files[0]);
+      }
+    }
+
+    async function doSearch() {
+      const query = document.getElementById('searchInput').value.trim();
+      if (!query) return;
+
+      try {
+        const res = await fetch('/api/sasta-ilaaj/search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query })
+        });
+        const data = await res.json();
+        renderResults(data.results || []);
+      } catch (err) {
+        console.error('Search failed:', err);
+      }
+    }
+
+    async function searchBySalt(salt) {
+      try {
+        const res = await fetch('/api/sasta-ilaaj/by-salt', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ salt })
+        });
+        const data = await res.json();
+        renderSaltResults(salt, data.results || []);
+      } catch (err) {
+        console.error('Salt search failed:', err);
+      }
+    }
+
+    function renderResults(results) {
+      const section = document.getElementById('resultsSection');
+      const container = document.getElementById('resultsContainer');
+      const count = document.getElementById('resultCount');
+
+      if (results.length === 0) {
+        section.classList.remove('hidden');
+        count.textContent = '';
+        container.innerHTML = `
+          <div class="bg-white rounded-xl p-8 text-center shadow-sm">
+            <p class="text-gray-500 text-lg">No medicines found. Try a different spelling or brand name.</p>
+          </div>`;
+        return;
+      }
+
+      section.classList.remove('hidden');
+      count.textContent = `${results.length} result${results.length > 1 ? 's' : ''} found`;
+
+      container.innerHTML = results.map((med, medIdx) => {
+        const best = med.bestSavings;
+        const cheapestAlt = med.genericAlternatives[med.genericAlternatives.length - 1] || med.genericAlternatives[0];
+        const cheapestPrice = cheapestAlt ? cheapestAlt.price : med.mrp;
+
+        const altsHtml = med.genericAlternatives.map((alt, i) => `
+          <div class="flex items-center justify-between py-2 ${i > 0 ? 'border-t border-gray-100' : ''}">
+            <div>
+              <p class="font-medium text-gray-800 text-sm">${alt.name}</p>
+              <p class="text-xs text-gray-400">${alt.manufacturer}</p>
+            </div>
+            <div class="text-right">
+              <span class="font-bold text-emerald-600">₹${alt.price}</span>
+              <span class="text-xs text-emerald-500 ml-1">(Save ${alt.savingsPercent}%)</span>
+            </div>
+          </div>
+        `).join('');
+
+        // Side effects
+        const sideEffects = sideEffectsDB[med.brand] || sideEffectsDB[med.salt ? med.salt.split('+')[0].trim().split(' ')[0] : ''] || null;
+        const sideEffectsHtml = sideEffects ? `
+          <div class="px-5 py-3 border-t">
+            <button onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('.chevron').classList.toggle('rotate-180')" class="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-800 w-full text-left">
+              <span>⚠️</span> Common Side Effects
+              <svg class="chevron w-4 h-4 ml-auto transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </button>
+            <div class="hidden mt-2 pl-6">
+              <ul class="text-xs text-gray-500 space-y-1 list-disc">
+                ${sideEffects.map(s => '<li>' + s + '</li>').join('')}
+              </ul>
+              <p class="text-xs text-gray-400 mt-2 italic">Most side effects are mild and temporary. Consult your doctor if they persist.</p>
+            </div>
+          </div>
+        ` : '';
+
+        return `
+          <div class="result-card bg-white rounded-xl shadow-sm mb-4 overflow-hidden fade-in">
+            <!-- Header -->
+            <div class="p-5 border-b flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+              <div>
+                <div class="flex items-center gap-2 mb-1">
+                  <h3 class="text-lg font-bold text-gray-900">${med.brand}</h3>
+                  <span class="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">${med.category}</span>
+                  <button onclick="shareMedicineOnWhatsApp('${med.brand.replace(/'/g, "\\'")}', '${med.mrp}', '${cheapestPrice}')" class="text-green-500 hover:text-green-600 ml-1" title="Share on WhatsApp">
+                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                  </button>
+                </div>
+                <p class="text-sm text-gray-500">by ${med.manufacturer} — MRP <span class="font-semibold text-gray-700">₹${med.mrp}</span></p>
+              </div>
+              <div class="flex items-center gap-2">
+                <div class="savings-badge bg-emerald-100 text-emerald-800 px-4 py-2 rounded-xl text-center">
+                  <p class="text-xs font-medium">You can save</p>
+                  <p class="text-xl font-extrabold">₹${best.amount} <span class="text-sm font-semibold">(${best.percent}%)</span></p>
+                </div>
+                <button onclick='addToPrescription(${JSON.stringify({ brand: med.brand, mrp: med.mrp, cheapestPrice: cheapestPrice, salt: med.salt }).replace(/'/g, "&#39;")})' class="bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-semibold px-3 py-2 rounded-lg transition" title="Add to My Prescription">+ Add</button>
+              </div>
+            </div>
+
+            <!-- Salt -->
+            <div class="px-5 py-3 bg-blue-50 border-b">
+              <p class="text-sm">
+                <span class="font-semibold text-blue-800">Salt Composition:</span>
+                <button onclick="searchBySalt('${med.salt.replace(/'/g, "\\'")}')" class="text-blue-600 hover:underline ml-1">${med.salt}</button>
+                <span class="text-xs text-blue-400 ml-1">(Click to find all brands)</span>
+              </p>
+            </div>
+
+            <!-- Alternatives -->
+            <div class="px-5 py-4">
+              <h4 class="text-sm font-semibold text-gray-700 mb-2">Cheaper Alternatives:</h4>
+              ${altsHtml}
+            </div>
+
+            ${sideEffectsHtml}
+
+            <!-- Monthly Savings Calculator -->
+            <div class="px-5 py-4 bg-emerald-50 border-t">
+              <div class="flex items-center gap-2 mb-2">
+                <span class="text-base">📊</span>
+                <h4 class="text-sm font-semibold text-emerald-800">Monthly Savings Calculator</h4>
+              </div>
+              <p class="text-sm text-emerald-700">
+                If you take this medicine regularly:
+                <strong>Save ₹${best.monthly}/strip</strong> per month,
+                that's <strong class="text-lg">₹${best.yearly}/year!</strong>
+              </p>
+            </div>
+
+            <!-- Jan Aushadhi -->
+            <div class="px-5 py-3 border-t flex items-center justify-between">
+              <p class="text-xs text-gray-400">Cheapest at: <strong class="text-emerald-600">Jan Aushadhi Kendra</strong></p>
+              <button onclick="showStoreFinder()" class="text-xs bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full hover:bg-emerald-200 transition">Find Nearest Store</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // Scroll to results
+      section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function renderSaltResults(salt, results) {
+      const section = document.getElementById('saltResultsSection');
+      const container = document.getElementById('saltResultsContainer');
+      const title = document.getElementById('saltResultsTitle');
+
+      if (results.length === 0) {
+        section.classList.add('hidden');
+        return;
+      }
+
+      section.classList.remove('hidden');
+      title.textContent = `All brands with: ${salt}`;
+
+      container.innerHTML = results.map(med => `
+        <div class="bg-white rounded-lg p-4 shadow-sm flex items-center justify-between fade-in">
+          <div>
+            <p class="font-semibold text-gray-800">${med.brand}</p>
+            <p class="text-xs text-gray-400">${med.manufacturer}</p>
+          </div>
+          <div class="text-right">
+            <p class="font-bold text-gray-700">MRP ₹${med.mrp}</p>
+            <p class="text-xs text-emerald-600">Save up to ${med.bestSavings.percent}%</p>
+          </div>
+        </div>
+      `).join('');
+
+      section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function showStoreFinder() {
+      document.getElementById('storeFinderSection').classList.remove('hidden');
+      document.getElementById('storeFinderSection').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // Browse by category
+    async function browseCategory(category) {
+      document.getElementById('searchInput').value = category;
+      try {
+        const res = await fetch('/api/sasta-ilaaj/search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: category, category: category })
+        });
+        const data = await res.json();
+        renderResults(data.results || []);
+      } catch (err) {
+        console.error('Category search failed:', err);
+        doSearch();
+      }
+    }
+
+    // WhatsApp share for individual medicine
+    function shareMedicineOnWhatsApp(brand, mrp, genericPrice) {
+      const text = `I found that *${brand}* costs ₹${mrp} but the same medicine (generic) costs only *₹${genericPrice}*! That's a saving of ₹${(mrp - genericPrice).toFixed(0)} per strip!\n\nCheck SastaIlaaj on SaveKaro to save on your medicines too!\n👉 savekaro.in/sasta-ilaaj`;
+      const url = 'https://wa.me/?text=' + encodeURIComponent(text);
+      window.open(url, '_blank');
+    }
+
+    // Prescription builder functions
+    function addToPrescription(med) {
+      // Avoid duplicates
+      if (prescriptionItems.find(p => p.brand === med.brand)) {
+        alert(med.brand + ' is already in your prescription.');
+        return;
+      }
+      prescriptionItems.push(med);
+      updatePrescriptionUI();
+    }
+
+    function removeFromPrescription(index) {
+      prescriptionItems.splice(index, 1);
+      updatePrescriptionUI();
+    }
+
+    function clearPrescription() {
+      prescriptionItems = [];
+      updatePrescriptionUI();
+    }
+
+    function updatePrescriptionUI() {
+      const builder = document.getElementById('prescriptionBuilder');
+      const itemsEl = document.getElementById('prescriptionItems');
+
+      if (prescriptionItems.length === 0) {
+        builder.classList.add('hidden');
+        return;
+      }
+
+      builder.classList.remove('hidden');
+      let totalBrand = 0;
+      let totalGeneric = 0;
+
+      itemsEl.innerHTML = prescriptionItems.map((item, i) => {
+        const brandPrice = parseFloat(item.mrp) || 0;
+        const genPrice = parseFloat(item.cheapestPrice) || 0;
+        totalBrand += brandPrice;
+        totalGeneric += genPrice;
+        return `
+          <div class="px-5 py-3 flex items-center justify-between">
+            <div>
+              <p class="font-semibold text-gray-800 text-sm">${item.brand}</p>
+              <p class="text-xs text-gray-400">${item.salt || ''}</p>
+            </div>
+            <div class="flex items-center gap-4">
+              <div class="text-right">
+                <p class="text-xs text-gray-400 line-through">₹${brandPrice}</p>
+                <p class="font-bold text-emerald-600 text-sm">₹${genPrice}</p>
+              </div>
+              <button onclick="removeFromPrescription(${i})" class="text-gray-300 hover:text-red-500 transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      const monthlySave = totalBrand - totalGeneric;
+      const yearlySave = monthlySave * 12;
+      document.getElementById('rxBrandTotal').textContent = '\u20B9' + totalBrand.toFixed(0);
+      document.getElementById('rxGenericTotal').textContent = '\u20B9' + totalGeneric.toFixed(0);
+      document.getElementById('rxMonthlySave').textContent = '\u20B9' + monthlySave.toFixed(0);
+      document.getElementById('rxYearlySave').textContent = '\u20B9' + yearlySave.toFixed(0);
+    }
+
+    function sharePrescriptionOnWhatsApp() {
+      if (prescriptionItems.length === 0) return;
+      let totalBrand = 0, totalGeneric = 0;
+      let lines = prescriptionItems.map(item => {
+        const bp = parseFloat(item.mrp) || 0;
+        const gp = parseFloat(item.cheapestPrice) || 0;
+        totalBrand += bp;
+        totalGeneric += gp;
+        return `• ${item.brand}: ₹${bp} → Generic: ₹${gp} (Save ₹${(bp - gp).toFixed(0)})`;
+      });
+      const monthlySave = totalBrand - totalGeneric;
+      let text = `*My Prescription Savings with SastaIlaaj* 💊\n\n`;
+      text += lines.join('\n');
+      text += `\n\n*Total: ₹${totalBrand.toFixed(0)}/month → ₹${totalGeneric.toFixed(0)}/month*`;
+      text += `\n*I save ₹${monthlySave.toFixed(0)}/month (₹${(monthlySave * 12).toFixed(0)}/year)!*`;
+      text += `\n\nFind generic alternatives for your medicines too!\n👉 savekaro.in/sasta-ilaaj`;
+      const url = 'https://wa.me/?text=' + encodeURIComponent(text);
+      window.open(url, '_blank');
+    }
+  </script>
+</body>
+</html>
