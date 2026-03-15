@@ -94,6 +94,9 @@ async function extractWithAI(type, filePathOrText, gender) {
   let mapped = aiExtract.mapToParametersDB(aiResults, PARAMETERS_DB, findParameter, gender);
   if (mapped.length === 0) return null;
 
+  // Collect all raw AI results for unmapped tracking (combine first + follow-up passes)
+  let allAiResults = [...aiResults];
+
   // Second pass: detect and fill missing parameters from expected groups
   const missingNames = aiExtract.detectMissingParameters(mapped);
   console.log(`[Extract] First pass: ${mapped.length} params mapped. Missing groups check: ${missingNames.length} missing.`);
@@ -104,6 +107,7 @@ async function extractWithAI(type, filePathOrText, gender) {
       const followUpResults = await aiExtract.extractMissing(type, filePathOrText, missingNames);
       console.log(`[FollowUp] Second call returned ${followUpResults ? followUpResults.length : 0} raw results`);
       if (followUpResults && followUpResults.length > 0) {
+        allAiResults = [...allAiResults, ...followUpResults];
         const followUpMapped = aiExtract.mapToParametersDB(followUpResults, PARAMETERS_DB, findParameter, gender);
         console.log(`[FollowUp] Mapped to ${followUpMapped.length} DB params`);
         // Merge — only add params not already found
@@ -121,7 +125,13 @@ async function extractWithAI(type, filePathOrText, gender) {
     }
   }
 
-  return mapped;
+  // Get unmapped parameters (found in report but not in our DB)
+  const unmapped = aiExtract.getUnmappedParams(allAiResults, findParameter);
+  if (unmapped.length > 0) {
+    console.log(`[Extract] ${unmapped.length} unmapped params: ${unmapped.map(u => u.name).join(', ')}`);
+  }
+
+  return { mapped, unmapped };
 }
 
 // API: Analyze blood report
@@ -131,8 +141,17 @@ app.post('/api/sehat-scan/analyze', upload.single('report'), async (req, res) =>
     const age = parseInt(req.body.age) || 30;
 
     // Helper to return analysis result
+    // parsed can be an array (legacy) or { mapped, unmapped } object
     async function sendAnalysis(parsed, mode) {
-      if (parsed.length === 0) {
+      let mappedParams, unmappedParams = [];
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed) && parsed.mapped) {
+        mappedParams = parsed.mapped;
+        unmappedParams = parsed.unmapped || [];
+      } else {
+        mappedParams = parsed;
+      }
+
+      if (mappedParams.length === 0) {
         return res.json({
           success: true,
           mode: 'invalid',
@@ -140,16 +159,21 @@ app.post('/api/sehat-scan/analyze', upload.single('report'), async (req, res) =>
           parametersFound: 0
         });
       }
-      if (parsed.length < (MIN_VALID_PARAMETERS || 1)) {
+      if (mappedParams.length < (MIN_VALID_PARAMETERS || 1)) {
         return res.json({
           success: true,
           mode: 'insufficient',
-          message: `Only found ${parsed.length} parameter(s). Try pasting the full report text or uploading a clearer image.`,
-          parametersFound: parsed.length,
-          partialParams: parsed.map(p => p.rawName)
+          message: `Only found ${mappedParams.length} parameter(s). Try pasting the full report text or uploading a clearer image.`,
+          parametersFound: mappedParams.length,
+          partialParams: mappedParams.map(p => p.rawName)
         });
       }
-      const analysis = analyzeResults(parsed, gender);
+      const analysis = analyzeResults(mappedParams, gender);
+
+      // Attach unmapped parameters to the analysis
+      if (unmappedParams.length > 0) {
+        analysis.unmappedParams = unmappedParams;
+      }
 
       // Generate AI doctor summary (optional — won't block if it fails)
       try {
@@ -158,7 +182,7 @@ app.post('/api/sehat-scan/analyze', upload.single('report'), async (req, res) =>
         console.error('Doctor summary generation failed (skipping):', err.message);
       }
 
-      return res.json({ success: true, mode, parametersFound: parsed.length, analysis, aiPowered: mode === 'ai' });
+      return res.json({ success: true, mode, parametersFound: mappedParams.length, analysis, aiPowered: mode === 'ai' });
     }
 
     // Helper: handle AI errors (rate limits, no key, etc.)

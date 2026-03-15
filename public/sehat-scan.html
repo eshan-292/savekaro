@@ -316,6 +316,23 @@
       font-size: 0.75rem; opacity: 0.8;
     }
 
+    /* Parameter sub-groups */
+    .param-subgroup {
+      margin-bottom: 24px;
+    }
+    .subgroup-header {
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 12px; padding-bottom: 8px;
+      border-bottom: 2px solid var(--green-200);
+    }
+    .subgroup-header h3 {
+      font-size: 0.85rem; font-weight: 700; color: var(--green-700);
+      text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .subgroup-header .subgroup-count {
+      font-size: 0.75rem; color: var(--gray-400); font-weight: 500;
+    }
+
     /* Parameter cards */
     .params-grid {
       display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -330,6 +347,7 @@
     .param-card.status-normal { border-left: 4px solid var(--green-500); }
     .param-card.status-warning { border-left: 4px solid var(--yellow-500); }
     .param-card.status-critical { border-left: 4px solid var(--red-500); }
+    .param-card.status-borderline { border-left: 4px solid var(--blue-500); }
 
     .param-header {
       display: flex; justify-content: space-between; align-items: flex-start;
@@ -343,6 +361,7 @@
     .param-status.normal { background: var(--green-100); color: var(--green-700); }
     .param-status.warning { background: var(--yellow-100); color: var(--yellow-600); }
     .param-status.critical { background: var(--red-100); color: var(--red-700); }
+    .param-status.borderline { background: var(--blue-50); color: var(--blue-600); }
 
     .param-value-row {
       display: flex; align-items: baseline; gap: 8px; margin-bottom: 8px;
@@ -351,8 +370,13 @@
     .param-value.normal { color: var(--green-600); }
     .param-value.warning { color: var(--yellow-600); }
     .param-value.critical { color: var(--red-600); }
+    .param-value.borderline { color: var(--blue-600); }
     .param-unit { font-size: 0.85rem; color: var(--gray-500); }
     .param-range { font-size: 0.8rem; color: var(--gray-400); }
+    .range-source {
+      font-size: 0.7rem; color: var(--gray-400); font-style: italic;
+      margin-top: 2px; display: block;
+    }
 
     /* Range bar */
     .range-bar {
@@ -370,6 +394,7 @@
       transform: translateX(-50%);
     }
     .range-bar .marker.normal { background: var(--green-500); }
+    .range-bar .marker.borderline { background: var(--blue-500); }
     .range-bar .marker.warning { background: var(--yellow-500); }
     .range-bar .marker.critical { background: var(--red-500); }
 
@@ -1378,6 +1403,46 @@ Vitamin B12   165     pg/mL    200 - 900"></textarea>
           </div>`;
       }
 
+      // Detected Clinical Patterns
+      if (analysis.detectedPatterns && analysis.detectedPatterns.length > 0) {
+        const patternEmojis = {
+          'Iron Deficiency Pattern': '🫘',
+          'B12/Folate Deficiency Pattern': '🥛',
+          'Pre-Diabetes Pattern': '🍚',
+          'Hypothyroid Pattern': '🦋',
+          'Lipid Risk Pattern': '❤️',
+          'Liver Stress Pattern': '🫁'
+        };
+        const patternsHTML = analysis.detectedPatterns.map(p =>
+          `<span style="display:inline-block;background:var(--blue-50);color:var(--blue-600);padding:4px 12px;border-radius:20px;font-size:0.85rem;font-weight:600;margin:4px;">${patternEmojis[p] || '🔬'} ${p}</span>`
+        ).join('');
+        alertsContainer.innerHTML += `
+          <div style="background:linear-gradient(135deg,var(--blue-50),var(--green-50));border-radius:12px;padding:16px 20px;margin-top:12px;">
+            <div style="font-weight:700;font-size:0.9rem;color:var(--gray-700);margin-bottom:8px;">🧬 Clinical Patterns Detected</div>
+            <div>${patternsHTML}</div>
+            <div style="font-size:0.78rem;color:var(--gray-400);margin-top:8px;">These patterns connect multiple related findings for smarter recommendations</div>
+          </div>`;
+      }
+
+      // Unmapped Parameters (from report but not in our DB)
+      if (analysis.unmappedParams && analysis.unmappedParams.length > 0) {
+        const unmappedHTML = analysis.unmappedParams.map(p =>
+          `<tr><td style="font-weight:500;">${p.name}</td><td>${p.value}</td><td>${p.unit}</td><td style="color:var(--gray-400);">${p.refRange || '—'}</td></tr>`
+        ).join('');
+        const unmappedSection = document.createElement('div');
+        unmappedSection.style.cssText = 'background:var(--gray-50);border:1px solid var(--gray-200);border-radius:12px;padding:16px 20px;margin-top:20px;';
+        unmappedSection.innerHTML = `
+          <div style="font-weight:700;font-size:0.9rem;color:var(--gray-600);margin-bottom:10px;">📋 Other Parameters (Not Analyzed)</div>
+          <div style="font-size:0.78rem;color:var(--gray-400);margin-bottom:10px;">These were found in your report but aren't in our analysis database yet</div>
+          <table style="width:100%;font-size:0.82rem;border-collapse:collapse;">
+            <thead><tr style="border-bottom:1px solid var(--gray-200);color:var(--gray-500);text-align:left;">
+              <th style="padding:6px 8px;">Parameter</th><th style="padding:6px 8px;">Value</th><th style="padding:6px 8px;">Unit</th><th style="padding:6px 8px;">Ref. Range</th>
+            </tr></thead>
+            <tbody>${unmappedHTML}</tbody>
+          </table>`;
+        document.getElementById('params-grid').after(unmappedSection);
+      }
+
       // Category tabs
       const categories = Object.keys(analysis.categories);
       const catTabsEl = document.getElementById('cat-tabs');
@@ -1452,58 +1517,98 @@ Vitamin B12   165     pg/mL    200 - 900"></textarea>
       `).join('');
     }
 
+    function renderParamCard(p) {
+      const statusClass = p.status.includes('borderline') ? 'borderline' :
+        p.status === 'normal' ? 'normal' :
+        p.status.startsWith('critical') ? 'critical' : 'warning';
+      const statusLabel = p.status.includes('borderline') ? 'Borderline' :
+        p.status === 'normal' ? 'Normal' :
+        p.status.startsWith('critical') ? 'Critical' :
+        p.status.includes('high') ? 'High' : 'Low';
+
+      // Range bar calculations
+      const range = p.normalRange.split(' - ').map(Number);
+      const rangeMin = range[0] || 0;
+      const rangeMax = range[1] || range[0] * 2;
+      const displayMin = Math.max(0, rangeMin * 0.5);
+      const displayMax = rangeMax * 1.5;
+      const totalRange = displayMax - displayMin;
+      const normalStart = ((rangeMin - displayMin) / totalRange) * 100;
+      const normalWidth = ((rangeMax - rangeMin) / totalRange) * 100;
+      let markerPos = ((p.value - displayMin) / totalRange) * 100;
+      markerPos = Math.max(2, Math.min(98, markerPos));
+
+      return `
+        <div class="param-card status-${statusClass}" data-category="${p.category}">
+          <div class="param-header">
+            <span class="param-name">${p.statusEmoji} ${p.name}</span>
+            <span class="param-status ${statusClass}">${statusLabel}</span>
+          </div>
+          <div class="param-value-row">
+            <span class="param-value ${statusClass}">${p.value}</span>
+            <span class="param-unit">${p.unit}</span>
+          </div>
+          <div class="param-range">Normal: ${p.normalRange} ${p.unit}</div>
+          ${p.rangeSource === 'report' ? '<span class="range-source">📋 Range from your lab report</span>' : '<span class="range-source">📚 SehatScan reference range</span>'}
+          <div class="range-bar">
+            <div class="normal-zone" style="left:${normalStart}%;width:${normalWidth}%"></div>
+            <div class="marker ${statusClass}" style="left:${markerPos}%"></div>
+          </div>
+          <div class="param-explanation">${p.explanation}</div>
+          ${p.status !== 'normal' ? `
+            <div class="param-tags">
+              <span class="param-tag doctor">👨‍⚕️ ${p.doctor}</span>
+            </div>` : ''}
+        </div>`;
+    }
+
     function renderParams(params) {
       const grid = document.getElementById('params-grid');
       grid.innerHTML = '';
 
-      // Sort by severity: critical first, then warning, then normal
-      const severityOrder = { critical: 0, warning: 1, normal: 2 };
+      // Sort by severity: critical first, then warning, then borderline, then normal
+      const severityOrder = { critical: 0, warning: 1, borderline: 2, normal: 3 };
       const sorted = [...params].sort((a, b) => {
-        const aKey = a.status.startsWith('critical') ? 'critical' : (a.status === 'normal' ? 'normal' : 'warning');
-        const bKey = b.status.startsWith('critical') ? 'critical' : (b.status === 'normal' ? 'normal' : 'warning');
+        const aKey = a.status.startsWith('critical') ? 'critical' : a.status.includes('borderline') ? 'borderline' : (a.status === 'normal' ? 'normal' : 'warning');
+        const bKey = b.status.startsWith('critical') ? 'critical' : b.status.includes('borderline') ? 'borderline' : (b.status === 'normal' ? 'normal' : 'warning');
         return severityOrder[aKey] - severityOrder[bKey];
       });
 
+      // Group by subCategory
+      const groups = new Map();
+      const ungrouped = [];
+
       sorted.forEach(p => {
-        const statusClass = p.status === 'normal' ? 'normal' :
-          p.status.startsWith('critical') ? 'critical' : 'warning';
-        const statusLabel = p.status === 'normal' ? 'Normal' :
-          p.status.startsWith('critical') ? 'Critical' :
-          p.status.includes('high') ? 'High' : 'Low';
+        if (p.subCategory) {
+          if (!groups.has(p.subCategory)) groups.set(p.subCategory, []);
+          groups.get(p.subCategory).push(p);
+        } else {
+          ungrouped.push(p);
+        }
+      });
 
-        // Range bar calculations
-        const range = p.normalRange.split(' - ').map(Number);
-        const rangeMin = range[0] || 0;
-        const rangeMax = range[1] || range[0] * 2;
-        const displayMin = Math.max(0, rangeMin * 0.5);
-        const displayMax = rangeMax * 1.5;
-        const totalRange = displayMax - displayMin;
-        const normalStart = ((rangeMin - displayMin) / totalRange) * 100;
-        const normalWidth = ((rangeMax - rangeMin) / totalRange) * 100;
-        let markerPos = ((p.value - displayMin) / totalRange) * 100;
-        markerPos = Math.max(2, Math.min(98, markerPos));
+      // Render grouped params first (in order of first appearance)
+      const subgroupEmojis = {
+        'CBC Core': '\u{1FA78}', 'RBC Indices': '\u{1F52C}', 'WBC Differential': '\u{1F9A0}', 'Iron Studies': '\u2697\uFE0F'
+      };
 
+      for (const [groupName, groupParams] of groups) {
+        const emoji = subgroupEmojis[groupName] || '\u{1F4CA}';
         grid.innerHTML += `
-          <div class="param-card status-${statusClass}" data-category="${p.category}">
-            <div class="param-header">
-              <span class="param-name">${p.statusEmoji} ${p.name}</span>
-              <span class="param-status ${statusClass}">${statusLabel}</span>
+          <div class="param-subgroup" style="grid-column: 1 / -1;">
+            <div class="subgroup-header">
+              <h3>${emoji} ${groupName}</h3>
+              <span class="subgroup-count">${groupParams.length} parameters</span>
             </div>
-            <div class="param-value-row">
-              <span class="param-value ${statusClass}">${p.value}</span>
-              <span class="param-unit">${p.unit}</span>
-            </div>
-            <div class="param-range">Normal: ${p.normalRange} ${p.unit}</div>
-            <div class="range-bar">
-              <div class="normal-zone" style="left:${normalStart}%;width:${normalWidth}%"></div>
-              <div class="marker ${statusClass}" style="left:${markerPos}%"></div>
-            </div>
-            <div class="param-explanation">${p.explanation}</div>
-            ${p.status !== 'normal' ? `
-              <div class="param-tags">
-                <span class="param-tag doctor">👨‍⚕️ ${p.doctor}</span>
-              </div>` : ''}
           </div>`;
+        groupParams.forEach(p => {
+          grid.innerHTML += renderParamCard(p);
+        });
+      }
+
+      // Render ungrouped params
+      ungrouped.forEach(p => {
+        grid.innerHTML += renderParamCard(p);
       });
     }
 
