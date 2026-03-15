@@ -1458,6 +1458,19 @@ Vitamin B12   165     pg/mL    200 - 900"></textarea>
           </div>`;
       }
 
+      // Suggested Additional Tests
+      if (analysis.suggestedTests && analysis.suggestedTests.length > 0) {
+        const testsHTML = analysis.suggestedTests.map(t =>
+          `<li style="margin-bottom:6px;">${t}</li>`
+        ).join('');
+        alertsContainer.innerHTML += `
+          <div style="background:var(--yellow-50);border:1px solid #fde68a;border-radius:12px;padding:16px 20px;margin-top:12px;">
+            <div style="font-weight:700;font-size:0.9rem;color:var(--yellow-600);margin-bottom:8px;">📋 Recommended Additional Tests</div>
+            <div style="font-size:0.78rem;color:var(--gray-400);margin-bottom:8px;">Based on your results, these tests would give a more complete picture</div>
+            <ul style="font-size:0.88rem;color:var(--gray-600);padding-left:20px;line-height:1.7;">${testsHTML}</ul>
+          </div>`;
+      }
+
       // Unmapped Parameters (from report but not in our DB)
       if (analysis.unmappedParams && analysis.unmappedParams.length > 0) {
         const unmappedHTML = analysis.unmappedParams.map(p =>
@@ -1608,42 +1621,81 @@ Vitamin B12   165     pg/mL    200 - 900"></textarea>
         return severityOrder[aKey] - severityOrder[bKey];
       });
 
-      // Group by subCategory
-      const groups = new Map();
-      const ungrouped = [];
+      // Separate abnormal/borderline from normal
+      const abnormalParams = sorted.filter(p => p.status !== 'normal');
+      const normalParams = sorted.filter(p => p.status === 'normal');
 
-      sorted.forEach(p => {
-        if (p.subCategory) {
-          if (!groups.has(p.subCategory)) groups.set(p.subCategory, []);
-          groups.get(p.subCategory).push(p);
-        } else {
-          ungrouped.push(p);
-        }
-      });
+      // Render abnormal/borderline params (always shown)
+      function renderParamList(paramList) {
+        const groups = new Map();
+        const ungrouped = [];
 
-      // Render grouped params first (in order of first appearance)
-      const subgroupEmojis = {
-        'CBC Core': '\u{1FA78}', 'RBC Indices': '\u{1F52C}', 'WBC Differential': '\u{1F9A0}', 'Iron Studies': '\u2697\uFE0F'
-      };
-
-      for (const [groupName, groupParams] of groups) {
-        const emoji = subgroupEmojis[groupName] || '\u{1F4CA}';
-        grid.innerHTML += `
-          <div class="param-subgroup" style="grid-column: 1 / -1;">
-            <div class="subgroup-header">
-              <h3>${emoji} ${groupName}</h3>
-              <span class="subgroup-count">${groupParams.length} parameters</span>
-            </div>
-          </div>`;
-        groupParams.forEach(p => {
-          grid.innerHTML += renderParamCard(p);
+        paramList.forEach(p => {
+          if (p.subCategory) {
+            if (!groups.has(p.subCategory)) groups.set(p.subCategory, []);
+            groups.get(p.subCategory).push(p);
+          } else {
+            ungrouped.push(p);
+          }
         });
+
+        const subgroupEmojis = {
+          'CBC Core': '\u{1FA78}', 'RBC Indices': '\u{1F52C}', 'WBC Differential': '\u{1F9A0}', 'Iron Studies': '\u2697\uFE0F'
+        };
+
+        let html = '';
+        for (const [groupName, groupParams] of groups) {
+          const emoji = subgroupEmojis[groupName] || '\u{1F4CA}';
+          html += `
+            <div class="param-subgroup" style="grid-column: 1 / -1;">
+              <div class="subgroup-header">
+                <h3>${emoji} ${groupName}</h3>
+                <span class="subgroup-count">${groupParams.length} parameters</span>
+              </div>
+            </div>`;
+          groupParams.forEach(p => { html += renderParamCard(p); });
+        }
+        ungrouped.forEach(p => { html += renderParamCard(p); });
+        return html;
       }
 
-      // Render ungrouped params
-      ungrouped.forEach(p => {
-        grid.innerHTML += renderParamCard(p);
-      });
+      // Show abnormal params expanded
+      if (abnormalParams.length > 0) {
+        grid.innerHTML += renderParamList(abnormalParams);
+      }
+
+      // Collapse normal params into expandable summary
+      if (normalParams.length > 0) {
+        grid.innerHTML += `
+          <div style="grid-column: 1 / -1; margin-top: 16px;">
+            <button onclick="toggleNormalParams()" id="normal-toggle-btn"
+              style="width:100%; padding:14px 20px; background:var(--green-50); border:1px solid var(--green-200);
+              border-radius:12px; cursor:pointer; font-size:0.95rem; font-weight:600; color:var(--green-700);
+              display:flex; align-items:center; justify-content:center; gap:8px; transition: all 0.2s;">
+              🟢 ${normalParams.length} parameters are normal
+              <span style="font-size:0.8rem; color:var(--gray-400); font-weight:400;">— tap to expand</span>
+              <span id="normal-toggle-arrow" style="transition:transform 0.3s;">▼</span>
+            </button>
+            <div id="normal-params-container" style="display:none; margin-top:12px;">
+              <div class="params-grid">${renderParamList(normalParams)}</div>
+            </div>
+          </div>`;
+      }
+    }
+
+    function toggleNormalParams() {
+      const container = document.getElementById('normal-params-container');
+      const arrow = document.getElementById('normal-toggle-arrow');
+      const btn = document.getElementById('normal-toggle-btn');
+      if (container.style.display === 'none') {
+        container.style.display = 'block';
+        arrow.style.transform = 'rotate(180deg)';
+        btn.querySelector('span').textContent = '— tap to collapse';
+      } else {
+        container.style.display = 'none';
+        arrow.style.transform = 'rotate(0deg)';
+        btn.querySelector('span').textContent = '— tap to expand';
+      }
     }
 
     function filterCategory(cat) {
