@@ -867,7 +867,14 @@ Vitamin B12   165     pg/mL    200 - 900"></textarea>
         return false;
       }
 
-      // Valid parsed result
+      // AI-powered result
+      if (data.mode === 'ai' && data.analysis) {
+        currentAnalysis = data.analysis;
+        renderResults(data.analysis, `✅ Found ${data.parametersFound} parameters (AI-powered, high accuracy).`);
+        return true;
+      }
+
+      // Valid parsed result (regex fallback)
       if (data.mode === 'parsed' && data.analysis) {
         currentAnalysis = data.analysis;
         renderResults(data.analysis, `✅ Found ${data.parametersFound} blood test parameters.`);
@@ -988,15 +995,9 @@ Vitamin B12   165     pg/mL    200 - 900"></textarea>
           let extractedText = '';
 
           if (['png', 'jpg', 'jpeg', 'webp'].includes(ext)) {
-            // IMAGE → Client-side OCR with Tesseract.js
-            const imageUrl = URL.createObjectURL(currentFile);
-            extractedText = await performOCR(imageUrl);
-            URL.revokeObjectURL(imageUrl);
-
-          } else if (ext === 'pdf') {
-            // PDF → Try text extraction first, fall back to OCR
+            // IMAGE → Send to server for AI analysis (Gemini Vision)
             showOCRProgress();
-            updateOCRProgress(3, 'Opening PDF...', 'Checking if text is extractable');
+            updateOCRProgress(10, 'Uploading image...', 'Sending to AI for analysis');
 
             const formData = new FormData();
             formData.append('report', currentFile);
@@ -1009,24 +1010,62 @@ Vitamin B12   165     pg/mL    200 - 900"></textarea>
             });
             const data = await response.json();
 
-            // If server successfully parsed text PDF
-            if (data.mode === 'parsed' && data.analysis) {
-              updateOCRProgress(100, 'Done! Text PDF processed.', `Found ${data.parametersFound} parameters`);
+            // AI successfully analyzed the image
+            if ((data.mode === 'ai' || data.mode === 'parsed') && data.analysis) {
+              updateOCRProgress(100, 'Done!', `Found ${data.parametersFound} parameters`);
               await new Promise(r => setTimeout(r, 500));
               hideOCRProgress();
-              currentAnalysis = data.analysis;
-              renderResults(data.analysis, `✅ Found ${data.parametersFound} parameters from PDF.`);
+              handleAnalysisResponse(data);
               return;
             }
 
-            // Insufficient from text extraction — show error, don't try OCR for gibberish
+            // AI not available — fall back to client-side OCR
+            if (data.mode === 'no_ai') {
+              updateOCRProgress(15, 'AI unavailable — using OCR...', 'Running in-browser text recognition');
+              const imageUrl = URL.createObjectURL(currentFile);
+              extractedText = await performOCR(imageUrl);
+              URL.revokeObjectURL(imageUrl);
+            } else {
+              // Other error modes
+              hideOCRProgress();
+              handleAnalysisResponse(data);
+              return;
+            }
+
+          } else if (ext === 'pdf') {
+            // PDF → Send to server (AI first, then regex fallback)
+            showOCRProgress();
+            updateOCRProgress(3, 'Uploading PDF...', 'Analyzing with AI');
+
+            const formData = new FormData();
+            formData.append('report', currentFile);
+            formData.append('gender', gender);
+            formData.append('age', age);
+
+            const response = await fetch('/api/sehat-scan/analyze', {
+              method: 'POST',
+              body: formData
+            });
+            const data = await response.json();
+
+            // Server successfully analyzed (AI or regex)
+            if ((data.mode === 'ai' || data.mode === 'parsed') && data.analysis) {
+              const label = data.mode === 'ai' ? 'AI-analyzed' : 'Text PDF processed';
+              updateOCRProgress(100, `Done! ${label}.`, `Found ${data.parametersFound} parameters`);
+              await new Promise(r => setTimeout(r, 500));
+              hideOCRProgress();
+              handleAnalysisResponse(data);
+              return;
+            }
+
+            // Insufficient from text extraction — show error
             if (data.mode === 'insufficient') {
               hideOCRProgress();
               handleAnalysisResponse(data);
               return;
             }
 
-            // No text / scanned PDF → try OCR
+            // No text / scanned PDF → try client-side OCR as last resort
             if (data.mode === 'no_text' || data.mode === 'invalid') {
               updateOCRProgress(5, 'Scanned PDF detected — running OCR...', 'Rendering pages to images');
 
@@ -1035,7 +1074,7 @@ Vitamin B12   165     pg/mL    200 - 900"></textarea>
                 let allText = '';
 
                 for (let i = 0; i < canvases.length; i++) {
-                  document.getElementById('ocr-title').textContent = `📸 Scanning page ${i + 1}/${canvases.length}...`;
+                  document.getElementById('ocr-title').textContent = `Scanning page ${i + 1}/${canvases.length}...`;
                   const pageText = await performOCROnCanvas(canvases[i], i, canvases.length);
                   allText += pageText + '\n';
                 }

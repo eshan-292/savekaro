@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const multer = require('multer');
 const cors = require('cors');
@@ -5,7 +6,8 @@ const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 const fs = require('fs');
 
-const { PARAMETERS_DB, parseReportText, analyzeResults, getDemoAnalysis, MIN_VALID_PARAMETERS } = require('./lib/sehat-scan');
+const { PARAMETERS_DB, parseReportText, analyzeResults, getDemoAnalysis, MIN_VALID_PARAMETERS, findParameter } = require('./lib/sehat-scan');
+const aiExtract = require('./lib/ai-extract');
 const sastaIlaaj = require('./lib/sasta-ilaaj');
 const thaaliScore = require('./lib/thaali-score');
 const bijliSmart = require('./lib/bijli-smart');
@@ -70,95 +72,124 @@ app.get('/api/sehat-scan/parameters', (req, res) => {
   res.json({ success: true, count: params.length, parameters: params });
 });
 
+// Helper: Try AI extraction first, fall back to regex
+async function extractWithAI(type, filePathOrText) {
+  if (!aiExtract.isAvailable()) return null;
+  try {
+    let aiResults;
+    if (type === 'pdf') aiResults = await aiExtract.extractFromPDF(filePathOrText);
+    else if (type === 'image') aiResults = await aiExtract.extractFromImage(filePathOrText);
+    else aiResults = await aiExtract.extractFromText(filePathOrText);
+
+    if (!aiResults || aiResults.length === 0) return null;
+    const mapped = aiExtract.mapToParametersDB(aiResults, PARAMETERS_DB, findParameter);
+    return mapped.length > 0 ? mapped : null;
+  } catch (err) {
+    console.error('AI extraction failed, falling back to regex:', err.message);
+    return null;
+  }
+}
+
 // API: Analyze blood report
 app.post('/api/sehat-scan/analyze', upload.single('report'), async (req, res) => {
   try {
     const gender = req.body.gender || 'default';
     const age = parseInt(req.body.age) || 30;
 
-    // If manual text was provided
-    if (req.body.reportText) {
-      const parsed = parseReportText(req.body.reportText);
-
+    // Helper to return analysis result
+    function sendAnalysis(parsed, mode) {
       if (parsed.length === 0) {
         return res.json({
           success: true,
           mode: 'invalid',
-          message: 'Could not find any blood test parameters in the provided text. Please make sure you are uploading a blood test report.',
+          message: 'Could not find any blood test parameters. Please make sure you are uploading a blood test report.',
           parametersFound: 0
         });
       }
-
-      if (parsed.length < (MIN_VALID_PARAMETERS || 3)) {
+      if (parsed.length < (MIN_VALID_PARAMETERS || 1)) {
         return res.json({
           success: true,
           mode: 'insufficient',
-          message: `Only found ${parsed.length} parameter(s). This doesn't look like a complete blood test report. We need at least ${MIN_VALID_PARAMETERS || 3} recognizable parameters to give an accurate analysis. Try pasting the full report text or uploading a clearer image.`,
+          message: `Only found ${parsed.length} parameter(s). Try pasting the full report text or uploading a clearer image.`,
           parametersFound: parsed.length,
           partialParams: parsed.map(p => p.rawName)
         });
       }
-
       const analysis = analyzeResults(parsed, gender);
-      return res.json({ success: true, mode: 'parsed', parametersFound: parsed.length, analysis });
+      return res.json({ success: true, mode, parametersFound: parsed.length, analysis, aiPowered: mode === 'ai' });
+    }
+
+    // If manual text was provided
+    if (req.body.reportText) {
+      // Try AI first
+      const aiParsed = await extractWithAI('text', req.body.reportText);
+      if (aiParsed) return sendAnalysis(aiParsed, 'ai');
+
+      // Fallback to regex
+      const parsed = parseReportText(req.body.reportText);
+      return sendAnalysis(parsed, 'parsed');
     }
 
     // If file was uploaded
     if (req.file) {
       const ext = path.extname(req.file.originalname).toLowerCase();
+      const filePath = req.file.path;
 
-      if (ext === '.pdf') {
-        try {
-          const pdfParse = require('pdf-parse');
-          const dataBuffer = fs.readFileSync(req.file.path);
-          const pdfData = await pdfParse(dataBuffer);
-          const text = pdfData.text;
+      try {
+        if (ext === '.pdf') {
+          // Try AI extraction on PDF first
+          const aiParsed = await extractWithAI('pdf', filePath);
+          if (aiParsed) {
+            fs.unlink(filePath, () => {});
+            return sendAnalysis(aiParsed, 'ai');
+          }
 
-          const parsed = parseReportText(text);
-          // Clean up file
-          fs.unlink(req.file.path, () => {});
+          // Fallback: extract text from PDF and parse with regex
+          try {
+            const pdfParse = require('pdf-parse');
+            const dataBuffer = fs.readFileSync(filePath);
+            const pdfData = await pdfParse(dataBuffer);
+            const text = pdfData.text;
+            const parsed = parseReportText(text);
+            fs.unlink(filePath, () => {});
 
-          if (parsed.length === 0) {
+            if (parsed.length === 0) {
+              return res.json({
+                success: true,
+                mode: 'no_text',
+                message: 'Could not extract parameters from this PDF. Try pasting the report text directly.',
+                extractedText: text.substring(0, 500),
+                parametersFound: 0
+              });
+            }
+            return sendAnalysis(parsed, 'parsed');
+          } catch (pdfErr) {
+            fs.unlink(filePath, () => {});
             return res.json({
               success: true,
               mode: 'no_text',
-              message: 'Could not extract text from this PDF. It may be a scanned/image PDF. Try our image OCR — re-upload the file and we\'ll scan it with OCR.',
-              extractedText: text.substring(0, 500),
+              message: 'Could not read this PDF. Try re-uploading or pasting the report text.',
               parametersFound: 0
             });
           }
+        } else {
+          // Image file — send to AI (Gemini Vision)
+          const aiParsed = await extractWithAI('image', filePath);
+          fs.unlink(filePath, () => {});
 
-          if (parsed.length < (MIN_VALID_PARAMETERS || 3)) {
-            return res.json({
-              success: true,
-              mode: 'insufficient',
-              message: `Only found ${parsed.length} parameter(s) in the PDF. This may not be a blood test report, or the text extraction was incomplete. Try pasting the report text directly.`,
-              parametersFound: parsed.length,
-              partialParams: parsed.map(p => p.rawName),
-              extractedText: text.substring(0, 500)
-            });
-          }
+          if (aiParsed) return sendAnalysis(aiParsed, 'ai');
 
-          const analysis = analyzeResults(parsed, gender);
-          return res.json({ success: true, mode: 'parsed', parametersFound: parsed.length, analysis });
-        } catch (pdfErr) {
-          fs.unlink(req.file.path, () => {});
+          // No AI available — tell user to paste text
           return res.json({
             success: true,
-            mode: 'no_text',
-            message: 'Could not read this PDF. It may be a scanned image. Try re-uploading — we\'ll use OCR to scan it.',
+            mode: 'no_ai',
+            message: 'Image analysis requires AI. Please paste the report text instead, or upload a PDF.',
             parametersFound: 0
           });
         }
-      } else {
-        // Image file — OCR now handled client-side, this shouldn't be reached
-        fs.unlink(req.file.path, () => {});
-        return res.json({
-          success: true,
-          mode: 'invalid',
-          message: 'Please use the upload button to scan images — OCR runs directly in your browser for privacy.',
-          parametersFound: 0
-        });
+      } catch (fileErr) {
+        fs.unlink(filePath, () => {});
+        throw fileErr;
       }
     }
 
