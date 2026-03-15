@@ -23,7 +23,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Multer config for file uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const uploadDir = path.join(__dirname, 'uploads');
+    const uploadDir = process.env.VERCEL === '1' ? '/tmp' : path.join(__dirname, 'uploads');
     if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
     cb(null, uploadDir);
   },
@@ -197,12 +197,18 @@ app.use((err, req, res, next) => {
   res.status(500).json({ success: false, error: err.message || 'Something went wrong' });
 });
 
-app.listen(PORT, () => {
-  console.log(`\n  SaveKaro is running at http://localhost:${PORT}\n`);
-  console.log(`  Tools:`);
-  console.log(`    SehatScan:    http://localhost:${PORT}/sehat-scan`);
-  console.log(`    SastaIlaaj:   http://localhost:${PORT}/sasta-ilaaj`);
-  console.log(`    ThaaliScore:  http://localhost:${PORT}/thaali-score`);
-  console.log(`    BijliSmart:   http://localhost:${PORT}/bijli-smart`);
-  console.log(`    SabseSasta:   http://localhost:${PORT}/sabse-sasta\n`);
-});
+// Only listen when running locally (not on Vercel)
+if (process.env.VERCEL !== '1') {
+  app.listen(PORT, () => {
+    console.log(`\n  SaveKaro is running at http://localhost:${PORT}\n`);
+    console.log(`  Tools:`);
+    console.log(`    SehatScan:    http://localhost:${PORT}/sehat-scan`);
+    console.log(`    SastaIlaaj:   http://localhost:${PORT}/sasta-ilaaj`);
+    console.log(`    ThaaliScore:  http://localhost:${PORT}/thaali-score`);
+    console.log(`    BijliSmart:   http://localhost:${PORT}/bijli-smart`);
+    console.log(`    SabseSasta:   http://localhost:${PORT}/sabse-sasta\n`);
+  });
+}
+
+// Export for Vercel serverless
+module.exports = app;
