@@ -84,14 +84,38 @@ async function extractWithAI(type, filePathOrText, gender) {
     throw err;
   }
 
+  // First pass: extract all parameters
   let aiResults;
   if (type === 'pdf') aiResults = await aiExtract.extractFromPDF(filePathOrText);
   else if (type === 'image') aiResults = await aiExtract.extractFromImage(filePathOrText);
   else aiResults = await aiExtract.extractFromText(filePathOrText);
 
   if (!aiResults || aiResults.length === 0) return null;
-  const mapped = aiExtract.mapToParametersDB(aiResults, PARAMETERS_DB, findParameter, gender);
-  return mapped.length > 0 ? mapped : null;
+  let mapped = aiExtract.mapToParametersDB(aiResults, PARAMETERS_DB, findParameter, gender);
+  if (mapped.length === 0) return null;
+
+  // Second pass: detect and fill missing parameters from expected groups
+  const missingNames = aiExtract.detectMissingParameters(mapped);
+  if (missingNames.length > 0) {
+    console.log(`[FollowUp] First pass found ${mapped.length} params. Missing from expected groups: ${missingNames.join(', ')}`);
+    try {
+      const followUpResults = await aiExtract.extractMissing(type, filePathOrText, missingNames);
+      if (followUpResults && followUpResults.length > 0) {
+        const followUpMapped = aiExtract.mapToParametersDB(followUpResults, PARAMETERS_DB, findParameter, gender);
+        // Merge — only add params not already found
+        const existingIds = new Set(mapped.map(m => m.parameterId));
+        const newParams = followUpMapped.filter(m => !existingIds.has(m.parameterId));
+        if (newParams.length > 0) {
+          console.log(`[FollowUp] Found ${newParams.length} additional params: ${newParams.map(p => p.rawName).join(', ')}`);
+          mapped = [...mapped, ...newParams];
+        }
+      }
+    } catch (err) {
+      console.log(`[FollowUp] Skipped: ${err.message}`);
+    }
+  }
+
+  return mapped;
 }
 
 // API: Analyze blood report
