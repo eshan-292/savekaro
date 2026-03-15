@@ -8,6 +8,7 @@ const fs = require('fs');
 
 const { PARAMETERS_DB, parseReportText, analyzeResults, getDemoAnalysis, MIN_VALID_PARAMETERS, findParameter } = require('./lib/sehat-scan');
 const aiExtract = require('./lib/ai-extract');
+const { generateDoctorSummary } = require('./lib/ai-extract');
 const sastaIlaaj = require('./lib/sasta-ilaaj');
 const thaaliScore = require('./lib/thaali-score');
 const bijliSmart = require('./lib/bijli-smart');
@@ -100,7 +101,7 @@ app.post('/api/sehat-scan/analyze', upload.single('report'), async (req, res) =>
     const age = parseInt(req.body.age) || 30;
 
     // Helper to return analysis result
-    function sendAnalysis(parsed, mode) {
+    async function sendAnalysis(parsed, mode) {
       if (parsed.length === 0) {
         return res.json({
           success: true,
@@ -119,6 +120,14 @@ app.post('/api/sehat-scan/analyze', upload.single('report'), async (req, res) =>
         });
       }
       const analysis = analyzeResults(parsed, gender);
+
+      // Generate AI doctor summary (optional — won't block if it fails)
+      try {
+        analysis.doctorSummary = await generateDoctorSummary(analysis, gender, age);
+      } catch (err) {
+        console.error('Doctor summary generation failed (skipping):', err.message);
+      }
+
       return res.json({ success: true, mode, parametersFound: parsed.length, analysis, aiPowered: mode === 'ai' });
     }
 
@@ -159,7 +168,7 @@ app.post('/api/sehat-scan/analyze', upload.single('report'), async (req, res) =>
     if (req.body.reportText) {
       try {
         const aiParsed = await extractWithAI('text', req.body.reportText, gender);
-        if (aiParsed) return sendAnalysis(aiParsed, 'ai');
+        if (aiParsed) return await sendAnalysis(aiParsed, 'ai');
 
         // AI returned empty — not a blood report
         return res.json({
@@ -183,7 +192,7 @@ app.post('/api/sehat-scan/analyze', upload.single('report'), async (req, res) =>
         const aiParsed = await extractWithAI(type, filePath, gender);
         fs.unlink(filePath, () => {});
 
-        if (aiParsed) return sendAnalysis(aiParsed, 'ai');
+        if (aiParsed) return await sendAnalysis(aiParsed, 'ai');
 
         // AI returned empty — not a blood report
         return res.json({

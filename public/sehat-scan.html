@@ -168,18 +168,92 @@
       font-family: inherit;
     }
 
-    /* LOADING */
+    /* LOADING - Enhanced */
     .loading {
-      display: none; text-align: center; padding: 60px 20px;
+      display: none; text-align: center; padding: 40px 20px;
     }
     .loading.active { display: block; }
-    .spinner {
-      width: 48px; height: 48px; border: 4px solid var(--gray-200);
-      border-top-color: var(--green-500); border-radius: 50%;
-      animation: spin 0.8s linear infinite; margin: 0 auto 16px;
+
+    .loading-animation {
+      position: relative; width: 120px; height: 120px; margin: 0 auto 24px;
     }
+
+    /* Pulsing heart/blood cell */
+    .pulse-ring {
+      width: 80px; height: 80px; border-radius: 50%;
+      position: absolute; top: 20px; left: 20px;
+      animation: pulse-ring 1.5s ease-out infinite;
+    }
+    .pulse-ring:nth-child(1) { animation-delay: 0s; background: rgba(16, 185, 129, 0.3); }
+    .pulse-ring:nth-child(2) { animation-delay: 0.4s; background: rgba(16, 185, 129, 0.2); }
+    .pulse-ring:nth-child(3) { animation-delay: 0.8s; background: rgba(16, 185, 129, 0.1); }
+
+    @keyframes pulse-ring {
+      0% { transform: scale(0.5); opacity: 1; }
+      100% { transform: scale(2.2); opacity: 0; }
+    }
+
+    .loading-icon {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      font-size: 2.5rem; z-index: 2;
+      animation: heartbeat 1.2s ease-in-out infinite;
+    }
+    @keyframes heartbeat {
+      0%, 100% { transform: translate(-50%, -50%) scale(1); }
+      15% { transform: translate(-50%, -50%) scale(1.15); }
+      30% { transform: translate(-50%, -50%) scale(1); }
+      45% { transform: translate(-50%, -50%) scale(1.1); }
+    }
+
     @keyframes spin { to { transform: rotate(360deg); } }
-    .loading p { color: var(--gray-600); font-size: 1rem; }
+
+    /* Steps progress */
+    .loading-steps {
+      max-width: 400px; margin: 0 auto;
+    }
+    .loading-step {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 16px; margin-bottom: 4px;
+      border-radius: 10px;
+      font-size: 0.9rem; color: var(--gray-400);
+      transition: all 0.4s ease;
+    }
+    .loading-step.active {
+      color: var(--green-700); font-weight: 600;
+      background: var(--green-50);
+    }
+    .loading-step.done {
+      color: var(--green-600);
+    }
+    .step-icon {
+      width: 24px; height: 24px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.75rem; flex-shrink: 0;
+      background: var(--gray-200); color: var(--gray-400);
+      transition: all 0.4s ease;
+    }
+    .loading-step.active .step-icon {
+      background: var(--green-500); color: white;
+      animation: spin 1s linear infinite;
+    }
+    .loading-step.done .step-icon {
+      background: var(--green-500); color: white;
+      animation: none;
+    }
+
+    .loading-fact {
+      margin-top: 20px; padding: 12px 20px;
+      background: var(--gray-50); border-radius: 10px;
+      font-size: 0.8rem; color: var(--gray-500);
+      max-width: 400px; margin-left: auto; margin-right: auto;
+      min-height: 50px;
+      transition: opacity 0.3s;
+    }
+    .loading-fact .fact-label {
+      font-weight: 700; color: var(--green-600); font-size: 0.7rem;
+      text-transform: uppercase; letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
 
     /* RESULTS DASHBOARD */
     .results {
@@ -487,6 +561,36 @@
       max-height: 200px; object-fit: contain;
       background: var(--gray-100);
     }
+
+    /* Doctor Summary */
+    .doctor-summary {
+      max-width: 700px; margin: 0 auto 24px;
+      background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+      border: 1px solid var(--green-300);
+      border-radius: 16px; padding: 24px;
+      position: relative;
+    }
+    .doctor-summary::before {
+      content: '👨‍⚕️';
+      position: absolute; top: -16px; left: 20px;
+      font-size: 2rem; background: var(--white);
+      border-radius: 50%; width: 40px; height: 40px;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .doctor-summary h3 {
+      font-size: 1rem; font-weight: 700; color: var(--green-800);
+      margin-bottom: 12px; padding-left: 36px;
+    }
+    .doctor-summary .summary-text {
+      font-size: 0.95rem; color: var(--gray-700); line-height: 1.8;
+      white-space: pre-line;
+    }
+    .doctor-summary .ai-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 0.75rem; color: var(--green-600);
+      margin-top: 12px; font-weight: 600;
+    }
   </style>
   <!-- Tesseract.js for client-side OCR (free, runs in browser) -->
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
@@ -590,12 +694,39 @@ Vitamin B12   165     pg/mL    200 - 900"></textarea>
     </div>
   </section>
 
-  <!-- LOADING (for text/demo) -->
+  <!-- LOADING -->
   <section class="loading" id="loading">
     <div class="container">
-      <div class="spinner"></div>
-      <p class="loading-text" id="loading-text">Reading your report...</p>
-      <p style="font-size:0.85rem;color:var(--gray-400);margin-top:8px;">This usually takes 5-10 seconds</p>
+      <div class="loading-animation">
+        <div class="pulse-ring"></div>
+        <div class="pulse-ring"></div>
+        <div class="pulse-ring"></div>
+        <div class="loading-icon">🔬</div>
+      </div>
+
+      <div class="loading-steps">
+        <div class="loading-step" id="step-1">
+          <span class="step-icon">1</span>
+          <span>Reading your report...</span>
+        </div>
+        <div class="loading-step" id="step-2">
+          <span class="step-icon">2</span>
+          <span>Extracting 93 parameters...</span>
+        </div>
+        <div class="loading-step" id="step-3">
+          <span class="step-icon">3</span>
+          <span>Comparing with normal ranges...</span>
+        </div>
+        <div class="loading-step" id="step-4">
+          <span class="step-icon">4</span>
+          <span>Generating health score & summary...</span>
+        </div>
+      </div>
+
+      <div class="loading-fact" id="loading-fact">
+        <div class="fact-label">💡 Did you know?</div>
+        <div id="fact-text">India has 77 million diabetics — the second highest in the world.</div>
+      </div>
     </div>
   </section>
 
@@ -683,8 +814,6 @@ Vitamin B12   165     pg/mL    200 - 900"></textarea>
   <script>
     let currentFile = null;
     let currentAnalysis = null;
-    let loadingInterval = null;
-
     // Save original results HTML so we can restore it after showing errors
     const originalResultsHTML = document.getElementById('results').querySelector('.container').innerHTML;
 
@@ -693,24 +822,84 @@ Vitamin B12   165     pg/mL    200 - 900"></textarea>
       pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     }
 
-    // Loading text cycling
-    const loadingMessages = [
-      'Reading your report...',
-      'Checking 86 parameters...',
-      'Comparing with normal ranges...',
-      'Generating health score...'
+    // Loading steps animation
+    const healthFacts = [
+      'India has 77 million diabetics — the second highest in the world.',
+      'Iron deficiency anemia affects 53% of Indian women aged 15-49.',
+      '1 in 10 Indians has thyroid disorders, and most don\'t know it.',
+      'Vitamin D deficiency affects over 76% of Indians despite abundant sunlight.',
+      'Regular blood tests can detect health issues 5-7 years before symptoms appear.',
+      'High cholesterol has NO symptoms — only a blood test can reveal it.',
+      'Cooking in iron kadhai can increase iron content of food by up to 16%.',
+      'A single amla (Indian gooseberry) has 20x more Vitamin C than an orange.',
+      'Walking 30 minutes daily reduces heart disease risk by 35%.',
+      'Turmeric (haldi) in milk is scientifically proven to reduce inflammation.',
     ];
-    function startLoadingText() {
-      let idx = 0;
-      const el = document.getElementById('loading-text');
-      if (el) el.textContent = loadingMessages[0];
-      loadingInterval = setInterval(() => {
-        idx = (idx + 1) % loadingMessages.length;
-        if (el) el.textContent = loadingMessages[idx];
-      }, 2500);
+
+    let loadingStepTimer = null;
+    let factTimer = null;
+
+    function startLoadingAnimation() {
+      const steps = ['step-1', 'step-2', 'step-3', 'step-4'];
+      let currentStep = 0;
+
+      // Activate first step immediately
+      document.getElementById(steps[0]).classList.add('active');
+
+      // Progress through steps
+      loadingStepTimer = setInterval(() => {
+        if (currentStep > 0) {
+          document.getElementById(steps[currentStep - 1]).classList.remove('active');
+          document.getElementById(steps[currentStep - 1]).classList.add('done');
+          const icon = document.getElementById(steps[currentStep - 1]).querySelector('.step-icon');
+          icon.textContent = '✓';
+        }
+        if (currentStep < steps.length) {
+          document.getElementById(steps[currentStep]).classList.add('active');
+          currentStep++;
+        } else {
+          // Loop back to step 3-4 area
+          currentStep = 2;
+          steps.forEach(s => {
+            document.getElementById(s).classList.remove('active', 'done');
+            document.getElementById(s).querySelector('.step-icon').textContent = steps.indexOf(s) + 1;
+          });
+          document.getElementById(steps[0]).classList.add('done');
+          document.getElementById(steps[0]).querySelector('.step-icon').textContent = '✓';
+          document.getElementById(steps[1]).classList.add('done');
+          document.getElementById(steps[1]).querySelector('.step-icon').textContent = '✓';
+          document.getElementById(steps[2]).classList.add('active');
+        }
+      }, 2000);
+
+      // Cycle health facts
+      let factIdx = Math.floor(Math.random() * healthFacts.length);
+      factTimer = setInterval(() => {
+        factIdx = (factIdx + 1) % healthFacts.length;
+        const factEl = document.getElementById('fact-text');
+        if (factEl) {
+          factEl.style.opacity = '0';
+          setTimeout(() => {
+            factEl.textContent = healthFacts[factIdx];
+            factEl.style.opacity = '1';
+          }, 300);
+        }
+      }, 4000);
     }
-    function stopLoadingText() {
-      if (loadingInterval) { clearInterval(loadingInterval); loadingInterval = null; }
+
+    function stopLoadingAnimation() {
+      if (loadingStepTimer) { clearInterval(loadingStepTimer); loadingStepTimer = null; }
+      if (factTimer) { clearInterval(factTimer); factTimer = null; }
+
+      // Mark all steps as done
+      ['step-1', 'step-2', 'step-3', 'step-4'].forEach(s => {
+        const el = document.getElementById(s);
+        if (el) {
+          el.classList.remove('active');
+          el.classList.add('done');
+          el.querySelector('.step-icon').textContent = '✓';
+        }
+      });
     }
 
     // Tab switching
@@ -924,7 +1113,7 @@ Vitamin B12   165     pg/mL    200 - 900"></textarea>
     // Show error/invalid state to user
     function showInvalidReport(message, detail) {
       hideOCRProgress();
-      stopLoadingText();
+      stopLoadingAnimation();
       document.getElementById('loading').classList.remove('active');
 
       // Show the results section with error
@@ -962,7 +1151,7 @@ Vitamin B12   165     pg/mL    200 - 900"></textarea>
     // Show rate limit exhausted message with subscription CTA
     function showRateLimitMessage(message) {
       hideOCRProgress();
-      stopLoadingText();
+      stopLoadingAnimation();
       document.getElementById('loading').classList.remove('active');
       document.getElementById('results').classList.add('active');
 
@@ -1017,7 +1206,7 @@ Vitamin B12   165     pg/mL    200 - 900"></textarea>
         if (reportText.trim()) {
           document.getElementById('upload-section').style.display = 'none';
           document.getElementById('loading').classList.add('active');
-          startLoadingText();
+          startLoadingAnimation();
 
           const response = await fetch('/api/sehat-scan/analyze', {
             method: 'POST',
@@ -1025,7 +1214,7 @@ Vitamin B12   165     pg/mL    200 - 900"></textarea>
             body: JSON.stringify({ reportText, gender, age })
           });
           const data = await response.json();
-          stopLoadingText();
+          stopLoadingAnimation();
           document.getElementById('loading').classList.remove('active');
 
           handleAnalysisResponse(data);
@@ -1071,10 +1260,10 @@ Vitamin B12   165     pg/mL    200 - 900"></textarea>
         // CASE 3: No file, no text → demo
         document.getElementById('upload-section').style.display = 'none';
         document.getElementById('loading').classList.add('active');
-        startLoadingText();
+        startLoadingAnimation();
         const demoResp = await fetch('/api/sehat-scan/demo');
         const demoData = await demoResp.json();
-        stopLoadingText();
+        stopLoadingAnimation();
         document.getElementById('loading').classList.remove('active');
         currentAnalysis = demoData.analysis;
         renderResults(demoData.analysis, '📋 This is a demo report. Upload your own report for real analysis.');
@@ -1082,7 +1271,7 @@ Vitamin B12   165     pg/mL    200 - 900"></textarea>
       } catch (err) {
         console.error(err);
         hideOCRProgress();
-        stopLoadingText();
+        stopLoadingAnimation();
         document.getElementById('loading').classList.remove('active');
         showInvalidReport('Something went wrong: ' + err.message + '. Please try again.');
       }
@@ -1118,17 +1307,17 @@ Vitamin B12   165     pg/mL    200 - 900"></textarea>
     function loadDemo() {
       document.getElementById('upload-section').style.display = 'none';
       document.getElementById('loading').classList.add('active');
-      startLoadingText();
+      startLoadingAnimation();
       fetch('/api/sehat-scan/demo')
         .then(r => r.json())
         .then(data => {
-          stopLoadingText();
+          stopLoadingAnimation();
           document.getElementById('loading').classList.remove('active');
           currentAnalysis = data.analysis;
           renderResults(data.analysis, 'Showing demo analysis with a sample report.');
         })
         .catch(() => {
-          stopLoadingText();
+          stopLoadingAnimation();
           document.getElementById('loading').classList.remove('active');
           alert('Failed to load demo.');
           resetPage();
@@ -1136,7 +1325,7 @@ Vitamin B12   165     pg/mL    200 - 900"></textarea>
     }
 
     function renderResults(analysis, message) {
-      stopLoadingText();
+      stopLoadingAnimation();
       document.getElementById('loading').classList.remove('active');
 
       // Restore original results HTML in case it was replaced by error screen
@@ -1165,6 +1354,18 @@ Vitamin B12   165     pg/mL    200 - 900"></textarea>
 
       document.getElementById('score-summary').innerHTML = analysis.summary +
         (message ? '<br><span style="font-size:0.85rem;color:var(--gray-400);">' + message + '</span>' : '');
+
+      // Doctor Summary (AI-generated Hinglish)
+      if (analysis.doctorSummary) {
+        const summaryContainer = document.createElement('div');
+        summaryContainer.className = 'doctor-summary';
+        summaryContainer.innerHTML = `
+          <h3>Doctor's Summary</h3>
+          <div class="summary-text">${analysis.doctorSummary}</div>
+          <div class="ai-badge">✨ AI-generated summary — not a medical diagnosis</div>
+        `;
+        document.getElementById('alerts-container').before(summaryContainer);
+      }
 
       // Alerts
       const alertsContainer = document.getElementById('alerts-container');
@@ -1349,7 +1550,7 @@ Vitamin B12   165     pg/mL    200 - 900"></textarea>
       // Restore original results HTML in case it was replaced by error screen
       document.getElementById('results').querySelector('.container').innerHTML = originalResultsHTML;
       hideOCRProgress();
-      stopLoadingText();
+      stopLoadingAnimation();
       currentFile = null;
       document.getElementById('file-input').value = '';
       document.getElementById('file-name').style.display = 'none';
