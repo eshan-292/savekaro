@@ -307,6 +307,37 @@
     let currentDietGoal = 'maintain';
     let lastAnalysisData = null;
 
+    // ─── localStorage persistence for tracker ───
+    function getTrackerDateKey() {
+      return new Date().toISOString().slice(0, 10); // "2026-03-15"
+    }
+
+    function saveTracker() {
+      const key = 'thaali_tracker_' + getTrackerDateKey();
+      localStorage.setItem(key, JSON.stringify(trackerMeals));
+      localStorage.setItem('thaali_diet_goal', currentDietGoal);
+    }
+
+    function loadTracker() {
+      // Load diet goal
+      const savedGoal = localStorage.getItem('thaali_diet_goal');
+      if (savedGoal && dietGoals[savedGoal]) {
+        currentDietGoal = savedGoal;
+      }
+
+      // Load today's tracker meals
+      const key = 'thaali_tracker_' + getTrackerDateKey();
+      const saved = localStorage.getItem(key);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (parsed && parsed.breakfast && parsed.lunch && parsed.dinner) {
+            trackerMeals = parsed;
+          }
+        } catch(e) { /* ignore corrupt data */ }
+      }
+    }
+
     const dietGoals = {
       lose:     { label: 'Lose Weight', calories: 1500, desc: 'Daily target: 1500 calories (calorie deficit)' },
       maintain: { label: 'Maintain', calories: 2000, desc: 'Daily target: 2000 calories' },
@@ -322,6 +353,8 @@
       const activeBtn = document.getElementById('goal' + goal.charAt(0).toUpperCase() + goal.slice(1));
       if (activeBtn) activeBtn.className = 'diet-goal-btn text-xs px-4 py-2 rounded-full border-2 border-emerald-500 bg-emerald-50 text-emerald-700 font-medium';
       document.getElementById('goalDescription').textContent = dietGoals[goal].desc;
+      saveTracker();
+      renderTracker();
       // Re-render analysis if available
       if (lastAnalysisData) renderAnalysis(lastAnalysisData);
     }
@@ -471,20 +504,20 @@
       }
     }
 
-    // Popular dishes for initial load
+    // Popular dishes — IDs match backend database (1-305)
     const popularDishes = [
-      { id: 101, name: 'Dal Tadka', cal: 180, category: 'Dals', veg: true, serving: '1 bowl', healthScore: 8 },
-      { id: 102, name: 'Roti', cal: 120, category: 'Rice/Breads', veg: true, serving: '2 pcs', healthScore: 7 },
-      { id: 103, name: 'Paneer Butter Masala', cal: 380, category: 'North Indian', veg: true, serving: '1 bowl', healthScore: 4 },
-      { id: 104, name: 'Chicken Biryani', cal: 490, category: 'Non-Veg', veg: false, serving: '1 plate', healthScore: 5 },
-      { id: 105, name: 'Masala Dosa', cal: 290, category: 'South Indian', veg: true, serving: '1 dosa', healthScore: 6 },
-      { id: 106, name: 'Idli (2 pcs)', cal: 130, category: 'Breakfast', veg: true, serving: '2 pcs', healthScore: 8 },
-      { id: 107, name: 'Chole Bhature', cal: 520, category: 'North Indian', veg: true, serving: '1 plate', healthScore: 3 },
-      { id: 108, name: 'Sambar', cal: 120, category: 'South Indian', veg: true, serving: '1 bowl', healthScore: 9 },
-      { id: 109, name: 'Rajma Chawal', cal: 410, category: 'North Indian', veg: true, serving: '1 plate', healthScore: 6 },
-      { id: 110, name: 'Poha', cal: 180, category: 'Breakfast', veg: true, serving: '1 bowl', healthScore: 7 },
-      { id: 111, name: 'Raita', cal: 70, category: 'Sides', veg: true, serving: '1 bowl', healthScore: 8 },
-      { id: 112, name: 'Gulab Jamun', cal: 175, category: 'Sweets', veg: true, serving: '2 pcs', healthScore: 2 },
+      { id: 13, name: 'Dal Tadka', cal: 180, category: 'Dals', veg: true, serving: '1 bowl (200g)', healthScore: 8, gi: 'low' },
+      { id: 76, name: 'Roti (Chapati)', cal: 80, category: 'Rice/Breads', veg: true, serving: '1 pc (30g dry)', healthScore: 8, gi: 'medium' },
+      { id: 4, name: 'Paneer Butter Masala', cal: 370, category: 'North Indian', veg: true, serving: '1 bowl (200g)', healthScore: 4, gi: 'low' },
+      { id: 28, name: 'Chicken Biryani', cal: 450, category: 'Non-Veg', veg: false, serving: '1 plate (300g)', healthScore: 5, gi: 'medium' },
+      { id: 35, name: 'Masala Dosa', cal: 280, category: 'South Indian', veg: true, serving: '1 dosa + filling', healthScore: 6, gi: 'medium' },
+      { id: 36, name: 'Idli', cal: 180, category: 'South Indian', veg: true, serving: '3 pcs (180g)', healthScore: 8, gi: 'medium' },
+      { id: 151, name: 'Chole Bhature', cal: 550, category: 'Snacks', veg: true, serving: '2 bhature + chole', healthScore: 3, gi: 'high' },
+      { id: 38, name: 'Sambar', cal: 120, category: 'South Indian', veg: true, serving: '1 bowl (200g)', healthScore: 9, gi: 'low' },
+      { id: 2, name: 'Rajma Curry', cal: 220, category: 'North Indian', veg: true, serving: '1 bowl (200g)', healthScore: 8, gi: 'low' },
+      { id: 55, name: 'Poha', cal: 220, category: 'Breakfast', veg: true, serving: '1 plate (200g)', healthScore: 7, gi: 'medium' },
+      { id: 191, name: 'Mixed Veg Raita', cal: 70, category: 'Sides', veg: true, serving: '1 bowl (100g)', healthScore: 7, gi: 'low' },
+      { id: 107, name: 'Gulab Jamun', cal: 300, category: 'Sweets', veg: true, serving: '2 pcs (80g)', healthScore: 2, gi: 'high' },
     ];
 
     // Serving size adjuster
@@ -1024,6 +1057,7 @@
     function addTrackerDish(id, name, cal) {
       trackerMeals[trackerAddingTo].push({ id, name, cal });
       closeTrackerModal();
+      saveTracker();
       renderTracker();
     }
 
@@ -1059,8 +1093,9 @@
       if (allIds.length > 0) {
         document.getElementById('dailyTotals').classList.remove('hidden');
         const allCal = allIds.reduce((s, d) => s + d.cal, 0);
-        const pct = Math.round((allCal / 2000) * 100);
-        const remaining = 2000 - allCal;
+        const goalCal = dietGoals[currentDietGoal].calories;
+        const pct = Math.round((allCal / goalCal) * 100);
+        const remaining = goalCal - allCal;
         document.getElementById('dailyTotalsContent').innerHTML = `
           <div class="grid grid-cols-3 gap-4 mb-4">
             <div class="text-center">
@@ -1079,7 +1114,7 @@
           <div class="h-3 bg-gray-100 rounded-full overflow-hidden">
             <div class="h-full rounded-full transition-all duration-500 ${pct > 100 ? 'bg-red-500' : 'bg-emerald-500'}" style="width:${Math.min(pct,100)}%"></div>
           </div>
-          <p class="text-xs text-gray-400 mt-2 text-center">Based on 2000 cal daily target. ${allIds.length} items across ${Object.values(trackerMeals).filter(m => m.length > 0).length} meals.</p>
+          <p class="text-xs text-gray-400 mt-2 text-center">Based on ${goalCal} cal daily target (${dietGoals[currentDietGoal].label}). ${allIds.length} items across ${Object.values(trackerMeals).filter(m => m.length > 0).length} meals.</p>
         `;
       } else {
         document.getElementById('dailyTotals').classList.add('hidden');
@@ -1088,6 +1123,7 @@
 
     function removeTrackerItem(meal, index) {
       trackerMeals[meal].splice(index, 1);
+      saveTracker();
       renderTracker();
     }
 
@@ -1096,8 +1132,10 @@
       if (e.target === this) closeTrackerModal();
     });
 
-    // Initial load: show popular dishes + load combos
+    // Initial load: restore state + show popular dishes + load combos
     window.addEventListener('DOMContentLoaded', () => {
+      loadTracker();
+      setDietGoal(currentDietGoal); // restore UI for saved diet goal
       searchDishes();
       renderTracker();
       loadCombos();
