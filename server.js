@@ -5,7 +5,7 @@ const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 const fs = require('fs');
 
-const { PARAMETERS_DB, parseReportText, analyzeResults, getDemoAnalysis } = require('./lib/sehat-scan');
+const { PARAMETERS_DB, parseReportText, analyzeResults, getDemoAnalysis, MIN_VALID_PARAMETERS } = require('./lib/sehat-scan');
 const sastaIlaaj = require('./lib/sasta-ilaaj');
 const thaaliScore = require('./lib/thaali-score');
 const bijliSmart = require('./lib/bijli-smart');
@@ -79,16 +79,28 @@ app.post('/api/sehat-scan/analyze', upload.single('report'), async (req, res) =>
     // If manual text was provided
     if (req.body.reportText) {
       const parsed = parseReportText(req.body.reportText);
+
       if (parsed.length === 0) {
         return res.json({
           success: true,
-          mode: 'demo',
-          message: 'Could not extract parameters from text. Showing demo analysis instead.',
-          analysis: getDemoAnalysis()
+          mode: 'invalid',
+          message: 'Could not find any blood test parameters in the provided text. Please make sure you are uploading a blood test report.',
+          parametersFound: 0
         });
       }
+
+      if (parsed.length < (MIN_VALID_PARAMETERS || 3)) {
+        return res.json({
+          success: true,
+          mode: 'insufficient',
+          message: `Only found ${parsed.length} parameter(s). This doesn't look like a complete blood test report. We need at least ${MIN_VALID_PARAMETERS || 3} recognizable parameters to give an accurate analysis. Try pasting the full report text or uploading a clearer image.`,
+          parametersFound: parsed.length,
+          partialParams: parsed.map(p => p.rawName)
+        });
+      }
+
       const analysis = analyzeResults(parsed, gender);
-      return res.json({ success: true, mode: 'parsed', analysis });
+      return res.json({ success: true, mode: 'parsed', parametersFound: parsed.length, analysis });
     }
 
     // If file was uploaded
@@ -109,10 +121,21 @@ app.post('/api/sehat-scan/analyze', upload.single('report'), async (req, res) =>
           if (parsed.length === 0) {
             return res.json({
               success: true,
-              mode: 'demo',
-              message: 'Could not extract parameters from the PDF. The text might be in image format. Showing demo analysis.',
+              mode: 'no_text',
+              message: 'Could not extract text from this PDF. It may be a scanned/image PDF. Try our image OCR — re-upload the file and we\'ll scan it with OCR.',
               extractedText: text.substring(0, 500),
-              analysis: getDemoAnalysis()
+              parametersFound: 0
+            });
+          }
+
+          if (parsed.length < (MIN_VALID_PARAMETERS || 3)) {
+            return res.json({
+              success: true,
+              mode: 'insufficient',
+              message: `Only found ${parsed.length} parameter(s) in the PDF. This may not be a blood test report, or the text extraction was incomplete. Try pasting the report text directly.`,
+              parametersFound: parsed.length,
+              partialParams: parsed.map(p => p.rawName),
+              extractedText: text.substring(0, 500)
             });
           }
 
@@ -122,19 +145,19 @@ app.post('/api/sehat-scan/analyze', upload.single('report'), async (req, res) =>
           fs.unlink(req.file.path, () => {});
           return res.json({
             success: true,
-            mode: 'demo',
-            message: 'Could not read PDF. It might be a scanned image. Showing demo analysis. For best results, paste your report text directly.',
-            analysis: getDemoAnalysis()
+            mode: 'no_text',
+            message: 'Could not read this PDF. It may be a scanned image. Try re-uploading — we\'ll use OCR to scan it.',
+            parametersFound: 0
           });
         }
       } else {
-        // Image file — in production, would use OCR
+        // Image file — OCR now handled client-side, this shouldn't be reached
         fs.unlink(req.file.path, () => {});
         return res.json({
           success: true,
-          mode: 'demo',
-          message: 'Image OCR is coming soon! For now, showing demo analysis. You can also paste your report text directly.',
-          analysis: getDemoAnalysis()
+          mode: 'invalid',
+          message: 'Please use the upload button to scan images — OCR runs directly in your browser for privacy.',
+          parametersFound: 0
         });
       }
     }

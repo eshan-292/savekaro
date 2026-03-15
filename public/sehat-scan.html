@@ -685,6 +685,9 @@ Vitamin B12   165     pg/mL    200 - 900"></textarea>
     let currentAnalysis = null;
     let loadingInterval = null;
 
+    // Save original results HTML so we can restore it after showing errors
+    const originalResultsHTML = document.getElementById('results').querySelector('.container').innerHTML;
+
     // Set PDF.js worker
     if (window.pdfjsLib) {
       pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
@@ -856,6 +859,99 @@ Vitamin B12   165     pg/mL    200 - 900"></textarea>
       return canvases;
     }
 
+    // ── HANDLE API RESPONSE ──
+    // Returns true if results were shown, false if it was an error/invalid
+    function handleAnalysisResponse(data) {
+      if (!data.success) {
+        showInvalidReport('Analysis failed. Please try again.');
+        return false;
+      }
+
+      // Valid parsed result
+      if (data.mode === 'parsed' && data.analysis) {
+        currentAnalysis = data.analysis;
+        renderResults(data.analysis, `✅ Found ${data.parametersFound} blood test parameters.`);
+        return true;
+      }
+
+      // Demo mode (only from explicit demo button)
+      if (data.mode === 'demo' && data.analysis) {
+        currentAnalysis = data.analysis;
+        renderResults(data.analysis, data.message);
+        return true;
+      }
+
+      // Invalid — not a blood report
+      if (data.mode === 'invalid') {
+        showInvalidReport(data.message || 'This does not appear to be a blood test report.');
+        return false;
+      }
+
+      // Insufficient parameters
+      if (data.mode === 'insufficient') {
+        const partialList = data.partialParams ? data.partialParams.join(', ') : '';
+        showInvalidReport(
+          data.message || 'Not enough parameters found.',
+          partialList ? `Partially detected: ${partialList}` : null
+        );
+        return false;
+      }
+
+      // No text extracted from PDF
+      if (data.mode === 'no_text') {
+        // Return false to trigger OCR fallback
+        return false;
+      }
+
+      // Unknown mode
+      showInvalidReport(data.message || 'Could not process this report.');
+      return false;
+    }
+
+    // Show error/invalid state to user
+    function showInvalidReport(message, detail) {
+      hideOCRProgress();
+      stopLoadingText();
+      document.getElementById('loading').classList.remove('active');
+
+      // Show the results section with error
+      document.getElementById('results').classList.add('active');
+
+      const container = document.getElementById('results').querySelector('.container');
+      container.innerHTML = `
+        <div style="text-align:center; padding:60px 20px; max-width:600px; margin:0 auto;">
+          <div style="font-size:4rem; margin-bottom:16px;">❌</div>
+          <h2 style="font-size:1.5rem; font-weight:800; color:var(--gray-900); margin-bottom:16px;">
+            This doesn't look like a blood test report
+          </h2>
+          <p style="font-size:1rem; color:var(--gray-600); line-height:1.7; margin-bottom:12px;">
+            ${message}
+          </p>
+          ${detail ? `<p style="font-size:0.85rem; color:var(--gray-400); margin-bottom:24px;">${detail}</p>` : ''}
+          <div style="background:var(--green-50); border:1px solid var(--green-200); border-radius:14px; padding:20px; text-align:left; margin-bottom:24px;">
+            <p style="font-weight:700; color:var(--green-700); margin-bottom:12px;">💡 Tips for best results:</p>
+            <ul style="color:var(--gray-600); font-size:0.9rem; line-height:1.8; padding-left:20px;">
+              <li>Upload a <strong>blood test / pathology lab report</strong> (CBC, lipid profile, thyroid, etc.)</li>
+              <li>For photos — take a clear, well-lit, straight photo of the report</li>
+              <li>For PDFs — digital PDFs work best (the ones from email)</li>
+              <li>Or <strong>paste the text</strong> directly — copy from your lab's email/PDF</li>
+            </ul>
+          </div>
+          <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
+            <button class="action-btn primary" onclick="resetPage()">🔄 Try Again</button>
+            <button class="action-btn secondary" onclick="resetAndPaste()">📝 Paste Text Instead</button>
+            <button class="action-btn secondary" onclick="loadDemo()">👀 See Demo Report</button>
+          </div>
+        </div>
+      `;
+    }
+
+    function resetAndPaste() {
+      resetPage();
+      switchTab('text');
+      document.getElementById('report-text').focus();
+    }
+
     // ── MAIN ANALYZE FUNCTION ──
     async function analyzeReport() {
       const btn = document.getElementById('analyze-btn');
@@ -882,12 +978,7 @@ Vitamin B12   165     pg/mL    200 - 900"></textarea>
           stopLoadingText();
           document.getElementById('loading').classList.remove('active');
 
-          if (data.success) {
-            currentAnalysis = data.analysis;
-            renderResults(data.analysis, data.message);
-          } else {
-            throw new Error(data.error || 'Analysis failed');
-          }
+          handleAnalysisResponse(data);
           return;
         }
 
@@ -907,7 +998,6 @@ Vitamin B12   165     pg/mL    200 - 900"></textarea>
             showOCRProgress();
             updateOCRProgress(3, 'Opening PDF...', 'Checking if text is extractable');
 
-            // First try server-side text extraction (fast for digital PDFs)
             const formData = new FormData();
             formData.append('report', currentFile);
             formData.append('gender', gender);
@@ -919,48 +1009,49 @@ Vitamin B12   165     pg/mL    200 - 900"></textarea>
             });
             const data = await response.json();
 
-            // If server found parameters, great — use those results
-            if (data.success && data.mode === 'parsed' && data.analysis) {
-              updateOCRProgress(100, 'Done! Text PDF processed successfully.', `Found ${data.parametersFound || 'multiple'} parameters`);
+            // If server successfully parsed text PDF
+            if (data.mode === 'parsed' && data.analysis) {
+              updateOCRProgress(100, 'Done! Text PDF processed.', `Found ${data.parametersFound} parameters`);
               await new Promise(r => setTimeout(r, 500));
               hideOCRProgress();
               currentAnalysis = data.analysis;
-              renderResults(data.analysis, null);
+              renderResults(data.analysis, `✅ Found ${data.parametersFound} parameters from PDF.`);
               return;
             }
 
-            // If server couldn't parse (scanned PDF) → OCR with Tesseract
-            updateOCRProgress(5, 'Scanned PDF detected — running OCR...', 'Rendering pages to images');
-
-            try {
-              const canvases = await pdfToImages(currentFile);
-              let allText = '';
-
-              for (let i = 0; i < canvases.length; i++) {
-                document.getElementById('ocr-title').textContent = `📸 Scanning page ${i + 1}/${canvases.length}...`;
-                const pageText = await performOCROnCanvas(canvases[i], i, canvases.length);
-                allText += pageText + '\n';
-              }
-              extractedText = allText;
-            } catch (ocrErr) {
-              console.error('PDF OCR failed:', ocrErr);
-              // Fall back to demo with message
+            // Insufficient from text extraction — show error, don't try OCR for gibberish
+            if (data.mode === 'insufficient') {
               hideOCRProgress();
-              document.getElementById('loading').classList.add('active');
-              startLoadingText();
-              const demoResp = await fetch('/api/sehat-scan/demo');
-              const demoData = await demoResp.json();
-              stopLoadingText();
-              document.getElementById('loading').classList.remove('active');
-              currentAnalysis = demoData.analysis;
-              renderResults(demoData.analysis, 'Could not read this PDF. Showing demo analysis. Try pasting the report text instead.');
+              handleAnalysisResponse(data);
               return;
+            }
+
+            // No text / scanned PDF → try OCR
+            if (data.mode === 'no_text' || data.mode === 'invalid') {
+              updateOCRProgress(5, 'Scanned PDF detected — running OCR...', 'Rendering pages to images');
+
+              try {
+                const canvases = await pdfToImages(currentFile);
+                let allText = '';
+
+                for (let i = 0; i < canvases.length; i++) {
+                  document.getElementById('ocr-title').textContent = `📸 Scanning page ${i + 1}/${canvases.length}...`;
+                  const pageText = await performOCROnCanvas(canvases[i], i, canvases.length);
+                  allText += pageText + '\n';
+                }
+                extractedText = allText;
+              } catch (ocrErr) {
+                console.error('PDF OCR failed:', ocrErr);
+                hideOCRProgress();
+                showInvalidReport('Could not read this PDF. The file may be corrupted or password-protected.');
+                return;
+              }
             }
           }
 
-          // Now send extracted OCR text to server for analysis
+          // Send extracted OCR text to server for analysis
           if (extractedText.trim()) {
-            updateOCRProgress(96, 'Analyzing extracted text...', 'Matching parameters against database');
+            updateOCRProgress(96, 'Analyzing extracted text...', 'Matching against 86 blood test parameters');
 
             const response = await fetch('/api/sehat-scan/analyze', {
               method: 'POST',
@@ -969,29 +1060,18 @@ Vitamin B12   165     pg/mL    200 - 900"></textarea>
             });
             const data = await response.json();
 
-            updateOCRProgress(100, 'Analysis complete!', '');
+            updateOCRProgress(100, 'Done!', '');
             await new Promise(r => setTimeout(r, 500));
             hideOCRProgress();
 
-            if (data.success) {
-              currentAnalysis = data.analysis;
-              const mode = data.mode === 'demo' ?
-                'OCR extracted text but couldn\'t find standard blood parameters. Showing demo. Try uploading a clearer photo or paste the text.' : null;
-              renderResults(data.analysis, data.message || mode);
-            } else {
-              throw new Error(data.error || 'Analysis failed');
-            }
+            handleAnalysisResponse(data);
           } else {
-            // No text extracted
+            // No text extracted at all
             hideOCRProgress();
-            document.getElementById('loading').classList.add('active');
-            startLoadingText();
-            const demoResp = await fetch('/api/sehat-scan/demo');
-            const demoData = await demoResp.json();
-            stopLoadingText();
-            document.getElementById('loading').classList.remove('active');
-            currentAnalysis = demoData.analysis;
-            renderResults(demoData.analysis, 'Could not extract text from the image. The photo may be too blurry. Try a clearer photo or paste the text directly.');
+            showInvalidReport(
+              'Could not extract any text from this image.',
+              'The photo may be too blurry, too dark, or not a blood test report. Try taking a clearer photo with good lighting, or paste the report text directly.'
+            );
           }
           return;
         }
@@ -1005,15 +1085,14 @@ Vitamin B12   165     pg/mL    200 - 900"></textarea>
         stopLoadingText();
         document.getElementById('loading').classList.remove('active');
         currentAnalysis = demoData.analysis;
-        renderResults(demoData.analysis, 'No report uploaded. Showing demo analysis.');
+        renderResults(demoData.analysis, '📋 This is a demo report. Upload your own report for real analysis.');
 
       } catch (err) {
         console.error(err);
         hideOCRProgress();
         stopLoadingText();
         document.getElementById('loading').classList.remove('active');
-        alert('Something went wrong: ' + err.message + '. Please try again.');
-        resetPage();
+        showInvalidReport('Something went wrong: ' + err.message + '. Please try again.');
       }
 
       btn.disabled = false;
@@ -1067,6 +1146,9 @@ Vitamin B12   165     pg/mL    200 - 900"></textarea>
     function renderResults(analysis, message) {
       stopLoadingText();
       document.getElementById('loading').classList.remove('active');
+
+      // Restore original results HTML in case it was replaced by error screen
+      document.getElementById('results').querySelector('.container').innerHTML = originalResultsHTML;
       document.getElementById('results').classList.add('active');
 
       // Score
@@ -1272,6 +1354,8 @@ Vitamin B12   165     pg/mL    200 - 900"></textarea>
       document.getElementById('upload-section').style.display = 'block';
       document.getElementById('loading').classList.remove('active');
       document.getElementById('results').classList.remove('active');
+      // Restore original results HTML in case it was replaced by error screen
+      document.getElementById('results').querySelector('.container').innerHTML = originalResultsHTML;
       hideOCRProgress();
       stopLoadingText();
       currentFile = null;
