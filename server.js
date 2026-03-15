@@ -76,7 +76,7 @@ app.get('/api/sehat-scan/parameters', (req, res) => {
 // Throws RATE_LIMIT_EXHAUSTED if all keys/models are exhausted
 // Throws NO_API_KEY if no keys configured
 // Returns null only if AI returns empty results (not a blood report)
-async function extractWithAI(type, filePathOrText) {
+async function extractWithAI(type, filePathOrText, gender) {
   if (!aiExtract.isAvailable()) {
     const err = new Error('NO_API_KEY');
     err.code = 'NO_API_KEY';
@@ -89,7 +89,7 @@ async function extractWithAI(type, filePathOrText) {
   else aiResults = await aiExtract.extractFromText(filePathOrText);
 
   if (!aiResults || aiResults.length === 0) return null;
-  const mapped = aiExtract.mapToParametersDB(aiResults, PARAMETERS_DB, findParameter);
+  const mapped = aiExtract.mapToParametersDB(aiResults, PARAMETERS_DB, findParameter, gender);
   return mapped.length > 0 ? mapped : null;
 }
 
@@ -158,7 +158,7 @@ app.post('/api/sehat-scan/analyze', upload.single('report'), async (req, res) =>
     // If manual text was provided
     if (req.body.reportText) {
       try {
-        const aiParsed = await extractWithAI('text', req.body.reportText);
+        const aiParsed = await extractWithAI('text', req.body.reportText, gender);
         if (aiParsed) return sendAnalysis(aiParsed, 'ai');
 
         // AI returned empty — not a blood report
@@ -180,7 +180,7 @@ app.post('/api/sehat-scan/analyze', upload.single('report'), async (req, res) =>
 
       try {
         const type = ext === '.pdf' ? 'pdf' : 'image';
-        const aiParsed = await extractWithAI(type, filePath);
+        const aiParsed = await extractWithAI(type, filePath, gender);
         fs.unlink(filePath, () => {});
 
         if (aiParsed) return sendAnalysis(aiParsed, 'ai');
