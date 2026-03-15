@@ -1691,10 +1691,17 @@ Vitamin B12   165     pg/mL    200 - 900"></textarea>
       let text = `*SEHAT SCAN - Health Report Summary*\n\n`;
       text += `Overall Health Score: *${a.overallScore}/100*\n`;
       text += `${a.summary}\n\n`;
-      const abnormal = a.parameters.filter(p => p.status !== 'normal');
-      if (abnormal.length > 0) {
-        text += `*Parameters needing attention:*\n`;
-        abnormal.forEach(p => {
+      const trueAbnormal = a.parameters.filter(p => p.status !== 'normal' && !p.status.startsWith('borderline'));
+      const borderline = a.parameters.filter(p => p.status.startsWith('borderline'));
+      if (trueAbnormal.length > 0) {
+        text += `*Parameters needing attention (${trueAbnormal.length}):*\n`;
+        trueAbnormal.forEach(p => {
+          text += `${p.statusEmoji} ${p.name}: ${p.value} ${p.unit} (Normal: ${p.normalRange})\n`;
+        });
+      }
+      if (borderline.length > 0) {
+        text += `\n*Borderline (in range but near boundary - ${borderline.length}):*\n`;
+        borderline.forEach(p => {
           text += `${p.statusEmoji} ${p.name}: ${p.value} ${p.unit} (Normal: ${p.normalRange})\n`;
         });
       }
