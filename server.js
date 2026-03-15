@@ -13,6 +13,7 @@ const sastaIlaaj = require('./lib/sasta-ilaaj');
 const thaaliScore = require('./lib/thaali-score');
 const bijliSmart = require('./lib/bijli-smart');
 const sabseSasta = require('./lib/sabse-sasta');
+const { analyzePhotoBuffer, matchDishesToDB, detectMimeType } = require('./lib/photo-analyze');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -324,153 +325,36 @@ app.post('/api/thaali-score/photo-analyze', upload.single('photo'), async (req, 
   const filePath = req.file.path;
 
   try {
-    // Read image as base64
+    // Read image buffer
     const imageBuffer = fs.readFileSync(filePath);
-    const base64Image = imageBuffer.toString('base64');
-    const mimeType = req.file.mimetype || 'image/jpeg';
-
-    // Get API key (reuse from ai-extract key management)
-    const apiKeys = (process.env.GEMINI_API_KEYS || '').split(',').map(k => k.trim()).filter(Boolean);
-    const singleKey = process.env.GEMINI_API_KEY || '';
-    const allKeys = apiKeys.length > 0 ? apiKeys : (singleKey ? [singleKey] : []);
-
-    if (allKeys.length === 0) {
-      fs.unlink(filePath, () => {});
-      return res.json({ success: false, error: 'AI not configured' });
-    }
-
-    let lastError = null;
-    let data = null;
-
-    // Try each API key until one works
-    for (const apiKey of allKeys) {
-      try {
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{
-              parts: [
-                {
-                  inlineData: { mimeType, data: base64Image }
-                },
-                {
-                  text: `You are an Indian food expert. Look at this photo and identify ALL Indian dishes/food items visible.
-
-For EACH dish, provide:
-1. The common Indian name (e.g., "Dal Makhani", "Roti", "Paneer Butter Masala")
-2. An estimated portion description
-
-Return ONLY a JSON array, no other text. Format:
-[{"name": "dish name", "portion": "1 bowl"}, ...]
-
-If this is not a food photo or you cannot identify any dishes, return: []
-Be specific with Indian dish names. Use common names like "Chole", "Rajma", "Idli", "Dosa", "Biryani", etc.`
-                }
-              ]
-            }],
-            generationConfig: {
-              temperature: 0.1,
-              maxOutputTokens: 1024
-            }
-          })
-        });
-
-        if (response.status === 429) {
-          lastError = 'rate_limited';
-          continue; // Try next key
-        }
-
-        if (!response.ok) {
-          const errText = await response.text();
-          console.error('[PhotoMode] Gemini error:', response.status, errText);
-          lastError = 'api_error';
-          continue;
-        }
-
-        data = await response.json();
-        break; // Success, stop trying keys
-      } catch (keyErr) {
-        console.error('[PhotoMode] Key error:', keyErr.message);
-        lastError = keyErr.message;
-        continue;
-      }
-    }
+    const mimeType = req.file.mimetype || undefined; // let detectMimeType handle fallback
 
     fs.unlink(filePath, () => {}); // Clean up
 
-    if (!data) {
-      if (lastError === 'rate_limited') {
+    // Use shared photo analysis
+    const result = await analyzePhotoBuffer(imageBuffer, mimeType);
+
+    if (result.error) {
+      if (result.error === 'no_api_key') {
+        return res.json({ success: false, error: 'AI not configured' });
+      }
+      if (result.error === 'rate_limited') {
         return res.json({ success: false, error: 'rate_limited', message: 'Daily free limit reached. Try again tomorrow.' });
+      }
+      if (result.error === 'parse_error') {
+        return res.json({ success: false, error: 'parse_error', message: 'Could not parse AI response. Try again.' });
       }
       return res.json({ success: false, error: 'AI analysis failed' });
     }
 
-    const textContent = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-
-    // Parse JSON from response (handle markdown code blocks)
-    let identified = [];
-    try {
-      const jsonMatch = textContent.match(/\[[\s\S]*\]/);
-      if (jsonMatch) {
-        identified = JSON.parse(jsonMatch[0]);
-      }
-    } catch(e) {
-      console.error('[PhotoMode] JSON parse error:', e.message, textContent);
-    }
+    const identified = result.identified || [];
 
     if (identified.length === 0) {
       return res.json({ success: true, dishes: [], message: 'No Indian dishes identified in this photo. Try a clearer image of your meal.' });
     }
 
-    // Fuzzy match against 305-dish database
-    const allDishes = thaaliScore.dishes;
-    const matched = [];
-    const unmatched = [];
-
-    for (const item of identified) {
-      const aiName = (item.name || '').toLowerCase().trim();
-
-      // Exact match first
-      let best = allDishes.find(d => d.name.toLowerCase() === aiName);
-
-      // Partial match
-      if (!best) {
-        best = allDishes.find(d => d.name.toLowerCase().includes(aiName) || aiName.includes(d.name.toLowerCase()));
-      }
-
-      // Word-level fuzzy match
-      if (!best) {
-        const aiWords = aiName.split(/[\s,/-]+/).filter(w => w.length > 2);
-        let bestScore = 0;
-        for (const d of allDishes) {
-          const dbWords = d.name.toLowerCase().split(/[\s,/-]+/);
-          const score = aiWords.filter(w => dbWords.some(dw => dw.includes(w) || w.includes(dw))).length;
-          if (score > bestScore && score >= 1) {
-            bestScore = score;
-            best = d;
-          }
-        }
-      }
-
-      if (best && !matched.some(m => m.id === best.id)) {
-        matched.push({
-          id: best.id,
-          name: best.name,
-          aiName: item.name,
-          portion: item.portion || best.serving,
-          cal: best.cal,
-          protein: best.protein,
-          category: best.category,
-          veg: best.veg,
-          healthScore: best.healthScore,
-          gi: best.gi,
-          confidence: best.name.toLowerCase() === aiName ? 'high' : 'medium'
-        });
-      } else if (!best) {
-        unmatched.push({ name: item.name, portion: item.portion });
-      }
-    }
+    // Match against dish database using shared function
+    const { matched, unmatched } = matchDishesToDB(identified, thaaliScore.dishes);
 
     res.json({
       success: true,
@@ -484,11 +368,6 @@ Be specific with Indian dish names. Use common names like "Chole", "Rajma", "Idl
   } catch(err) {
     fs.unlink(filePath, () => {});
     console.error('[PhotoMode] Error:', err);
-
-    if (err.message?.includes('RATE_LIMIT') || err.code === 429) {
-      return res.json({ success: false, error: 'rate_limited', message: 'Daily free limit reached.' });
-    }
-
     res.json({ success: false, error: 'Photo analysis failed. Please try again.' });
   }
 });
@@ -535,70 +414,55 @@ app.get('/api/sabse-sasta/product/:id', sabseSasta.handleGetProduct);
 const whatsappBot = require('./lib/whatsapp-bot');
 
 app.post('/api/whatsapp/webhook', express.urlencoded({ extended: false }), (req, res) => {
+  console.log('[WhatsApp] Incoming webhook:', { from: req.body.From, body: req.body.Body, numMedia: req.body.NumMedia });
+
   whatsappBot.handleWebhook(req, res, {
     dishes: thaaliScore.dishes,
     analyzePhoto: async (mediaUrl) => {
-      const apiKeys = (process.env.GEMINI_API_KEYS || '').split(',').map(k => k.trim()).filter(Boolean);
-      const singleKey = process.env.GEMINI_API_KEY || '';
-      const allKeys = apiKeys.length > 0 ? apiKeys : (singleKey ? [singleKey] : []);
-      if (allKeys.length === 0) return { error: 'no_ai' };
+      console.log('[WhatsApp] analyzePhoto called, mediaUrl:', mediaUrl);
 
       // Download image from Twilio
       const sid = process.env.TWILIO_ACCOUNT_SID;
       const token = process.env.TWILIO_AUTH_TOKEN;
       let imgRes;
-      if (sid && token) {
-        const auth = Buffer.from(`${sid}:${token}`).toString('base64');
-        imgRes = await fetch(mediaUrl, { headers: { 'Authorization': `Basic ${auth}` } });
-      } else {
-        imgRes = await fetch(mediaUrl);
+      try {
+        if (sid && token) {
+          const auth = Buffer.from(`${sid}:${token}`).toString('base64');
+          imgRes = await fetch(mediaUrl, { headers: { 'Authorization': `Basic ${auth}` } });
+        } else {
+          imgRes = await fetch(mediaUrl);
+        }
+      } catch (fetchErr) {
+        console.error('[WhatsApp] Failed to download image:', fetchErr.message);
+        return { error: 'api_error' };
       }
-      const imgBuf = Buffer.from(await imgRes.arrayBuffer());
-      const base64 = imgBuf.toString('base64');
-      const mime = imgRes.headers.get('content-type') || 'image/jpeg';
 
-      for (const key of allKeys) {
-        try {
-          const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: [{ parts: [
-                { inlineData: { mimeType: mime, data: base64 } },
-                { text: 'Indian food expert. Identify ALL dishes. Return ONLY JSON array: [{"name":"dish name","portion":"1 bowl"}]. If not food: []' }
-              ]}],
-              generationConfig: { temperature: 0.1, maxOutputTokens: 512 }
-            })
-          });
-          if (resp.status === 429) continue;
-          if (!resp.ok) continue;
-          const data = await resp.json();
-          const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-          const jm = text.match(/\[[\s\S]*\]/);
-          if (!jm) return { dishes: [] };
-          const identified = JSON.parse(jm[0]);
-          const matched = [];
-          for (const item of identified) {
-            const aiN = (item.name || '').toLowerCase().trim();
-            let best = thaaliScore.dishes.find(d => d.name.toLowerCase() === aiN);
-            if (!best) best = thaaliScore.dishes.find(d => d.name.toLowerCase().includes(aiN) || aiN.includes(d.name.toLowerCase()));
-            if (!best) {
-              const words = aiN.split(/[\s,/-]+/).filter(w => w.length > 2);
-              let bs = 0;
-              for (const d of thaaliScore.dishes) {
-                const dw = d.name.toLowerCase().split(/[\s,/-]+/);
-                const sc = words.filter(w => dw.some(x => x.includes(w) || w.includes(x))).length;
-                if (sc > bs && sc >= 1) { bs = sc; best = d; }
-              }
-            }
-            if (best && !matched.some(m => m.id === best.id)) {
-              matched.push({ id: best.id, name: best.name, cal: best.cal, protein: best.protein, veg: best.veg, healthScore: best.healthScore, gi: best.gi, category: best.category });
-            }
-          }
-          return { dishes: matched };
-        } catch(e) { continue; }
+      if (!imgRes.ok) {
+        console.error('[WhatsApp] Image download failed:', imgRes.status, imgRes.statusText);
+        return { error: 'api_error' };
       }
-      return { error: 'rate_limited' };
+
+      const imgBuf = Buffer.from(await imgRes.arrayBuffer());
+      const contentType = imgRes.headers.get('content-type') || undefined;
+
+      // Use shared analysis (handles API keys, model rotation, MIME detection)
+      const result = await analyzePhotoBuffer(imgBuf, contentType);
+
+      if (result.error) {
+        // Pass through distinct error types: 'no_api_key', 'rate_limited', 'api_error', 'parse_error'
+        console.log('[WhatsApp] Photo analysis error:', result.error);
+        return { error: result.error };
+      }
+
+      const identified = result.identified || [];
+      if (identified.length === 0) {
+        return { dishes: [] };
+      }
+
+      // Match against dish database using shared function
+      const { matched } = matchDishesToDB(identified, thaaliScore.dishes);
+      console.log(`[WhatsApp] Matched ${matched.length} dishes from ${identified.length} identified`);
+      return { dishes: matched };
     }
   });
 });
