@@ -311,6 +311,10 @@ app.get('/api/thaali-score/combos', thaaliScore.handleCombos);
 app.get('/api/thaali-score/combo/:comboId', (req, res) => thaaliScore.handleComboAnalyze(req, res));
 app.post('/api/thaali-score/suggestions', thaaliScore.handleSuggestions);
 app.get('/api/thaali-score/all-dishes', thaaliScore.handleAllDishes);
+app.get('/api/thaali-score/festivals', thaaliScore.handleFestivals);
+app.get('/api/thaali-score/festival/:festivalId/dishes', thaaliScore.handleFestivalDishes);
+app.post('/api/thaali-score/nuskhe', thaaliScore.handleNuskhe);
+app.post('/api/thaali-score/grocery-list', thaaliScore.handleGroceryList);
 // ─── ThaaliScore Photo Mode (Gemini Vision) ───
 app.post('/api/thaali-score/photo-analyze', upload.single('photo'), async (req, res) => {
   if (!req.file) {
@@ -526,6 +530,82 @@ app.get('/api/sabse-sasta/search', sabseSasta.handleSearch);
 app.get('/api/sabse-sasta/categories', sabseSasta.handleCategories);
 app.post('/api/sabse-sasta/compare-cart', sabseSasta.handleCompareCart);
 app.get('/api/sabse-sasta/product/:id', sabseSasta.handleGetProduct);
+
+// ─── WhatsApp Bot ───
+const whatsappBot = require('./lib/whatsapp-bot');
+
+app.post('/api/whatsapp/webhook', express.urlencoded({ extended: false }), (req, res) => {
+  whatsappBot.handleWebhook(req, res, {
+    dishes: thaaliScore.dishes,
+    analyzePhoto: async (mediaUrl) => {
+      const apiKeys = (process.env.GEMINI_API_KEYS || '').split(',').map(k => k.trim()).filter(Boolean);
+      const singleKey = process.env.GEMINI_API_KEY || '';
+      const allKeys = apiKeys.length > 0 ? apiKeys : (singleKey ? [singleKey] : []);
+      if (allKeys.length === 0) return { error: 'no_ai' };
+
+      // Download image from Twilio
+      const sid = process.env.TWILIO_ACCOUNT_SID;
+      const token = process.env.TWILIO_AUTH_TOKEN;
+      let imgRes;
+      if (sid && token) {
+        const auth = Buffer.from(`${sid}:${token}`).toString('base64');
+        imgRes = await fetch(mediaUrl, { headers: { 'Authorization': `Basic ${auth}` } });
+      } else {
+        imgRes = await fetch(mediaUrl);
+      }
+      const imgBuf = Buffer.from(await imgRes.arrayBuffer());
+      const base64 = imgBuf.toString('base64');
+      const mime = imgRes.headers.get('content-type') || 'image/jpeg';
+
+      for (const key of allKeys) {
+        try {
+          const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [
+                { inlineData: { mimeType: mime, data: base64 } },
+                { text: 'Indian food expert. Identify ALL dishes. Return ONLY JSON array: [{"name":"dish name","portion":"1 bowl"}]. If not food: []' }
+              ]}],
+              generationConfig: { temperature: 0.1, maxOutputTokens: 512 }
+            })
+          });
+          if (resp.status === 429) continue;
+          if (!resp.ok) continue;
+          const data = await resp.json();
+          const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+          const jm = text.match(/\[[\s\S]*\]/);
+          if (!jm) return { dishes: [] };
+          const identified = JSON.parse(jm[0]);
+          const matched = [];
+          for (const item of identified) {
+            const aiN = (item.name || '').toLowerCase().trim();
+            let best = thaaliScore.dishes.find(d => d.name.toLowerCase() === aiN);
+            if (!best) best = thaaliScore.dishes.find(d => d.name.toLowerCase().includes(aiN) || aiN.includes(d.name.toLowerCase()));
+            if (!best) {
+              const words = aiN.split(/[\s,/-]+/).filter(w => w.length > 2);
+              let bs = 0;
+              for (const d of thaaliScore.dishes) {
+                const dw = d.name.toLowerCase().split(/[\s,/-]+/);
+                const sc = words.filter(w => dw.some(x => x.includes(w) || w.includes(x))).length;
+                if (sc > bs && sc >= 1) { bs = sc; best = d; }
+              }
+            }
+            if (best && !matched.some(m => m.id === best.id)) {
+              matched.push({ id: best.id, name: best.name, cal: best.cal, protein: best.protein, veg: best.veg, healthScore: best.healthScore, gi: best.gi, category: best.category });
+            }
+          }
+          return { dishes: matched };
+        } catch(e) { continue; }
+      }
+      return { error: 'rate_limited' };
+    }
+  });
+});
+
+app.get('/api/whatsapp/webhook', (req, res) => {
+  res.send('ThaaliScore WhatsApp Bot is active! 🍽️');
+});
 
 // Error handler
 app.use((err, req, res, next) => {

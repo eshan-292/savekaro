@@ -63,102 +63,24 @@
     </div>
   </section>
 
-  <!-- Personalized Nutrition Profile -->
-  <div class="max-w-4xl mx-auto px-4 pt-6">
-    <div class="bg-white rounded-xl shadow-sm p-4 mb-4">
-      <div class="flex items-center justify-between cursor-pointer" onclick="toggleProfile()">
-        <div>
-          <p class="text-sm font-semibold text-gray-700">🎯 Your Personalized Plan</p>
-          <p id="goalDescription" class="text-xs text-gray-400 mt-0.5">Daily target: 2000 calories</p>
-        </div>
-        <div class="flex items-center gap-2">
-          <span id="profileBadge" class="hidden text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium">Profile Set ✓</span>
-          <svg id="profileChevron" class="w-5 h-5 text-gray-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+  <!-- Mode Tabs + Inline Goal Bar -->
+  <div class="max-w-4xl mx-auto px-4 pt-4">
+    <!-- Compact Goal Bar — always visible, in context -->
+    <div class="flex items-center justify-between bg-white rounded-t-xl px-4 py-2.5 border border-b-0 border-gray-200">
+      <div class="flex items-center gap-3 flex-wrap">
+        <span class="text-xs font-semibold text-gray-500">🎯 Goal:</span>
+        <div class="flex gap-1">
+          <button onclick="setDietGoal('lose')" id="goalLose" class="diet-goal-btn text-xs px-3 py-1 rounded-full border border-gray-200 text-gray-500 hover:border-emerald-400 transition font-medium">Lose</button>
+          <button onclick="setDietGoal('maintain')" id="goalMaintain" class="diet-goal-btn text-xs px-3 py-1 rounded-full border border-emerald-500 bg-emerald-50 text-emerald-700 font-medium">Maintain</button>
+          <button onclick="setDietGoal('gain')" id="goalGain" class="diet-goal-btn text-xs px-3 py-1 rounded-full border border-gray-200 text-gray-500 hover:border-emerald-400 transition font-medium">Muscle</button>
+          <button onclick="setDietGoal('diabetes')" id="goalDiabetes" class="diet-goal-btn text-xs px-3 py-1 rounded-full border border-gray-200 text-gray-500 hover:border-emerald-400 transition font-medium">Diabetes</button>
         </div>
       </div>
-
-      <!-- Profile Form (collapsible) -->
-      <div id="profileForm" class="hidden mt-4 pt-4 border-t border-gray-100">
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
-          <div>
-            <label class="text-xs font-medium text-gray-500 block mb-1">Age</label>
-            <input type="number" id="profileAge" min="10" max="100" value="" placeholder="25" class="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:border-emerald-500 focus:outline-none">
-          </div>
-          <div>
-            <label class="text-xs font-medium text-gray-500 block mb-1">Gender</label>
-            <select id="profileGender" class="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:border-emerald-500 focus:outline-none bg-white">
-              <option value="male">Male</option>
-              <option value="female">Female</option>
-            </select>
-          </div>
-          <div>
-            <label class="text-xs font-medium text-gray-500 block mb-1">Weight (kg)</label>
-            <input type="number" id="profileWeight" min="20" max="250" value="" placeholder="70" class="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:border-emerald-500 focus:outline-none">
-          </div>
-          <div>
-            <label class="text-xs font-medium text-gray-500 block mb-1">Height (cm)</label>
-            <input type="number" id="profileHeight" min="100" max="250" value="" placeholder="170" class="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:border-emerald-500 focus:outline-none">
-          </div>
-        </div>
-
-        <div class="mb-3">
-          <label class="text-xs font-medium text-gray-500 block mb-1.5">Activity Level</label>
-          <div class="flex flex-wrap gap-1.5">
-            <button onclick="setActivity('sedentary')" id="actSedentary" class="activity-btn text-xs px-3 py-1.5 rounded-full border-2 border-gray-200 text-gray-600 font-medium transition">🪑 Sedentary</button>
-            <button onclick="setActivity('light')" id="actLight" class="activity-btn text-xs px-3 py-1.5 rounded-full border-2 border-gray-200 text-gray-600 font-medium transition">🚶 Light</button>
-            <button onclick="setActivity('moderate')" id="actModerate" class="activity-btn text-xs px-3 py-1.5 rounded-full border-2 border-emerald-500 bg-emerald-50 text-emerald-700 font-medium">🏃 Moderate</button>
-            <button onclick="setActivity('active')" id="actActive" class="activity-btn text-xs px-3 py-1.5 rounded-full border-2 border-gray-200 text-gray-600 font-medium transition">💪 Active</button>
-            <button onclick="setActivity('veryActive')" id="actVeryActive" class="activity-btn text-xs px-3 py-1.5 rounded-full border-2 border-gray-200 text-gray-600 font-medium transition">🏋️ Very Active</button>
-          </div>
-        </div>
-
-        <div class="mb-4">
-          <label class="text-xs font-medium text-gray-500 block mb-1.5">Goal</label>
-          <div class="flex flex-wrap gap-1.5">
-            <button onclick="setDietGoal('lose')" id="goalLose" class="diet-goal-btn text-xs px-4 py-2 rounded-full border-2 border-gray-200 text-gray-600 hover:border-emerald-400 transition font-medium">🔥 Lose Weight</button>
-            <button onclick="setDietGoal('maintain')" id="goalMaintain" class="diet-goal-btn text-xs px-4 py-2 rounded-full border-2 border-emerald-500 bg-emerald-50 text-emerald-700 font-medium">⚖️ Maintain</button>
-            <button onclick="setDietGoal('gain')" id="goalGain" class="diet-goal-btn text-xs px-4 py-2 rounded-full border-2 border-gray-200 text-gray-600 hover:border-emerald-400 transition font-medium">💪 Gain Muscle</button>
-            <button onclick="setDietGoal('diabetes')" id="goalDiabetes" class="diet-goal-btn text-xs px-4 py-2 rounded-full border-2 border-gray-200 text-gray-600 hover:border-emerald-400 transition font-medium">🩸 Manage Diabetes</button>
-          </div>
-        </div>
-
-        <button onclick="calculateAndSaveProfile()" class="w-full bg-brand text-white py-2.5 rounded-xl font-semibold hover:bg-emerald-600 transition text-sm">
-          Calculate My Daily Targets
-        </button>
-
-        <!-- Calculated Results (shown after calculation) -->
-        <div id="profileResults" class="hidden mt-4 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl p-4">
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-2">
-            <div class="text-center">
-              <p class="text-xs text-gray-500">BMR</p>
-              <p id="resultBMR" class="text-lg font-bold text-gray-800">-</p>
-              <p class="text-xs text-gray-400">cal/day</p>
-            </div>
-            <div class="text-center">
-              <p class="text-xs text-gray-500">TDEE</p>
-              <p id="resultTDEE" class="text-lg font-bold text-gray-800">-</p>
-              <p class="text-xs text-gray-400">cal/day</p>
-            </div>
-            <div class="text-center">
-              <p class="text-xs text-emerald-600 font-medium">Your Target</p>
-              <p id="resultTarget" class="text-lg font-bold text-emerald-700">-</p>
-              <p class="text-xs text-gray-400">cal/day</p>
-            </div>
-            <div class="text-center">
-              <p class="text-xs text-gray-500">Protein Goal</p>
-              <p id="resultProtein" class="text-lg font-bold text-blue-600">-</p>
-              <p class="text-xs text-gray-400">g/day</p>
-            </div>
-          </div>
-          <div id="resultMacroSplit" class="mt-2"></div>
-          <p class="text-xs text-gray-400 mt-2">Calculated using Mifflin-St Jeor equation. Zero AI — pure nutrition science.</p>
-        </div>
+      <div class="flex items-center gap-2">
+        <span id="goalDescription" class="text-xs font-bold text-emerald-600">2000 cal/day</span>
+        <button onclick="openProfileModal()" class="text-xs text-gray-400 hover:text-emerald-600 underline">Customize</button>
       </div>
     </div>
-  </div>
-
-  <!-- Mode Tabs -->
-  <div class="max-w-4xl mx-auto px-4 pt-2">
     <div class="flex border-b">
       <button onclick="switchMode('build')" id="tabBuild" class="px-6 py-3 text-sm font-medium tab-active">
         🍛 Build Your Plate
@@ -171,6 +93,9 @@
       </button>
       <button onclick="switchMode('planner')" id="tabPlanner" class="px-6 py-3 text-sm font-medium text-gray-500 hover:text-gray-700">
         📅 Meal Planner
+      </button>
+      <button onclick="switchMode('festivals')" id="tabFestivals" class="px-6 py-3 text-sm font-medium text-gray-500 hover:text-gray-700">
+        🎉 Festivals
       </button>
     </div>
   </div>
@@ -382,6 +307,15 @@
             <button onclick="setPlannerVeg('nonveg')" id="planNonveg" class="planner-veg-btn text-xs px-3 py-1.5 rounded-full border-2 border-gray-200 text-gray-600 font-medium">🍗 Non-Veg</button>
           </div>
         </div>
+        <div>
+          <label class="text-xs font-medium text-gray-600 block mb-1">Region</label>
+          <select id="planRegion" onchange="plannerRegion=this.value" class="text-xs px-3 py-1.5 rounded-full border-2 border-gray-200 text-gray-600 font-medium bg-white focus:border-emerald-500 focus:outline-none">
+            <option value="">All India</option>
+            <option value="North Indian">North Indian</option>
+            <option value="South Indian">South Indian</option>
+            <option value="Breakfast">Breakfast-heavy</option>
+          </select>
+        </div>
       </div>
       <button onclick="generateMealPlan()" class="w-full bg-brand text-white py-3 rounded-xl font-semibold hover:bg-emerald-600 transition flex items-center justify-center gap-2">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
@@ -400,6 +334,47 @@
 
     <!-- 7-day plan grid -->
     <div id="planGrid" class="space-y-3"></div>
+    <!-- Grocery List -->
+    <div id="grocerySection" class="hidden mt-4">
+      <button onclick="generateGrocery()" class="w-full bg-amber-500 text-white py-3 rounded-xl font-semibold hover:bg-amber-600 transition flex items-center justify-center gap-2 mb-4">
+        🛒 Generate Weekly Grocery List
+      </button>
+      <div id="groceryResults" class="hidden bg-white rounded-xl shadow-sm overflow-hidden">
+        <div class="bg-gradient-to-r from-amber-500 to-orange-500 p-4 text-white">
+          <h3 class="font-bold text-lg">🛒 Weekly Grocery List</h3>
+          <p class="text-sm text-white/80" id="grocerySummary"></p>
+        </div>
+        <div id="groceryItems" class="p-4"></div>
+        <div class="p-4 border-t bg-amber-50">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-semibold text-gray-700">Estimated Weekly Cost</p>
+              <p class="text-xs text-gray-500">Based on average Indian market prices (Mar 2026)</p>
+            </div>
+            <p id="groceryTotal" class="text-2xl font-bold text-amber-600"></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Festival Mode -->
+  <section id="festivalsMode" class="hidden max-w-4xl mx-auto px-4 py-6">
+    <div class="bg-white rounded-xl shadow-sm p-5 mb-4">
+      <h3 class="font-bold text-gray-900 mb-1">🎉 Festival & Fasting Calendar</h3>
+      <p class="text-sm text-gray-500 mb-4">Upcoming Indian festivals with dietary guidelines and recommended dishes</p>
+      <div id="festivalsList" class="space-y-3">
+        <p class="text-sm text-gray-400 text-center py-4">Loading festivals...</p>
+      </div>
+    </div>
+    <!-- Festival dishes (shown when a festival is selected) -->
+    <div id="festivalDishes" class="hidden bg-white rounded-xl shadow-sm p-5">
+      <div class="flex items-center justify-between mb-3">
+        <h3 id="festivalDishesTitle" class="font-bold text-gray-900">Recommended Dishes</h3>
+        <button onclick="closeFestivalDishes()" class="text-sm text-gray-400 hover:text-gray-600">✕ Close</button>
+      </div>
+      <div id="festivalDishesGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-2"></div>
+    </div>
   </section>
 
   <!-- Analysis Results -->
@@ -436,6 +411,8 @@
 
         <!-- Micronutrient Highlights -->
         <div id="microHighlights" class="hidden mb-6"></div>
+        <!-- Dadi ke Nuskhe -->
+        <div id="nuskheSection" class="hidden mb-6"></div>
 
         <!-- Healthier Swaps -->
         <div id="swapsSection" class="hidden mb-6">
@@ -457,6 +434,108 @@
           </button>
         </div>
       </div>
+    </div>
+  </section>
+
+  <!-- Profile Modal -->
+  <div id="profileModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-lg rounded-2xl shadow-xl overflow-y-auto max-h-[90vh]">
+      <div class="flex items-center justify-between p-4 border-b">
+        <h3 class="font-bold text-gray-900">🎯 Personalize Your Nutrition</h3>
+        <button onclick="closeProfileModal()" class="text-gray-400 hover:text-gray-600">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="p-5">
+        <p class="text-xs text-gray-500 mb-4">Enter your details for a science-based calorie target (Mifflin-St Jeor + TDEE). Zero AI — pure math.</p>
+        <div class="grid grid-cols-2 gap-3 mb-4">
+          <div>
+            <label class="text-xs font-medium text-gray-500 block mb-1">Age</label>
+            <input type="number" id="profileAge" min="10" max="100" value="" placeholder="25" class="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:border-emerald-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="text-xs font-medium text-gray-500 block mb-1">Gender</label>
+            <select id="profileGender" class="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:border-emerald-500 focus:outline-none bg-white">
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-xs font-medium text-gray-500 block mb-1">Weight (kg)</label>
+            <input type="number" id="profileWeight" min="20" max="250" value="" placeholder="70" class="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:border-emerald-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="text-xs font-medium text-gray-500 block mb-1">Height (cm)</label>
+            <input type="number" id="profileHeight" min="100" max="250" value="" placeholder="170" class="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:border-emerald-500 focus:outline-none">
+          </div>
+        </div>
+        <div class="mb-4">
+          <label class="text-xs font-medium text-gray-500 block mb-1.5">Activity Level</label>
+          <div class="flex flex-wrap gap-1.5">
+            <button onclick="setActivity('sedentary')" id="actSedentary" class="activity-btn text-xs px-3 py-1.5 rounded-full border-2 border-gray-200 text-gray-600 font-medium transition">🪑 Sedentary</button>
+            <button onclick="setActivity('light')" id="actLight" class="activity-btn text-xs px-3 py-1.5 rounded-full border-2 border-gray-200 text-gray-600 font-medium transition">🚶 Light</button>
+            <button onclick="setActivity('moderate')" id="actModerate" class="activity-btn text-xs px-3 py-1.5 rounded-full border-2 border-emerald-500 bg-emerald-50 text-emerald-700 font-medium">🏃 Moderate</button>
+            <button onclick="setActivity('active')" id="actActive" class="activity-btn text-xs px-3 py-1.5 rounded-full border-2 border-gray-200 text-gray-600 font-medium transition">💪 Active</button>
+            <button onclick="setActivity('veryActive')" id="actVeryActive" class="activity-btn text-xs px-3 py-1.5 rounded-full border-2 border-gray-200 text-gray-600 font-medium transition">🏋️ Very Active</button>
+          </div>
+        </div>
+        <div class="mb-4">
+          <label class="text-xs font-medium text-gray-500 block mb-1.5">Goal</label>
+          <div class="flex flex-wrap gap-1.5">
+            <button onclick="setDietGoalInModal('lose')" id="modalGoalLose" class="modal-goal-btn text-xs px-3 py-1.5 rounded-full border-2 border-gray-200 text-gray-600 font-medium transition">🔥 Lose Weight</button>
+            <button onclick="setDietGoalInModal('maintain')" id="modalGoalMaintain" class="modal-goal-btn text-xs px-3 py-1.5 rounded-full border-2 border-emerald-500 bg-emerald-50 text-emerald-700 font-medium">⚖️ Maintain</button>
+            <button onclick="setDietGoalInModal('gain')" id="modalGoalGain" class="modal-goal-btn text-xs px-3 py-1.5 rounded-full border-2 border-gray-200 text-gray-600 font-medium transition">💪 Gain Muscle</button>
+            <button onclick="setDietGoalInModal('diabetes')" id="modalGoalDiabetes" class="modal-goal-btn text-xs px-3 py-1.5 rounded-full border-2 border-gray-200 text-gray-600 font-medium transition">🩸 Diabetes</button>
+            <button onclick="setDietGoalInModal('pregnancy')" id="modalGoalPregnancy" class="modal-goal-btn text-xs px-3 py-1.5 rounded-full border-2 border-gray-200 text-gray-600 font-medium transition">🤰 Pregnancy</button>
+            <button onclick="setDietGoalInModal('lactation')" id="modalGoalLactation" class="modal-goal-btn text-xs px-3 py-1.5 rounded-full border-2 border-gray-200 text-gray-600 font-medium transition">🤱 Lactation</button>
+          </div>
+        </div>
+        <button onclick="calculateAndSaveProfile()" class="w-full bg-brand text-white py-2.5 rounded-xl font-semibold hover:bg-emerald-600 transition text-sm">
+          Calculate My Daily Targets
+        </button>
+        <div id="profileResults" class="hidden mt-4 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl p-4">
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-2">
+            <div class="text-center">
+              <p class="text-xs text-gray-500">BMR</p>
+              <p id="resultBMR" class="text-lg font-bold text-gray-800">-</p>
+              <p class="text-xs text-gray-400">cal/day</p>
+            </div>
+            <div class="text-center">
+              <p class="text-xs text-gray-500">TDEE</p>
+              <p id="resultTDEE" class="text-lg font-bold text-gray-800">-</p>
+              <p class="text-xs text-gray-400">cal/day</p>
+            </div>
+            <div class="text-center">
+              <p class="text-xs text-emerald-600 font-medium">Your Target</p>
+              <p id="resultTarget" class="text-lg font-bold text-emerald-700">-</p>
+              <p class="text-xs text-gray-400">cal/day</p>
+            </div>
+            <div class="text-center">
+              <p class="text-xs text-gray-500">Protein Goal</p>
+              <p id="resultProtein" class="text-lg font-bold text-blue-600">-</p>
+              <p class="text-xs text-gray-400">g/day</p>
+            </div>
+          </div>
+          <div id="resultMacroSplit" class="mt-2"></div>
+          <p class="text-xs text-gray-400 mt-2">Calculated using Mifflin-St Jeor equation. Zero AI — pure nutrition science.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WhatsApp Bot Promo -->
+  <section class="max-w-4xl mx-auto px-4 py-6">
+    <div class="bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl p-5 text-white flex flex-col md:flex-row items-center gap-4">
+      <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0">
+        <svg class="w-7 h-7" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+      </div>
+      <div class="flex-1 text-center md:text-left">
+        <h3 class="font-bold text-lg">📱 ThaaliScore on WhatsApp!</h3>
+        <p class="text-white/80 text-sm">Send a meal photo → Get instant nutrition analysis. No app needed!</p>
+      </div>
+      <a href="https://wa.me/14155238886?text=Hi%20ThaaliScore!" target="_blank" class="bg-white text-green-600 px-6 py-2.5 rounded-xl font-bold text-sm hover:bg-green-50 transition flex-shrink-0">
+        Try on WhatsApp →
+      </a>
     </div>
   </section>
 
@@ -518,21 +597,19 @@
       maintain: { label: 'Maintain', calories: 2000, desc: 'Daily target: 2000 calories', proteinMult: 1.6, carbPct: 0.50, fatPct: 0.25 },
       gain:     { label: 'Gain Muscle', calories: 2500, desc: 'Daily target: 2500 calories (calorie surplus, high protein)', proteinMult: 2.2, carbPct: 0.45, fatPct: 0.25 },
       diabetes: { label: 'Manage Diabetes', calories: 1800, desc: 'Daily target: 1800 calories (low carbs, low sugar)', proteinMult: 1.5, carbPct: 0.35, fatPct: 0.30 },
+      pregnancy: { label: 'Pregnancy', calories: 2350, desc: '2350 cal (ICMR +350, high iron & folate)', proteinMult: 1.8, carbPct: 0.50, fatPct: 0.25 },
+      lactation: { label: 'Lactation', calories: 2600, desc: '2600 cal (ICMR +600, high calcium)', proteinMult: 1.8, carbPct: 0.50, fatPct: 0.25 },
     };
 
     function setDietGoal(goal) {
       currentDietGoal = goal;
-      document.querySelectorAll('.diet-goal-btn').forEach(btn => {
-        btn.className = 'diet-goal-btn text-xs px-4 py-2 rounded-full border-2 border-gray-200 text-gray-600 hover:border-emerald-400 transition font-medium';
-      });
-      const activeBtn = document.getElementById('goal' + goal.charAt(0).toUpperCase() + goal.slice(1));
-      if (activeBtn) activeBtn.className = 'diet-goal-btn text-xs px-4 py-2 rounded-full border-2 border-emerald-500 bg-emerald-50 text-emerald-700 font-medium';
+      syncInlineGoalButtons();
 
       // Recalculate if profile exists
       if (userProfile.tdee) {
         calculateAndSaveProfile();
       } else {
-        document.getElementById('goalDescription').textContent = dietGoals[goal].desc;
+        document.getElementById('goalDescription').textContent = dietGoals[goal].calories + ' cal/day';
       }
 
       saveTracker();
@@ -540,12 +617,38 @@
       if (lastAnalysisData) renderAnalysis(lastAnalysisData);
     }
 
-    function toggleProfile() {
-      const form = document.getElementById('profileForm');
-      const chevron = document.getElementById('profileChevron');
-      form.classList.toggle('hidden');
-      chevron.style.transform = form.classList.contains('hidden') ? '' : 'rotate(180deg)';
+    function openProfileModal() {
+      document.getElementById('profileModal').classList.remove('hidden');
+      // Sync modal goal buttons with current goal
+      syncModalGoalButtons();
     }
+    function closeProfileModal() {
+      document.getElementById('profileModal').classList.add('hidden');
+    }
+    document.getElementById('profileModal')?.addEventListener('click', function(e) {
+      if (e.target === this) closeProfileModal();
+    });
+    function setDietGoalInModal(goal) {
+      currentDietGoal = goal;
+      syncModalGoalButtons();
+      syncInlineGoalButtons();
+    }
+    function syncModalGoalButtons() {
+      document.querySelectorAll('.modal-goal-btn').forEach(btn => {
+        btn.className = 'modal-goal-btn text-xs px-3 py-1.5 rounded-full border-2 border-gray-200 text-gray-600 font-medium transition';
+      });
+      const el = document.getElementById('modalGoal' + currentDietGoal.charAt(0).toUpperCase() + currentDietGoal.slice(1));
+      if (el) el.className = 'modal-goal-btn text-xs px-3 py-1.5 rounded-full border-2 border-emerald-500 bg-emerald-50 text-emerald-700 font-medium';
+    }
+    function syncInlineGoalButtons() {
+      document.querySelectorAll('.diet-goal-btn').forEach(btn => {
+        btn.className = 'diet-goal-btn text-xs px-3 py-1 rounded-full border border-gray-200 text-gray-500 hover:border-emerald-400 transition font-medium';
+      });
+      const activeBtn = document.getElementById('goal' + currentDietGoal.charAt(0).toUpperCase() + currentDietGoal.slice(1));
+      if (activeBtn) activeBtn.className = 'diet-goal-btn text-xs px-3 py-1 rounded-full border border-emerald-500 bg-emerald-50 text-emerald-700 font-medium';
+    }
+    // Legacy alias
+    function toggleProfile() { openProfileModal(); }
 
     function setActivity(level) {
       profileActivity = level;
@@ -594,6 +697,8 @@
         case 'lose': targetCal = Math.max(1200, tdee - 500); break;
         case 'gain': targetCal = tdee + 300; break;
         case 'diabetes': targetCal = Math.min(tdee - 200, 1800); break;
+        case 'pregnancy': targetCal = tdee + 350; break;
+        case 'lactation': targetCal = tdee + 600; break;
         default: targetCal = tdee;
       }
 
@@ -611,6 +716,8 @@
       dietGoals.maintain.calories = tdee;
       dietGoals.gain.calories = tdee + 300;
       dietGoals.diabetes.calories = Math.min(tdee - 200, 1800);
+      if (dietGoals.pregnancy) dietGoals.pregnancy.calories = tdee + 350;
+      if (dietGoals.lactation) dietGoals.lactation.calories = tdee + 600;
 
       // Save profile to localStorage
       localStorage.setItem('thaali_user_profile', JSON.stringify({
@@ -646,17 +753,14 @@
         </div>
       `;
 
-      // Update description and badge
-      document.getElementById('goalDescription').textContent =
-        `Your target: ${targetCal} cal/day (BMR: ${bmr}, TDEE: ${tdee})`;
-      document.getElementById('profileBadge').classList.remove('hidden');
-      document.getElementById('profileBadge').textContent = `${targetCal} cal ✓`;
+      // Update inline goal bar
+      document.getElementById('goalDescription').textContent = `${targetCal} cal/day`;
+      syncInlineGoalButtons();
 
-      // Collapse profile after calculation
+      // Close modal after showing results briefly
       setTimeout(() => {
-        document.getElementById('profileForm').classList.add('hidden');
-        document.getElementById('profileChevron').style.transform = '';
-      }, 2000);
+        closeProfileModal();
+      }, 2500);
 
       saveTracker();
       renderTracker();
@@ -664,7 +768,7 @@
     }
 
     function updateGoalDescription() {
-      document.getElementById('goalDescription').textContent = dietGoals[currentDietGoal].desc;
+      document.getElementById('goalDescription').textContent = dietGoals[currentDietGoal].calories + ' cal/day';
     }
 
     function loadUserProfile() {
@@ -871,7 +975,7 @@
 
     // Mode switching
     function switchMode(mode) {
-      ['build','photo','tracker','planner'].forEach(m => {
+      ['build','photo','tracker','planner','festivals'].forEach(m => {
         document.getElementById(m + 'Mode').classList.toggle('hidden', m !== mode);
         const tab = document.getElementById('tab' + m.charAt(0).toUpperCase() + m.slice(1));
         if (m === mode) tab.classList.add('tab-active');
@@ -1159,7 +1263,9 @@
           }
         });
         // RDA for micronutrients
-        const microRDA = { iron: 17, calcium: 1000, vitC: 80, vitB12: 2.4, folate: 400 };
+        const isPregnant = currentDietGoal === 'pregnancy';
+        const isLactating = currentDietGoal === 'lactation';
+        const microRDA = { iron: isPregnant ? 35 : isLactating ? 21 : 17, calcium: isPregnant || isLactating ? 1200 : 1000, vitC: isLactating ? 115 : 80, vitB12: isPregnant ? 2.6 : isLactating ? 2.8 : 2.4, folate: isPregnant ? 600 : isLactating ? 500 : 400 };
         const microItems = [
           { key: 'iron', label: 'Iron', unit: 'mg', rda: microRDA.iron, icon: '🩸', color: 'text-red-600' },
           { key: 'calcium', label: 'Calcium', unit: 'mg', rda: microRDA.calcium, icon: '🦴', color: 'text-blue-600' },
@@ -1190,6 +1296,9 @@
         microSection.classList.add('hidden');
       }
 
+      // Dadi ke Nuskhe
+      fetchNuskhe(data);
+
       // Walking Info
       document.getElementById('walkingInfo').innerHTML = `
         <span class="text-3xl">🚶</span>
@@ -1210,6 +1319,16 @@
       } else if (currentDietGoal === 'diabetes') {
         if (data.totals.carbs > 60) goalAdvice.push({ icon: '\u26A0\uFE0F', text: 'This meal is too high in carbs for diabetes management. Reduce rice/roti portions.', color: 'bg-red-50 text-red-800' });
         goalAdvice.push({ icon: '\uD83D\uDCA1', text: 'Prefer high-fiber, low-GI foods like dal, green veggies, and whole grains.', color: 'bg-blue-50 text-blue-800' });
+      }
+      if (currentDietGoal === 'pregnancy') {
+        goalAdvice.push({ icon: '🤰', text: 'Iron-rich foods (palak, chana, dates) are essential — aim for 35mg iron/day during pregnancy.', color: 'bg-pink-50 text-pink-800' });
+        goalAdvice.push({ icon: '🌿', text: 'Folate is critical — include methi, palak, and chana in every meal.', color: 'bg-green-50 text-green-800' });
+        if (data.totals.protein < 25) goalAdvice.push({ icon: '⚠️', text: 'Low protein! Pregnancy needs ~78g/day. Add dal, paneer, or eggs.', color: 'bg-amber-50 text-amber-800' });
+      }
+      if (currentDietGoal === 'lactation') {
+        goalAdvice.push({ icon: '🤱', text: 'Calcium is crucial — include dahi, paneer, ragi, and green leafy vegetables.', color: 'bg-blue-50 text-blue-800' });
+        goalAdvice.push({ icon: '💧', text: 'Drink 3-4L water daily. Milk, buttermilk, and coconut water help milk production.', color: 'bg-cyan-50 text-cyan-800' });
+        goalAdvice.push({ icon: '🥛', text: 'Galactagogues: fenugreek (methi), garlic, oats, dill seeds (sowa) boost milk supply.', color: 'bg-purple-50 text-purple-800' });
       }
 
       document.getElementById('mealRatings').innerHTML = `
@@ -1582,6 +1701,103 @@
       renderTracker();
     }
 
+    // ─── Dadi ke Nuskhe ───
+    async function fetchNuskhe(analysisData) {
+      try {
+        const res = await fetch('/api/thaali-score/nuskhe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ dishes: analysisData.dishes.map(d => ({ name: d.name, gi: d.gi, veg: d.veg })), totals: analysisData.totals })
+        });
+        const data = await res.json();
+        const section = document.getElementById('nuskheSection');
+        if (data.nuskhe && data.nuskhe.length > 0) {
+          section.classList.remove('hidden');
+          section.innerHTML = `
+            <h4 class="font-semibold text-gray-700 mb-3">👵 Dadi ke Nuskhe — Traditional Food Wisdom</h4>
+            <div class="space-y-2">
+              ${data.nuskhe.map(n => {
+                const bg = n.category === 'wisdom' ? 'bg-amber-50 border-amber-200' : n.category === 'taaseer' ? 'bg-orange-50 border-orange-200' : n.category === 'seasonal' ? 'bg-blue-50 border-blue-200' : 'bg-emerald-50 border-emerald-200';
+                return `<div class="flex items-start gap-2.5 p-3 rounded-lg ${bg} border"><span class="text-lg mt-0.5">${n.icon}</span><p class="text-sm text-gray-700">${n.tip}</p></div>`;
+              }).join('')}
+            </div>
+            <p class="text-xs text-gray-400 mt-2">Traditional wisdom backed by modern nutrition science.</p>
+          `;
+        } else { section.classList.add('hidden'); }
+      } catch(e) { console.error('Nuskhe error:', e); }
+    }
+
+    // ─── Festivals ───
+    async function loadFestivals() {
+      try {
+        const res = await fetch('/api/thaali-score/festivals');
+        const data = await res.json();
+        renderFestivals(data.festivals || []);
+      } catch(e) {
+        document.getElementById('festivalsList').innerHTML = '<p class="text-sm text-gray-400 text-center py-4">Could not load festivals</p>';
+      }
+    }
+
+    function renderFestivals(festivals) {
+      const container = document.getElementById('festivalsList');
+      if (festivals.length === 0) {
+        container.innerHTML = '<p class="text-sm text-gray-400 text-center py-4">No upcoming festivals in the next 60 days</p>';
+        return;
+      }
+      container.innerHTML = festivals.map(f => {
+        const typeColor = f.type === 'fast' ? 'bg-amber-100 text-amber-700' : 'bg-purple-100 text-purple-700';
+        const statusBadge = f.isActive
+          ? '<span class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium animate-pulse">Active Now</span>'
+          : `<span class="text-xs text-gray-400">${f.daysUntil === 0 ? 'Today' : f.daysUntil + ' days away'}</span>`;
+        return `
+          <div class="border-2 border-gray-100 rounded-xl p-4 hover:border-emerald-300 transition cursor-pointer" onclick="showFestivalDetails('${f.id}')">
+            <div class="flex items-center justify-between mb-2">
+              <div class="flex items-center gap-2">
+                <h4 class="font-semibold text-gray-800">${f.name}</h4>
+                <span class="${typeColor} text-xs px-2 py-0.5 rounded-full font-medium">${f.type === 'fast' ? '🕐 Fast' : '🎊 Festival'}</span>
+              </div>
+              ${statusBadge}
+            </div>
+            <p class="text-xs text-gray-500 mb-2">${f.startDate}${f.endDate !== f.startDate ? ' to ' + f.endDate : ''} · ${f.duration} day${f.duration > 1 ? 's' : ''}</p>
+            <div class="flex flex-wrap gap-1 mb-2">
+              ${(f.rules.tips || []).slice(0, 2).map(t => `<span class="text-xs bg-gray-50 text-gray-600 px-2 py-1 rounded-lg">💡 ${t}</span>`).join('')}
+            </div>
+            ${f.rules.avoid && f.rules.avoid.length > 0 ? `<p class="text-xs text-red-500">🚫 Avoid: ${f.rules.avoid.slice(0, 4).join(', ')}</p>` : ''}
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function showFestivalDetails(festId) {
+      try {
+        const res = await fetch('/api/thaali-score/festival/' + festId + '/dishes');
+        const data = await res.json();
+        const section = document.getElementById('festivalDishes');
+        section.classList.remove('hidden');
+        document.getElementById('festivalDishesTitle').textContent = '🍽️ Recommended Dishes for ' + festId.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+        document.getElementById('festivalDishesGrid').innerHTML = (data.dishes || []).map(d => {
+          const vegIcon = d.veg ? '🟢' : '🔴';
+          return `
+            <div class="flex items-center justify-between p-2.5 rounded-lg border border-gray-100 hover:border-emerald-300 transition cursor-pointer" onclick="quickAddDish(${d.id}, '${(d.name||'').replace(/'/g,"\\'")}')">
+              <div>
+                <span class="text-sm font-medium text-gray-800">${vegIcon} ${d.name}</span>
+                <p class="text-xs text-gray-400">${d.category} · ${d.healthScore}/10</p>
+              </div>
+              <div class="text-right">
+                <p class="text-xs font-bold text-gray-700">${d.cal} cal</p>
+                <p class="text-xs text-emerald-500">+ Add</p>
+              </div>
+            </div>
+          `;
+        }).join('');
+        section.scrollIntoView({ behavior: 'smooth' });
+      } catch(e) { console.error(e); }
+    }
+
+    function closeFestivalDishes() {
+      document.getElementById('festivalDishes').classList.add('hidden');
+    }
+
     // Close tracker modal on backdrop click
     document.getElementById('trackerModal').addEventListener('click', function(e) {
       if (e.target === this) closeTrackerModal();
@@ -1589,6 +1805,7 @@
 
     // ─── Meal Planner ───
     let plannerVeg = 'veg';
+    let plannerRegion = '';
     let allDishesCache = null;
     let currentMealPlan = null;
 
@@ -1676,7 +1893,9 @@
       }
 
       const filtered = filterByVegPref(allDishesCache);
-      const pool = classifyDishes(filtered);
+      // Apply region filter
+      const regionFiltered = plannerRegion ? filtered.filter(d => d.category === plannerRegion || d.category === 'Dals' || d.category === 'Rice/Breads' || d.category === 'Sides' || d.category === 'Drinks') : filtered;
+      const pool = classifyDishes(regionFiltered);
       const goalCal = dietGoals[currentDietGoal].calories;
       const isDiabetic = currentDietGoal === 'diabetes';
       const days = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
@@ -1844,6 +2063,41 @@
           </div>
         `;
       }).join('');
+      document.getElementById('grocerySection').classList.remove('hidden');
+    }
+
+    async function generateGrocery() {
+      if (!currentMealPlan) return;
+      try {
+        const res = await fetch('/api/thaali-score/grocery-list', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mealPlan: currentMealPlan })
+        });
+        const data = await res.json();
+        document.getElementById('groceryResults').classList.remove('hidden');
+        document.getElementById('grocerySummary').textContent = data.dishCount + ' unique dishes · ' + data.servings + ' servings across 7 days';
+        document.getElementById('groceryTotal').textContent = '₹' + data.totalCost;
+        const groups = {};
+        data.items.forEach(item => { if (!groups[item.category]) groups[item.category] = []; groups[item.category].push(item); });
+        document.getElementById('groceryItems').innerHTML = Object.entries(groups).map(([cat, items]) => `
+          <div class="mb-4">
+            <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">${cat}</h4>
+            ${items.map(i => `
+              <div class="flex items-center justify-between py-1.5 border-b border-gray-50">
+                <div class="flex items-center gap-2">
+                  <span class="w-1.5 h-1.5 bg-amber-400 rounded-full flex-shrink-0"></span>
+                  <span class="text-sm text-gray-700">${i.name}</span>
+                </div>
+                <div class="flex items-center gap-3">
+                  <span class="text-xs text-gray-400">${i.qty}</span>
+                  <span class="text-sm font-medium text-gray-700">₹${i.cost}</span>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        `).join('');
+      } catch(e) { console.error('Grocery error:', e); }
     }
 
     function regenerateDay(dayIndex) {
@@ -1956,6 +2210,7 @@
       searchDishes();
       renderTracker();
       loadCombos();
+      loadFestivals();
       loadSavedMealPlan();
     });
   </script>
