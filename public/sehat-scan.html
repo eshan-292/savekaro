@@ -1471,6 +1471,46 @@ Vitamin B12   165     pg/mL    200 - 900"></textarea>
           </div>`;
       }
 
+      // Corrected Calcium Note (if applicable)
+      if (analysis.correctedCalcium) {
+        const cc = analysis.correctedCalcium;
+        const isNormal = cc.corrected >= 8.5 && cc.corrected <= 10.5;
+        alertsContainer.innerHTML += `
+          <div style="background:${isNormal ? 'var(--green-50)' : 'var(--yellow-50)'};border:1px solid ${isNormal ? 'var(--green-200)' : '#fde68a'};border-radius:12px;padding:16px 20px;margin-top:12px;">
+            <div style="font-weight:700;font-size:0.9rem;color:${isNormal ? 'var(--green-700)' : 'var(--yellow-600)'};margin-bottom:8px;">🧮 Corrected Calcium</div>
+            <div style="font-size:0.88rem;color:var(--gray-600);line-height:1.6;">${cc.note}</div>
+            <div style="font-size:0.78rem;color:var(--gray-400);margin-top:6px;">Formula: Measured Ca (${cc.measured}) + 0.8 × (4.0 - Albumin ${cc.albumin}) = ${cc.corrected} mg/dL</div>
+          </div>`;
+      }
+
+      // Action Plan (tiered priority)
+      if (analysis.actionPlan) {
+        const ap = analysis.actionPlan;
+        let planHTML = '';
+        if (ap.thisWeek && ap.thisWeek.length > 0) {
+          planHTML += '<div style="margin-bottom:12px;"><div style="font-weight:700;font-size:0.85rem;color:var(--red-600);margin-bottom:4px;">🔴 This Week</div>';
+          planHTML += ap.thisWeek.map(a => `<div style="font-size:0.85rem;color:var(--gray-700);padding:4px 0 4px 16px;">• ${a}</div>`).join('');
+          planHTML += '</div>';
+        }
+        if (ap.thisMonth && ap.thisMonth.length > 0) {
+          planHTML += '<div style="margin-bottom:12px;"><div style="font-weight:700;font-size:0.85rem;color:var(--yellow-600);margin-bottom:4px;">🟡 This Month</div>';
+          planHTML += ap.thisMonth.map(a => `<div style="font-size:0.85rem;color:var(--gray-700);padding:4px 0 4px 16px;">• ${a}</div>`).join('');
+          planHTML += '</div>';
+        }
+        if (ap.in3Months && ap.in3Months.length > 0) {
+          planHTML += '<div><div style="font-weight:700;font-size:0.85rem;color:var(--blue-500);margin-bottom:4px;">🔵 In 3 Months</div>';
+          planHTML += ap.in3Months.map(a => `<div style="font-size:0.85rem;color:var(--gray-700);padding:4px 0 4px 16px;">• ${a}</div>`).join('');
+          planHTML += '</div>';
+        }
+        if (planHTML) {
+          alertsContainer.innerHTML += `
+            <div style="background:var(--white);border:1px solid var(--gray-200);border-radius:12px;padding:16px 20px;margin-top:12px;">
+              <div style="font-weight:700;font-size:0.95rem;color:var(--gray-800);margin-bottom:12px;">📅 Action Plan</div>
+              ${planHTML}
+            </div>`;
+        }
+      }
+
       // Unmapped Parameters (from report but not in our DB)
       if (analysis.unmappedParams && analysis.unmappedParams.length > 0) {
         const unmappedHTML = analysis.unmappedParams.map(p =>
