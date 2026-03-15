@@ -310,6 +310,7 @@ app.get('/api/thaali-score/dish/:id', thaaliScore.handleGetDish);
 app.get('/api/thaali-score/combos', thaaliScore.handleCombos);
 app.get('/api/thaali-score/combo/:comboId', (req, res) => thaaliScore.handleComboAnalyze(req, res));
 app.post('/api/thaali-score/suggestions', thaaliScore.handleSuggestions);
+app.get('/api/thaali-score/all-dishes', thaaliScore.handleAllDishes);
 app.get('/api/thaali-score/nutrient-rich', (req, res) => {
   // Filter dishes by a specific nutrient — used for SehatScan cross-link
   const { nutrient, veg, limit } = req.query;

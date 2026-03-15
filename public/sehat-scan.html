@@ -609,6 +609,66 @@
     .diet-tip-card .tip-text { font-size: 0.9rem; color: var(--gray-700); line-height: 1.6; }
     .diet-tip-card .tip-text strong { color: var(--green-700); }
 
+    /* ThaaliScore Cross-link Cards */
+    .thaali-crosslink {
+      background: var(--white); border: 2px solid var(--green-300);
+      border-radius: 14px; padding: 20px; margin-top: 10px; margin-bottom: 16px;
+    }
+    .thaali-crosslink-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 14px; flex-wrap: wrap; gap: 8px;
+    }
+    .thaali-crosslink-title {
+      font-size: 1rem; font-weight: 700; color: var(--green-700);
+      display: flex; align-items: center; gap: 6px;
+    }
+    .thaali-veg-toggle {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 0.8rem; font-weight: 600; color: var(--green-700);
+      cursor: pointer; user-select: none;
+    }
+    .thaali-veg-toggle input[type="checkbox"] {
+      accent-color: var(--green-600); width: 16px; height: 16px; cursor: pointer;
+    }
+    .thaali-dish-list {
+      list-style: none; padding: 0; margin: 0;
+    }
+    .thaali-dish-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 0; border-bottom: 1px solid var(--gray-100);
+      font-size: 0.88rem; color: var(--gray-700);
+    }
+    .thaali-dish-item:last-child { border-bottom: none; }
+    .thaali-dish-rank {
+      background: var(--green-100); color: var(--green-700);
+      font-weight: 700; font-size: 0.75rem;
+      width: 22px; height: 22px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .thaali-dish-name { font-weight: 600; color: var(--gray-800); }
+    .thaali-dish-meta { color: var(--gray-500); font-size: 0.8rem; margin-left: auto; white-space: nowrap; }
+    .thaali-crosslink-footer {
+      margin-top: 12px; text-align: center;
+    }
+    .thaali-crosslink-footer a {
+      display: inline-flex; align-items: center; gap: 4px;
+      color: var(--green-600); font-weight: 600; font-size: 0.88rem;
+      text-decoration: none; padding: 8px 16px;
+      border: 1px solid var(--green-300); border-radius: 8px;
+      transition: all 0.2s;
+    }
+    .thaali-crosslink-footer a:hover {
+      background: var(--green-50); border-color: var(--green-500);
+    }
+    .thaali-loading {
+      text-align: center; padding: 12px; color: var(--gray-400);
+      font-size: 0.85rem;
+    }
+    .thaali-error {
+      text-align: center; padding: 10px; color: var(--gray-400);
+      font-size: 0.82rem; font-style: italic;
+    }
+
     /* Loading animation text */
     .loading-text {
       color: var(--gray-600); font-size: 1rem;
@@ -1679,6 +1739,14 @@ Vitamin B12   165     pg/mL    200 - 900"></textarea>
         'Calcium': { low: { icon: '🥛', tip: '<strong>Low Calcium?</strong> Include ragi (nachni) roti/dosa, til (sesame) seeds, dahi, paneer, and doodh daily. Dried figs (anjeer) and almonds (badam) are excellent sources. Soak almonds overnight for better absorption.' }}
       };
 
+      // Map diet tip parameter names to ThaaliScore nutrients (only for low direction)
+      const tipToNutrient = {
+        'Hemoglobin': { nutrient: 'iron', label: 'Iron', direction: 'low' },
+        'Iron': { nutrient: 'iron', label: 'Iron', direction: 'low' },
+        'Calcium': { nutrient: 'calcium', label: 'Calcium', direction: 'low' },
+        'Vitamin B12': { nutrient: 'vitB12', label: 'Vitamin B12', direction: 'low' },
+      };
+
       const tips = [];
       params.forEach(p => {
         const mapping = dietTipsMap[p.name];
@@ -1686,22 +1754,134 @@ Vitamin B12   165     pg/mL    200 - 900"></textarea>
         if (p.status === 'normal') return;
         const direction = p.status.includes('high') || p.status.includes('critical_high') ? 'high' : 'low';
         const tipData = mapping[direction] || mapping['high'] || mapping['low'];
-        if (tipData) tips.push(tipData);
+        if (tipData) {
+          // Create a copy and attach ThaaliScore nutrient info if applicable
+          const entry = { icon: tipData.icon, tip: tipData.tip };
+          const nm = tipToNutrient[p.name];
+          if (nm && direction === nm.direction) {
+            entry.nutrient = nm.nutrient;
+            entry.label = nm.label;
+          }
+          tips.push(entry);
+        }
+      });
+
+      // Build ThaaliScore nutrient mapping for low parameters
+      const thaaliNutrientMap = {
+        'Hemoglobin': { direction: 'low', nutrient: 'iron', label: 'Iron' },
+        'Iron': { direction: 'low', nutrient: 'iron', label: 'Iron' },
+        'Serum Iron': { direction: 'low', nutrient: 'iron', label: 'Iron' },
+        'Calcium': { direction: 'low', nutrient: 'calcium', label: 'Calcium' },
+        'Vitamin B12': { direction: 'low', nutrient: 'vitB12', label: 'Vitamin B12' },
+        'Folate': { direction: 'low', nutrient: 'folate', label: 'Folate' },
+        'Folic Acid': { direction: 'low', nutrient: 'folate', label: 'Folate' },
+        'Total Protein': { direction: 'low', nutrient: 'protein', label: 'Protein' },
+        'Albumin': { direction: 'low', nutrient: 'protein', label: 'Protein' }
+      };
+
+      const thaaliNutrients = [];
+      params.forEach(p => {
+        const mapping = thaaliNutrientMap[p.name];
+        if (!mapping) return;
+        if (p.status === 'normal') return;
+        const direction = p.status.includes('high') || p.status.includes('critical_high') ? 'high' : 'low';
+        if (direction === mapping.direction && !thaaliNutrients.find(n => n.nutrient === mapping.nutrient)) {
+          thaaliNutrients.push(mapping);
+        }
       });
 
       const section = document.getElementById('diet-tips-section');
       const list = document.getElementById('diet-tips-list');
-      if (tips.length === 0) {
+      if (tips.length === 0 && thaaliNutrients.length === 0) {
         section.style.display = 'none';
         return;
       }
       section.style.display = 'block';
-      list.innerHTML = tips.map(t => `
-        <div class="diet-tip-card">
-          <span class="tip-icon">${t.icon}</span>
-          <span class="tip-text">${t.tip}</span>
-        </div>
-      `).join('');
+
+      // Render diet tip cards, each followed by its ThaaliScore crosslink if applicable
+      let html = '';
+      const renderedNutrientCards = new Set();
+      tips.forEach((t, idx) => {
+        html += `
+          <div class="diet-tip-card">
+            <span class="tip-icon">${t.icon}</span>
+            <span class="tip-text">${t.tip}</span>
+          </div>`;
+        // Check if this tip has a matching ThaaliScore nutrient (avoid duplicate cards for same nutrient)
+        if (t.nutrient && !renderedNutrientCards.has(t.nutrient)) {
+          renderedNutrientCards.add(t.nutrient);
+          html += `<div class="thaali-crosslink" id="thaali-card-${t.nutrient}" data-nutrient="${t.nutrient}" data-label="${t.label}">
+            <div class="thaali-loading">Loading top Indian dishes...</div>
+          </div>`;
+        }
+      });
+
+      // Also render standalone ThaaliScore cards for nutrients that didn't have a diet tip match
+      thaaliNutrients.forEach(n => {
+        if (renderedNutrientCards.has(n.nutrient)) return;
+        renderedNutrientCards.add(n.nutrient);
+        html += `<div class="thaali-crosslink" id="thaali-card-${n.nutrient}" data-nutrient="${n.nutrient}" data-label="${n.label}">
+          <div class="thaali-loading">Loading top Indian dishes...</div>
+        </div>`;
+      });
+
+      list.innerHTML = html;
+
+      // Fetch ThaaliScore data for all rendered nutrient cards
+      renderedNutrientCards.forEach(nutrient => {
+        const cardEl = document.getElementById(`thaali-card-${nutrient}`);
+        if (cardEl) fetchThaaliDishes(nutrient, cardEl.dataset.label, true);
+      });
+    }
+
+    async function fetchThaaliDishes(nutrient, label, vegOnly) {
+      const card = document.getElementById(`thaali-card-${nutrient}`);
+      if (!card) return;
+
+      card.innerHTML = `<div class="thaali-loading">Loading top Indian dishes...</div>`;
+
+      try {
+        const res = await fetch(`/api/thaali-score/nutrient-rich?nutrient=${nutrient}&veg=${vegOnly}&limit=5`);
+        if (!res.ok) throw new Error('API error');
+        const data = await res.json();
+        const dishes = data.dishes || data.results || data || [];
+
+        if (!Array.isArray(dishes) || dishes.length === 0) {
+          card.innerHTML = `<div class="thaali-error">No dishes found for ${label}.</div>`;
+          return;
+        }
+
+        const nutrientUnits = {
+          iron: 'mg iron', calcium: 'mg calcium', vitC: 'mg vit C',
+          vitB12: 'mcg B12', folate: 'mcg folate', protein: 'g protein'
+        };
+        const unit = nutrientUnits[nutrient] || nutrient;
+        const vegChecked = vegOnly ? 'checked' : '';
+
+        card.innerHTML = `
+          <div class="thaali-crosslink-header">
+            <span class="thaali-crosslink-title">&#129367; Top ${label}-Rich Indian Dishes</span>
+            <label class="thaali-veg-toggle">
+              <input type="checkbox" ${vegChecked} onchange="fetchThaaliDishes('${nutrient}', '${label}', this.checked)">
+              Veg Only
+            </label>
+          </div>
+          <ul class="thaali-dish-list">
+            ${dishes.map((d, i) => `
+              <li class="thaali-dish-item">
+                <span class="thaali-dish-rank">${i + 1}</span>
+                <span class="thaali-dish-name">${d.name || d.dish || 'Unknown'}</span>
+                <span class="thaali-dish-meta">${d.nutrientValue ?? d.value ?? '—'}${unit} (${d.calories ?? d.cal ?? '—'} cal)</span>
+              </li>
+            `).join('')}
+          </ul>
+          <div class="thaali-crosslink-footer">
+            <a href="/thaali-score?nutrient=${nutrient}">Explore on ThaaliScore &#8594;</a>
+          </div>
+        `;
+      } catch (err) {
+        card.innerHTML = `<div class="thaali-error">Could not load dishes. <a href="/thaali-score?nutrient=${nutrient}" style="color:var(--green-600);">Try ThaaliScore &rarr;</a></div>`;
+      }
     }
 
     function renderParamCard(p) {

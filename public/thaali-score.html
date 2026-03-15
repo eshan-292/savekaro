@@ -89,6 +89,9 @@
       <button onclick="switchMode('tracker')" id="tabTracker" class="px-6 py-3 text-sm font-medium text-gray-500 hover:text-gray-700">
         📊 Daily Tracker
       </button>
+      <button onclick="switchMode('planner')" id="tabPlanner" class="px-6 py-3 text-sm font-medium text-gray-500 hover:text-gray-700">
+        📅 Meal Planner
+      </button>
     </div>
   </div>
 
@@ -230,6 +233,40 @@
         <div id="trackerSearchResults" class="space-y-2 max-h-60 overflow-y-auto"></div>
       </div>
     </div>
+  </section>
+
+  <!-- Meal Planner Mode -->
+  <section id="plannerMode" class="hidden max-w-4xl mx-auto px-4 py-6">
+    <div class="bg-white rounded-xl shadow-sm p-5 mb-4">
+      <h3 class="font-bold text-gray-900 mb-3">🗓️ Generate Your 7-Day Indian Meal Plan</h3>
+      <p class="text-sm text-gray-500 mb-4">Auto-generated using our 305-dish database. Zero AI — pure nutrition science.</p>
+      <div class="flex flex-wrap gap-3 items-center mb-4">
+        <div>
+          <label class="text-xs font-medium text-gray-600 block mb-1">Diet Preference</label>
+          <div class="flex gap-1">
+            <button onclick="setPlannerVeg('veg')" id="planVeg" class="planner-veg-btn text-xs px-3 py-1.5 rounded-full border-2 border-emerald-500 bg-emerald-50 text-emerald-700 font-medium">🌿 Veg Only</button>
+            <button onclick="setPlannerVeg('egg')" id="planEgg" class="planner-veg-btn text-xs px-3 py-1.5 rounded-full border-2 border-gray-200 text-gray-600 font-medium">🥚 Egg OK</button>
+            <button onclick="setPlannerVeg('nonveg')" id="planNonveg" class="planner-veg-btn text-xs px-3 py-1.5 rounded-full border-2 border-gray-200 text-gray-600 font-medium">🍗 Non-Veg</button>
+          </div>
+        </div>
+      </div>
+      <button onclick="generateMealPlan()" class="w-full bg-brand text-white py-3 rounded-xl font-semibold hover:bg-emerald-600 transition flex items-center justify-center gap-2">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+        Generate 7-Day Plan
+      </button>
+    </div>
+
+    <!-- Weekly Summary -->
+    <div id="planSummary" class="hidden bg-gradient-to-r from-emerald-500 to-teal-500 rounded-xl p-5 mb-4 text-white">
+      <div class="flex items-center justify-between mb-2">
+        <h3 class="font-bold text-lg">Weekly Overview</h3>
+        <span id="planGoalBadge" class="text-xs bg-white/20 px-3 py-1 rounded-full"></span>
+      </div>
+      <div id="planSummaryStats" class="grid grid-cols-4 gap-3"></div>
+    </div>
+
+    <!-- 7-day plan grid -->
+    <div id="planGrid" class="space-y-3"></div>
   </section>
 
   <!-- Analysis Results -->
@@ -547,7 +584,7 @@
 
     // Mode switching
     function switchMode(mode) {
-      ['build','photo','tracker'].forEach(m => {
+      ['build','photo','tracker','planner'].forEach(m => {
         document.getElementById(m + 'Mode').classList.toggle('hidden', m !== mode);
         const tab = document.getElementById('tab' + m.charAt(0).toUpperCase() + m.slice(1));
         if (m === mode) tab.classList.add('tab-active');
@@ -1132,6 +1169,367 @@
       if (e.target === this) closeTrackerModal();
     });
 
+    // ─── Meal Planner ───
+    let plannerVeg = 'veg';
+    let allDishesCache = null;
+    let currentMealPlan = null;
+
+    function setPlannerVeg(pref) {
+      plannerVeg = pref;
+      document.querySelectorAll('.planner-veg-btn').forEach(btn => {
+        btn.className = 'planner-veg-btn text-xs px-3 py-1.5 rounded-full border-2 border-gray-200 text-gray-600 font-medium';
+      });
+      const id = pref === 'veg' ? 'planVeg' : pref === 'egg' ? 'planEgg' : 'planNonveg';
+      document.getElementById(id).className = 'planner-veg-btn text-xs px-3 py-1.5 rounded-full border-2 border-emerald-500 bg-emerald-50 text-emerald-700 font-medium';
+    }
+
+    // Egg-based dish IDs
+    const EGG_DISH_IDS = new Set([25, 59, 70, 158, 159, 160, 239, 261, 262]);
+
+    // Dish classification by meal suitability
+    const BREAKFAST_IDS = new Set([55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,162,197,198,199,200,235,239,253,262,
+      34,35,36,37,40,41,42,43,44,53,54,66,181,182,183,184,185,186,187,188]);
+    const BREAKFAST_DRINK_IDS = new Set([121,122,123,136,248,249,250]);
+    const LIGHT_DINNER_EXCLUDES = new Set([28,29,160,240,241,242,251,252,151,81,80]); // heavy biryanis, thalis, deep-fried
+    const SKIP_CATEGORIES = new Set(['Sweets','Snacks','Drinks','Sides']);
+
+    // Classify dishes
+    function classifyDishes(allDishes) {
+      const pool = { breakfast: [], lunchMain: [], dinnerMain: [], riceBreads: [], dals: [], sides: [], drinks: [] };
+
+      allDishes.forEach(d => {
+        if (d.category === 'Sides') { pool.sides.push(d); return; }
+        if (d.category === 'Drinks') { pool.drinks.push(d); return; }
+        if (d.category === 'Sweets' || d.category === 'Snacks') return;
+        if (d.id === 251 || d.id === 252) return; // skip thalis
+
+        if (BREAKFAST_IDS.has(d.id)) pool.breakfast.push(d);
+        if (d.category === 'Rice/Breads') { pool.riceBreads.push(d); return; }
+        if (d.category === 'Dals') { pool.dals.push(d); pool.lunchMain.push(d); pool.dinnerMain.push(d); return; }
+
+        // Main dishes for lunch/dinner
+        if (!BREAKFAST_IDS.has(d.id) || d.category === 'North Indian' || d.category === 'Non-Veg' || d.category === 'South Indian') {
+          pool.lunchMain.push(d);
+          if (!LIGHT_DINNER_EXCLUDES.has(d.id)) pool.dinnerMain.push(d);
+        }
+      });
+
+      return pool;
+    }
+
+    function shuffle(arr) {
+      const a = [...arr];
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    function filterByVegPref(dishes) {
+      if (plannerVeg === 'veg') return dishes.filter(d => d.veg);
+      if (plannerVeg === 'egg') return dishes.filter(d => d.veg || EGG_DISH_IDS.has(d.id));
+      return dishes; // nonveg = all
+    }
+
+    function pickDish(pool, usedRecently, calBudget, preferLowGI, minCal = 0) {
+      let candidates = pool.filter(d => !usedRecently.has(d.id) && d.cal <= calBudget + 100 && d.cal >= minCal);
+      if (preferLowGI) {
+        const lowGI = candidates.filter(d => d.gi === 'low');
+        if (lowGI.length > 3) candidates = lowGI;
+      }
+      if (candidates.length === 0) candidates = pool.filter(d => d.cal <= calBudget + 150 && d.cal >= minCal);
+      if (candidates.length === 0) candidates = pool.filter(d => d.cal <= calBudget + 150);
+      if (candidates.length === 0) return pool[Math.floor(Math.random() * pool.length)];
+      return candidates[Math.floor(Math.random() * candidates.length)];
+    }
+
+    function generateMealPlan() {
+      if (!allDishesCache) {
+        // Fetch all dishes first
+        fetch('/api/thaali-score/all-dishes')
+          .then(r => r.json())
+          .then(data => {
+            allDishesCache = data.dishes;
+            generateMealPlan();
+          })
+          .catch(e => console.error('Failed to fetch dishes:', e));
+        return;
+      }
+
+      const filtered = filterByVegPref(allDishesCache);
+      const pool = classifyDishes(filtered);
+      const goalCal = dietGoals[currentDietGoal].calories;
+      const isDiabetic = currentDietGoal === 'diabetes';
+      const days = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+      const usedMainRecently = new Set();
+      const plan = [];
+
+      // Calorie distribution: breakfast 25%, lunch 40%, dinner 35%
+      const bfTarget = Math.round(goalCal * 0.25);
+      const lunchTarget = Math.round(goalCal * 0.40);
+      const dinnerTarget = Math.round(goalCal * 0.35);
+
+      // Filter pools by veg pref
+      const bfPool = shuffle(pool.breakfast.length > 0 ? pool.breakfast : filtered.filter(d => d.cal < 400));
+      const lunchPool = shuffle(pool.lunchMain.length > 0 ? pool.lunchMain : filtered);
+      const dinnerPool = shuffle(pool.dinnerMain.length > 0 ? pool.dinnerMain : filtered);
+      const rbPool = pool.riceBreads.length > 0 ? pool.riceBreads : [];
+      const dalPool = pool.dals.length > 0 ? pool.dals : [];
+      const sidePool = pool.sides.length > 0 ? pool.sides : [];
+      const drinkPool = pool.drinks.length > 0 ? pool.drinks : [];
+
+      // Pick healthy bread/rice options for diabetes
+      const healthyRB = rbPool.filter(d => d.gi === 'low' || d.gi === 'medium');
+      const rbForGoal = isDiabetic && healthyRB.length > 2 ? healthyRB : rbPool;
+
+      for (let day = 0; day < 7; day++) {
+        const dayPlan = { day: days[day], breakfast: [], lunch: [], dinner: [] };
+
+        // ─── BREAKFAST ───
+        let bfCal = 0;
+        const bfMain = pickDish(bfPool, usedMainRecently, bfTarget, isDiabetic);
+        if (bfMain) { dayPlan.breakfast.push(bfMain); bfCal += bfMain.cal; usedMainRecently.add(bfMain.id); }
+        // Add a second breakfast item if under budget
+        if (bfCal < bfTarget - 120 && bfPool.length > 1) {
+          const bfExtra = pickDish(bfPool.filter(d => d.id !== (bfMain && bfMain.id)), usedMainRecently, bfTarget - bfCal, isDiabetic);
+          if (bfExtra) { dayPlan.breakfast.push(bfExtra); bfCal += bfExtra.cal; }
+        }
+        // Add a drink if budget allows
+        if (drinkPool.length > 0 && bfCal < bfTarget - 30) {
+          const drink = drinkPool[Math.floor(Math.random() * drinkPool.length)];
+          if (drink.cal < bfTarget - bfCal + 80) { dayPlan.breakfast.push(drink); bfCal += drink.cal; }
+        }
+
+        // ─── LUNCH ───
+        let lCal = 0;
+        const lMain = pickDish(lunchPool, usedMainRecently, lunchTarget * 0.5, isDiabetic, 150);
+        if (lMain) { dayPlan.lunch.push(lMain); lCal += lMain.cal; usedMainRecently.add(lMain.id); }
+        // Add rice/bread
+        if (rbForGoal.length > 0 && lCal < lunchTarget - 80) {
+          const rb = rbForGoal[Math.floor(Math.random() * rbForGoal.length)];
+          dayPlan.lunch.push(rb); lCal += rb.cal;
+        }
+        // Add dal if budget allows and not already a dal
+        if (dalPool.length > 0 && lCal < lunchTarget - 100 && lMain && lMain.category !== 'Dals') {
+          const dal = dalPool[Math.floor(Math.random() * dalPool.length)];
+          dayPlan.lunch.push(dal); lCal += dal.cal;
+        }
+        // Add side
+        if (sidePool.length > 0 && lCal < lunchTarget + 50) {
+          const side = sidePool[Math.floor(Math.random() * sidePool.length)];
+          dayPlan.lunch.push(side); lCal += side.cal;
+        }
+
+        // ─── DINNER ───
+        let dCal = 0;
+        const dMain = pickDish(dinnerPool, usedMainRecently, dinnerTarget * 0.5, isDiabetic, 150);
+        if (dMain) { dayPlan.dinner.push(dMain); dCal += dMain.cal; usedMainRecently.add(dMain.id); }
+        // Add rice/bread
+        if (rbForGoal.length > 0 && dCal < dinnerTarget - 80) {
+          const rb = rbForGoal[Math.floor(Math.random() * rbForGoal.length)];
+          dayPlan.dinner.push(rb); dCal += rb.cal;
+        }
+        // Add dal if budget allows
+        if (dalPool.length > 0 && dCal < dinnerTarget - 100 && dMain && dMain.category !== 'Dals') {
+          const dal = dalPool[Math.floor(Math.random() * dalPool.length)];
+          dayPlan.dinner.push(dal); dCal += dal.cal;
+        }
+        // Add side
+        if (sidePool.length > 0 && dCal < dinnerTarget + 50) {
+          const side = sidePool[Math.floor(Math.random() * sidePool.length)];
+          dayPlan.dinner.push(side); dCal += side.cal;
+        }
+
+        dayPlan.totalCal = bfCal + lCal + dCal;
+        dayPlan.totalProtein = [...dayPlan.breakfast, ...dayPlan.lunch, ...dayPlan.dinner].reduce((s, d) => s + (d.protein || 0), 0);
+        dayPlan.totalFiber = [...dayPlan.breakfast, ...dayPlan.lunch, ...dayPlan.dinner].reduce((s, d) => s + (d.fiber || 0), 0);
+        plan.push(dayPlan);
+
+        // Clear recently used every 3 days to allow variety reset
+        if ((day + 1) % 3 === 0) usedMainRecently.clear();
+      }
+
+      currentMealPlan = plan;
+      // Save to localStorage
+      localStorage.setItem('thaali_meal_plan', JSON.stringify({
+        goal: currentDietGoal, vegPref: plannerVeg, generatedAt: new Date().toISOString(), days: plan
+      }));
+      renderMealPlan(plan);
+    }
+
+    function renderMealPlan(plan) {
+      const goalCal = dietGoals[currentDietGoal].calories;
+
+      // Summary
+      const avgCal = Math.round(plan.reduce((s, d) => s + d.totalCal, 0) / 7);
+      const avgProtein = Math.round(plan.reduce((s, d) => s + d.totalProtein, 0) / 7);
+      const avgFiber = Math.round(plan.reduce((s, d) => s + d.totalFiber, 0) / 7);
+      const accuracy = Math.round((1 - Math.abs(avgCal - goalCal) / goalCal) * 100);
+
+      document.getElementById('planSummary').classList.remove('hidden');
+      document.getElementById('planGoalBadge').textContent = dietGoals[currentDietGoal].label + ' • ' + goalCal + ' cal/day';
+      document.getElementById('planSummaryStats').innerHTML = `
+        <div class="text-center"><p class="text-2xl font-bold">${avgCal}</p><p class="text-xs text-white/70">Avg cal/day</p></div>
+        <div class="text-center"><p class="text-2xl font-bold">${avgProtein}g</p><p class="text-xs text-white/70">Avg protein</p></div>
+        <div class="text-center"><p class="text-2xl font-bold">${avgFiber}g</p><p class="text-xs text-white/70">Avg fiber</p></div>
+        <div class="text-center"><p class="text-2xl font-bold">${accuracy}%</p><p class="text-xs text-white/70">Goal match</p></div>
+      `;
+
+      // Day cards
+      const dayEmojis = ['🟡','🟢','🔵','🟣','🟠','🔴','⚪'];
+      document.getElementById('planGrid').innerHTML = plan.map((day, i) => {
+        const calPct = Math.round((day.totalCal / goalCal) * 100);
+        const calColor = calPct > 110 ? 'text-red-500' : calPct < 85 ? 'text-amber-500' : 'text-emerald-600';
+        const mealHTML = (label, emoji, dishes) => {
+          if (dishes.length === 0) return '';
+          const mealCal = dishes.reduce((s, d) => s + d.cal, 0);
+          return `
+            <div class="mb-3">
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-xs font-semibold text-gray-500">${emoji} ${label}</span>
+                <span class="text-xs text-gray-400">${mealCal} cal</span>
+              </div>
+              ${dishes.map(d => `
+                <div class="flex items-center justify-between py-0.5">
+                  <span class="text-sm text-gray-700">${d.veg ? '🟢' : '🔴'} ${d.name}</span>
+                  <span class="text-xs text-gray-400">${d.cal}</span>
+                </div>
+              `).join('')}
+            </div>
+          `;
+        };
+        return `
+          <div class="bg-white rounded-xl shadow-sm overflow-hidden fade-in" style="animation-delay:${i * 0.05}s">
+            <div class="flex items-center justify-between px-4 py-3 bg-gray-50 border-b">
+              <div class="flex items-center gap-2">
+                <span>${dayEmojis[i]}</span>
+                <span class="font-semibold text-gray-900">${day.day}</span>
+              </div>
+              <div class="flex items-center gap-3">
+                <span class="text-sm font-bold ${calColor}">${day.totalCal} cal</span>
+                <span class="text-xs text-gray-400">${calPct}%</span>
+                <button onclick="regenerateDay(${i})" class="text-gray-400 hover:text-emerald-600" title="Regenerate this day">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                </button>
+              </div>
+            </div>
+            <div class="p-4">
+              ${mealHTML('Breakfast', '🌅', day.breakfast)}
+              ${mealHTML('Lunch', '🌞', day.lunch)}
+              ${mealHTML('Dinner', '🌙', day.dinner)}
+              <div class="flex gap-4 pt-2 border-t border-gray-100 mt-2">
+                <span class="text-xs text-gray-400">Protein: ${day.totalProtein}g</span>
+                <span class="text-xs text-gray-400">Fiber: ${day.totalFiber}g</span>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function regenerateDay(dayIndex) {
+      if (!allDishesCache || !currentMealPlan) return;
+      // Re-generate just this day
+      const filtered = filterByVegPref(allDishesCache);
+      const pool = classifyDishes(filtered);
+      const goalCal = dietGoals[currentDietGoal].calories;
+      const isDiabetic = currentDietGoal === 'diabetes';
+      const days = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+
+      const usedInOtherDays = new Set();
+      currentMealPlan.forEach((d, i) => {
+        if (i !== dayIndex) {
+          [...d.breakfast, ...d.lunch, ...d.dinner].forEach(dish => usedInOtherDays.add(dish.id));
+        }
+      });
+
+      const bfTarget = Math.round(goalCal * 0.25);
+      const lunchTarget = Math.round(goalCal * 0.40);
+      const dinnerTarget = Math.round(goalCal * 0.35);
+
+      const bfPool = shuffle(pool.breakfast.length > 0 ? pool.breakfast : filtered.filter(d => d.cal < 400));
+      const lunchPool = shuffle(pool.lunchMain);
+      const dinnerPool = shuffle(pool.dinnerMain);
+      const rbPool = pool.riceBreads;
+      const dalPool = pool.dals;
+      const sidePool = pool.sides;
+      const drinkPool = pool.drinks;
+      const healthyRB = rbPool.filter(d => d.gi === 'low' || d.gi === 'medium');
+      const rbForGoal = isDiabetic && healthyRB.length > 2 ? healthyRB : rbPool;
+
+      const dayPlan = { day: days[dayIndex], breakfast: [], lunch: [], dinner: [] };
+      let bfCal = 0, lCal = 0, dCal = 0;
+
+      // Breakfast
+      const bfMain = pickDish(bfPool, usedInOtherDays, bfTarget, isDiabetic);
+      if (bfMain) { dayPlan.breakfast.push(bfMain); bfCal += bfMain.cal; }
+      if (bfCal < bfTarget - 120 && bfPool.length > 1) {
+        const bfExtra = pickDish(bfPool.filter(d => d.id !== (bfMain && bfMain.id)), usedInOtherDays, bfTarget - bfCal, isDiabetic);
+        if (bfExtra) { dayPlan.breakfast.push(bfExtra); bfCal += bfExtra.cal; }
+      }
+      if (drinkPool.length > 0 && bfCal < bfTarget - 30) {
+        const drink = drinkPool[Math.floor(Math.random() * drinkPool.length)];
+        if (drink.cal < bfTarget - bfCal + 80) { dayPlan.breakfast.push(drink); bfCal += drink.cal; }
+      }
+
+      // Lunch
+      const lMain = pickDish(lunchPool, usedInOtherDays, lunchTarget * 0.5, isDiabetic, 150);
+      if (lMain) { dayPlan.lunch.push(lMain); lCal += lMain.cal; }
+      if (rbForGoal.length > 0 && lCal < lunchTarget - 80) {
+        const rb = rbForGoal[Math.floor(Math.random() * rbForGoal.length)];
+        dayPlan.lunch.push(rb); lCal += rb.cal;
+      }
+      if (dalPool.length > 0 && lCal < lunchTarget - 100 && lMain && lMain.category !== 'Dals') {
+        const dal = dalPool[Math.floor(Math.random() * dalPool.length)];
+        dayPlan.lunch.push(dal); lCal += dal.cal;
+      }
+      if (sidePool.length > 0 && lCal < lunchTarget + 50) {
+        const side = sidePool[Math.floor(Math.random() * sidePool.length)];
+        dayPlan.lunch.push(side); lCal += side.cal;
+      }
+
+      // Dinner
+      const dMain = pickDish(dinnerPool, usedInOtherDays, dinnerTarget * 0.5, isDiabetic, 150);
+      if (dMain) { dayPlan.dinner.push(dMain); dCal += dMain.cal; }
+      if (rbForGoal.length > 0 && dCal < dinnerTarget - 80) {
+        const rb = rbForGoal[Math.floor(Math.random() * rbForGoal.length)];
+        dayPlan.dinner.push(rb); dCal += rb.cal;
+      }
+      if (dalPool.length > 0 && dCal < dinnerTarget - 100 && dMain && dMain.category !== 'Dals') {
+        const dal = dalPool[Math.floor(Math.random() * dalPool.length)];
+        dayPlan.dinner.push(dal); dCal += dal.cal;
+      }
+      if (sidePool.length > 0 && dCal < dinnerTarget + 50) {
+        const side = sidePool[Math.floor(Math.random() * sidePool.length)];
+        dayPlan.dinner.push(side); dCal += side.cal;
+      }
+
+      dayPlan.totalCal = bfCal + lCal + dCal;
+      dayPlan.totalProtein = [...dayPlan.breakfast, ...dayPlan.lunch, ...dayPlan.dinner].reduce((s, d) => s + (d.protein || 0), 0);
+      dayPlan.totalFiber = [...dayPlan.breakfast, ...dayPlan.lunch, ...dayPlan.dinner].reduce((s, d) => s + (d.fiber || 0), 0);
+
+      currentMealPlan[dayIndex] = dayPlan;
+      localStorage.setItem('thaali_meal_plan', JSON.stringify({
+        goal: currentDietGoal, vegPref: plannerVeg, generatedAt: new Date().toISOString(), days: currentMealPlan
+      }));
+      renderMealPlan(currentMealPlan);
+    }
+
+    function loadSavedMealPlan() {
+      const saved = localStorage.getItem('thaali_meal_plan');
+      if (saved) {
+        try {
+          const data = JSON.parse(saved);
+          if (data && data.days && data.days.length === 7) {
+            currentMealPlan = data.days;
+            if (data.vegPref) { plannerVeg = data.vegPref; setPlannerVeg(plannerVeg); }
+            renderMealPlan(currentMealPlan);
+          }
+        } catch(e) { /* ignore */ }
+      }
+    }
+
     // Initial load: restore state + show popular dishes + load combos
     window.addEventListener('DOMContentLoaded', () => {
       loadTracker();
@@ -1139,6 +1537,7 @@
       searchDishes();
       renderTracker();
       loadCombos();
+      loadSavedMealPlan();
     });
   </script>
 </body>
