@@ -311,6 +311,184 @@ app.get('/api/thaali-score/combos', thaaliScore.handleCombos);
 app.get('/api/thaali-score/combo/:comboId', (req, res) => thaaliScore.handleComboAnalyze(req, res));
 app.post('/api/thaali-score/suggestions', thaaliScore.handleSuggestions);
 app.get('/api/thaali-score/all-dishes', thaaliScore.handleAllDishes);
+// ─── ThaaliScore Photo Mode (Gemini Vision) ───
+app.post('/api/thaali-score/photo-analyze', upload.single('photo'), async (req, res) => {
+  if (!req.file) {
+    return res.json({ success: false, error: 'No photo uploaded' });
+  }
+
+  const filePath = req.file.path;
+
+  try {
+    // Read image as base64
+    const imageBuffer = fs.readFileSync(filePath);
+    const base64Image = imageBuffer.toString('base64');
+    const mimeType = req.file.mimetype || 'image/jpeg';
+
+    // Get API key (reuse from ai-extract key management)
+    const apiKeys = (process.env.GEMINI_API_KEYS || '').split(',').map(k => k.trim()).filter(Boolean);
+    const singleKey = process.env.GEMINI_API_KEY || '';
+    const allKeys = apiKeys.length > 0 ? apiKeys : (singleKey ? [singleKey] : []);
+
+    if (allKeys.length === 0) {
+      fs.unlink(filePath, () => {});
+      return res.json({ success: false, error: 'AI not configured' });
+    }
+
+    let lastError = null;
+    let data = null;
+
+    // Try each API key until one works
+    for (const apiKey of allKeys) {
+      try {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{
+              parts: [
+                {
+                  inlineData: { mimeType, data: base64Image }
+                },
+                {
+                  text: `You are an Indian food expert. Look at this photo and identify ALL Indian dishes/food items visible.
+
+For EACH dish, provide:
+1. The common Indian name (e.g., "Dal Makhani", "Roti", "Paneer Butter Masala")
+2. An estimated portion description
+
+Return ONLY a JSON array, no other text. Format:
+[{"name": "dish name", "portion": "1 bowl"}, ...]
+
+If this is not a food photo or you cannot identify any dishes, return: []
+Be specific with Indian dish names. Use common names like "Chole", "Rajma", "Idli", "Dosa", "Biryani", etc.`
+                }
+              ]
+            }],
+            generationConfig: {
+              temperature: 0.1,
+              maxOutputTokens: 1024
+            }
+          })
+        });
+
+        if (response.status === 429) {
+          lastError = 'rate_limited';
+          continue; // Try next key
+        }
+
+        if (!response.ok) {
+          const errText = await response.text();
+          console.error('[PhotoMode] Gemini error:', response.status, errText);
+          lastError = 'api_error';
+          continue;
+        }
+
+        data = await response.json();
+        break; // Success, stop trying keys
+      } catch (keyErr) {
+        console.error('[PhotoMode] Key error:', keyErr.message);
+        lastError = keyErr.message;
+        continue;
+      }
+    }
+
+    fs.unlink(filePath, () => {}); // Clean up
+
+    if (!data) {
+      if (lastError === 'rate_limited') {
+        return res.json({ success: false, error: 'rate_limited', message: 'Daily free limit reached. Try again tomorrow.' });
+      }
+      return res.json({ success: false, error: 'AI analysis failed' });
+    }
+
+    const textContent = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+    // Parse JSON from response (handle markdown code blocks)
+    let identified = [];
+    try {
+      const jsonMatch = textContent.match(/\[[\s\S]*\]/);
+      if (jsonMatch) {
+        identified = JSON.parse(jsonMatch[0]);
+      }
+    } catch(e) {
+      console.error('[PhotoMode] JSON parse error:', e.message, textContent);
+    }
+
+    if (identified.length === 0) {
+      return res.json({ success: true, dishes: [], message: 'No Indian dishes identified in this photo. Try a clearer image of your meal.' });
+    }
+
+    // Fuzzy match against 305-dish database
+    const allDishes = thaaliScore.dishes;
+    const matched = [];
+    const unmatched = [];
+
+    for (const item of identified) {
+      const aiName = (item.name || '').toLowerCase().trim();
+
+      // Exact match first
+      let best = allDishes.find(d => d.name.toLowerCase() === aiName);
+
+      // Partial match
+      if (!best) {
+        best = allDishes.find(d => d.name.toLowerCase().includes(aiName) || aiName.includes(d.name.toLowerCase()));
+      }
+
+      // Word-level fuzzy match
+      if (!best) {
+        const aiWords = aiName.split(/[\s,/-]+/).filter(w => w.length > 2);
+        let bestScore = 0;
+        for (const d of allDishes) {
+          const dbWords = d.name.toLowerCase().split(/[\s,/-]+/);
+          const score = aiWords.filter(w => dbWords.some(dw => dw.includes(w) || w.includes(dw))).length;
+          if (score > bestScore && score >= 1) {
+            bestScore = score;
+            best = d;
+          }
+        }
+      }
+
+      if (best && !matched.some(m => m.id === best.id)) {
+        matched.push({
+          id: best.id,
+          name: best.name,
+          aiName: item.name,
+          portion: item.portion || best.serving,
+          cal: best.cal,
+          protein: best.protein,
+          category: best.category,
+          veg: best.veg,
+          healthScore: best.healthScore,
+          gi: best.gi,
+          confidence: best.name.toLowerCase() === aiName ? 'high' : 'medium'
+        });
+      } else if (!best) {
+        unmatched.push({ name: item.name, portion: item.portion });
+      }
+    }
+
+    res.json({
+      success: true,
+      dishes: matched,
+      unmatched: unmatched.length > 0 ? unmatched : undefined,
+      message: matched.length > 0
+        ? `Found ${matched.length} dish${matched.length > 1 ? 'es' : ''} in your photo!`
+        : 'Could not match any dishes to our database. Try adding them manually.'
+    });
+
+  } catch(err) {
+    fs.unlink(filePath, () => {});
+    console.error('[PhotoMode] Error:', err);
+
+    if (err.message?.includes('RATE_LIMIT') || err.code === 429) {
+      return res.json({ success: false, error: 'rate_limited', message: 'Daily free limit reached.' });
+    }
+
+    res.json({ success: false, error: 'Photo analysis failed. Please try again.' });
+  }
+});
+
 app.get('/api/thaali-score/nutrient-rich', (req, res) => {
   // Filter dishes by a specific nutrient — used for SehatScan cross-link
   const { nutrient, veg, limit } = req.query;

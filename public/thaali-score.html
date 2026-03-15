@@ -63,17 +63,97 @@
     </div>
   </section>
 
-  <!-- Diet Goal Selector -->
+  <!-- Personalized Nutrition Profile -->
   <div class="max-w-4xl mx-auto px-4 pt-6">
     <div class="bg-white rounded-xl shadow-sm p-4 mb-4">
-      <p class="text-sm font-semibold text-gray-700 mb-2">I want to:</p>
-      <div class="flex flex-wrap gap-2">
-        <button onclick="setDietGoal('lose')" id="goalLose" class="diet-goal-btn text-xs px-4 py-2 rounded-full border-2 border-gray-200 text-gray-600 hover:border-emerald-400 transition font-medium">Lose Weight</button>
-        <button onclick="setDietGoal('maintain')" id="goalMaintain" class="diet-goal-btn text-xs px-4 py-2 rounded-full border-2 border-emerald-500 bg-emerald-50 text-emerald-700 font-medium">Maintain</button>
-        <button onclick="setDietGoal('gain')" id="goalGain" class="diet-goal-btn text-xs px-4 py-2 rounded-full border-2 border-gray-200 text-gray-600 hover:border-emerald-400 transition font-medium">Gain Muscle</button>
-        <button onclick="setDietGoal('diabetes')" id="goalDiabetes" class="diet-goal-btn text-xs px-4 py-2 rounded-full border-2 border-gray-200 text-gray-600 hover:border-emerald-400 transition font-medium">Manage Diabetes</button>
+      <div class="flex items-center justify-between cursor-pointer" onclick="toggleProfile()">
+        <div>
+          <p class="text-sm font-semibold text-gray-700">🎯 Your Personalized Plan</p>
+          <p id="goalDescription" class="text-xs text-gray-400 mt-0.5">Daily target: 2000 calories</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <span id="profileBadge" class="hidden text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium">Profile Set ✓</span>
+          <svg id="profileChevron" class="w-5 h-5 text-gray-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </div>
       </div>
-      <p id="goalDescription" class="text-xs text-gray-400 mt-2">Daily target: 2000 calories</p>
+
+      <!-- Profile Form (collapsible) -->
+      <div id="profileForm" class="hidden mt-4 pt-4 border-t border-gray-100">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+          <div>
+            <label class="text-xs font-medium text-gray-500 block mb-1">Age</label>
+            <input type="number" id="profileAge" min="10" max="100" value="" placeholder="25" class="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:border-emerald-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="text-xs font-medium text-gray-500 block mb-1">Gender</label>
+            <select id="profileGender" class="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:border-emerald-500 focus:outline-none bg-white">
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-xs font-medium text-gray-500 block mb-1">Weight (kg)</label>
+            <input type="number" id="profileWeight" min="20" max="250" value="" placeholder="70" class="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:border-emerald-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="text-xs font-medium text-gray-500 block mb-1">Height (cm)</label>
+            <input type="number" id="profileHeight" min="100" max="250" value="" placeholder="170" class="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:border-emerald-500 focus:outline-none">
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="text-xs font-medium text-gray-500 block mb-1.5">Activity Level</label>
+          <div class="flex flex-wrap gap-1.5">
+            <button onclick="setActivity('sedentary')" id="actSedentary" class="activity-btn text-xs px-3 py-1.5 rounded-full border-2 border-gray-200 text-gray-600 font-medium transition">🪑 Sedentary</button>
+            <button onclick="setActivity('light')" id="actLight" class="activity-btn text-xs px-3 py-1.5 rounded-full border-2 border-gray-200 text-gray-600 font-medium transition">🚶 Light</button>
+            <button onclick="setActivity('moderate')" id="actModerate" class="activity-btn text-xs px-3 py-1.5 rounded-full border-2 border-emerald-500 bg-emerald-50 text-emerald-700 font-medium">🏃 Moderate</button>
+            <button onclick="setActivity('active')" id="actActive" class="activity-btn text-xs px-3 py-1.5 rounded-full border-2 border-gray-200 text-gray-600 font-medium transition">💪 Active</button>
+            <button onclick="setActivity('veryActive')" id="actVeryActive" class="activity-btn text-xs px-3 py-1.5 rounded-full border-2 border-gray-200 text-gray-600 font-medium transition">🏋️ Very Active</button>
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <label class="text-xs font-medium text-gray-500 block mb-1.5">Goal</label>
+          <div class="flex flex-wrap gap-1.5">
+            <button onclick="setDietGoal('lose')" id="goalLose" class="diet-goal-btn text-xs px-4 py-2 rounded-full border-2 border-gray-200 text-gray-600 hover:border-emerald-400 transition font-medium">🔥 Lose Weight</button>
+            <button onclick="setDietGoal('maintain')" id="goalMaintain" class="diet-goal-btn text-xs px-4 py-2 rounded-full border-2 border-emerald-500 bg-emerald-50 text-emerald-700 font-medium">⚖️ Maintain</button>
+            <button onclick="setDietGoal('gain')" id="goalGain" class="diet-goal-btn text-xs px-4 py-2 rounded-full border-2 border-gray-200 text-gray-600 hover:border-emerald-400 transition font-medium">💪 Gain Muscle</button>
+            <button onclick="setDietGoal('diabetes')" id="goalDiabetes" class="diet-goal-btn text-xs px-4 py-2 rounded-full border-2 border-gray-200 text-gray-600 hover:border-emerald-400 transition font-medium">🩸 Manage Diabetes</button>
+          </div>
+        </div>
+
+        <button onclick="calculateAndSaveProfile()" class="w-full bg-brand text-white py-2.5 rounded-xl font-semibold hover:bg-emerald-600 transition text-sm">
+          Calculate My Daily Targets
+        </button>
+
+        <!-- Calculated Results (shown after calculation) -->
+        <div id="profileResults" class="hidden mt-4 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl p-4">
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-2">
+            <div class="text-center">
+              <p class="text-xs text-gray-500">BMR</p>
+              <p id="resultBMR" class="text-lg font-bold text-gray-800">-</p>
+              <p class="text-xs text-gray-400">cal/day</p>
+            </div>
+            <div class="text-center">
+              <p class="text-xs text-gray-500">TDEE</p>
+              <p id="resultTDEE" class="text-lg font-bold text-gray-800">-</p>
+              <p class="text-xs text-gray-400">cal/day</p>
+            </div>
+            <div class="text-center">
+              <p class="text-xs text-emerald-600 font-medium">Your Target</p>
+              <p id="resultTarget" class="text-lg font-bold text-emerald-700">-</p>
+              <p class="text-xs text-gray-400">cal/day</p>
+            </div>
+            <div class="text-center">
+              <p class="text-xs text-gray-500">Protein Goal</p>
+              <p id="resultProtein" class="text-lg font-bold text-blue-600">-</p>
+              <p class="text-xs text-gray-400">g/day</p>
+            </div>
+          </div>
+          <div id="resultMacroSplit" class="mt-2"></div>
+          <p class="text-xs text-gray-400 mt-2">Calculated using Mifflin-St Jeor equation. Zero AI — pure nutrition science.</p>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -165,22 +245,75 @@
 
   <!-- Photo Mode -->
   <section id="photoMode" class="hidden max-w-4xl mx-auto px-4 py-6">
-    <div class="bg-white rounded-xl shadow-sm p-8 text-center">
-      <div class="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
-        <svg class="w-10 h-10 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+    <div class="bg-white rounded-xl shadow-sm p-6">
+      <!-- Upload Area -->
+      <div id="photoUploadArea" class="text-center">
+        <div class="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <svg class="w-10 h-10 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        </div>
+        <h3 class="text-xl font-bold text-gray-900 mb-2">Snap Your Meal</h3>
+        <p class="text-gray-500 mb-4 text-sm">Take a photo of your Indian meal and our AI will identify the dishes instantly</p>
+        <div class="flex flex-col sm:flex-row gap-3 justify-center">
+          <label class="cursor-pointer inline-flex items-center gap-2 bg-brand text-white px-6 py-3 rounded-xl font-semibold hover:bg-emerald-600 transition">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/></svg>
+            Take Photo
+            <input type="file" accept="image/*" capture="environment" class="hidden" onchange="analyzeMealPhoto(this)">
+          </label>
+          <label class="cursor-pointer inline-flex items-center gap-2 bg-white text-emerald-700 border-2 border-emerald-500 px-6 py-3 rounded-xl font-semibold hover:bg-emerald-50 transition">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            Upload Photo
+            <input type="file" accept="image/*" class="hidden" onchange="analyzeMealPhoto(this)">
+          </label>
+        </div>
+        <p class="text-xs text-gray-400 mt-3">Powered by Google Gemini AI - Works best with clear, well-lit photos</p>
       </div>
-      <h3 class="text-xl font-bold text-gray-900 mb-2">Upload Your Meal Photo</h3>
-      <p class="text-gray-500 mb-4">AI food recognition coming soon! For now, upload your photo and we'll help you identify the dishes.</p>
-      <label class="cursor-pointer inline-flex items-center gap-2 bg-brand text-white px-6 py-3 rounded-xl font-semibold hover:bg-emerald-600 transition">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-        Choose Photo
-        <input type="file" accept="image/*" class="hidden" onchange="handleMealPhoto(this)">
-      </label>
-      <div id="mealPhotoPreview" class="hidden mt-6">
-        <img id="mealPhotoImg" src="" alt="Meal" class="max-w-xs mx-auto rounded-xl shadow border mb-4">
-        <p class="text-sm text-gray-500 mb-3">Now search and add the dishes you see in your photo:</p>
-        <button onclick="switchMode('build')" class="bg-emerald-100 text-emerald-700 px-5 py-2 rounded-lg font-medium hover:bg-emerald-200 transition">
-          Go to Build Your Plate
+
+      <!-- Loading State -->
+      <div id="photoLoading" class="hidden text-center py-8">
+        <div class="w-16 h-16 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin mx-auto mb-4"></div>
+        <p class="text-gray-600 font-medium">Analyzing your meal...</p>
+        <p class="text-sm text-gray-400 mt-1">Our AI is identifying Indian dishes in your photo</p>
+      </div>
+
+      <!-- Results -->
+      <div id="photoResults" class="hidden">
+        <div class="flex items-center gap-4 mb-4">
+          <img id="photoPreviewImg" src="" alt="Meal" class="w-24 h-24 rounded-xl object-cover shadow border">
+          <div>
+            <h3 class="font-bold text-gray-900" id="photoResultTitle">Dishes Found!</h3>
+            <p class="text-sm text-gray-500" id="photoResultSubtitle"></p>
+          </div>
+        </div>
+
+        <!-- Identified Dishes -->
+        <div id="photoIdentifiedDishes" class="space-y-2 mb-4"></div>
+
+        <!-- Unmatched items -->
+        <div id="photoUnmatched" class="hidden mb-4">
+          <p class="text-xs text-amber-600 font-medium mb-1">Could not match these items to our database:</p>
+          <div id="photoUnmatchedList" class="text-xs text-gray-500"></div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex gap-3">
+          <button onclick="addPhotoDishesToPlate()" id="photoAddBtn" class="flex-1 bg-brand text-white py-3 rounded-xl font-semibold hover:bg-emerald-600 transition">
+            Add All to My Plate
+          </button>
+          <button onclick="resetPhotoMode()" class="px-4 py-3 rounded-xl border-2 border-gray-200 text-gray-600 hover:border-gray-300 transition font-medium">
+            Try Again
+          </button>
+        </div>
+      </div>
+
+      <!-- Error State -->
+      <div id="photoError" class="hidden text-center py-6">
+        <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-3">
+          <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+        </div>
+        <p class="font-medium text-gray-700" id="photoErrorMsg">Something went wrong</p>
+        <p class="text-sm text-gray-500 mt-1" id="photoErrorDetail"></p>
+        <button onclick="resetPhotoMode()" class="mt-4 bg-emerald-100 text-emerald-700 px-5 py-2 rounded-lg font-medium hover:bg-emerald-200 transition">
+          Try Again
         </button>
       </div>
     </div>
@@ -343,6 +476,11 @@
     let trackerAddingTo = '';
     let currentDietGoal = 'maintain';
     let lastAnalysisData = null;
+    let userProfile = {
+      age: null, gender: 'male', weight: null, height: null,
+      activity: 'moderate', bmr: null, tdee: null, targetCal: null
+    };
+    let profileActivity = 'moderate';
 
     // ─── localStorage persistence for tracker ───
     function getTrackerDateKey() {
@@ -376,10 +514,10 @@
     }
 
     const dietGoals = {
-      lose:     { label: 'Lose Weight', calories: 1500, desc: 'Daily target: 1500 calories (calorie deficit)' },
-      maintain: { label: 'Maintain', calories: 2000, desc: 'Daily target: 2000 calories' },
-      gain:     { label: 'Gain Muscle', calories: 2500, desc: 'Daily target: 2500 calories (calorie surplus, high protein)' },
-      diabetes: { label: 'Manage Diabetes', calories: 1800, desc: 'Daily target: 1800 calories (low carbs, low sugar)' },
+      lose:     { label: 'Lose Weight', calories: 1500, desc: 'Daily target: 1500 calories (calorie deficit)', proteinMult: 2.0, carbPct: 0.40, fatPct: 0.30 },
+      maintain: { label: 'Maintain', calories: 2000, desc: 'Daily target: 2000 calories', proteinMult: 1.6, carbPct: 0.50, fatPct: 0.25 },
+      gain:     { label: 'Gain Muscle', calories: 2500, desc: 'Daily target: 2500 calories (calorie surplus, high protein)', proteinMult: 2.2, carbPct: 0.45, fatPct: 0.25 },
+      diabetes: { label: 'Manage Diabetes', calories: 1800, desc: 'Daily target: 1800 calories (low carbs, low sugar)', proteinMult: 1.5, carbPct: 0.35, fatPct: 0.30 },
     };
 
     function setDietGoal(goal) {
@@ -389,11 +527,160 @@
       });
       const activeBtn = document.getElementById('goal' + goal.charAt(0).toUpperCase() + goal.slice(1));
       if (activeBtn) activeBtn.className = 'diet-goal-btn text-xs px-4 py-2 rounded-full border-2 border-emerald-500 bg-emerald-50 text-emerald-700 font-medium';
-      document.getElementById('goalDescription').textContent = dietGoals[goal].desc;
+
+      // Recalculate if profile exists
+      if (userProfile.tdee) {
+        calculateAndSaveProfile();
+      } else {
+        document.getElementById('goalDescription').textContent = dietGoals[goal].desc;
+      }
+
       saveTracker();
       renderTracker();
-      // Re-render analysis if available
       if (lastAnalysisData) renderAnalysis(lastAnalysisData);
+    }
+
+    function toggleProfile() {
+      const form = document.getElementById('profileForm');
+      const chevron = document.getElementById('profileChevron');
+      form.classList.toggle('hidden');
+      chevron.style.transform = form.classList.contains('hidden') ? '' : 'rotate(180deg)';
+    }
+
+    function setActivity(level) {
+      profileActivity = level;
+      document.querySelectorAll('.activity-btn').forEach(btn => {
+        btn.className = 'activity-btn text-xs px-3 py-1.5 rounded-full border-2 border-gray-200 text-gray-600 font-medium transition';
+      });
+      const id = 'act' + level.charAt(0).toUpperCase() + level.slice(1);
+      const el = document.getElementById(id);
+      if (el) el.className = 'activity-btn text-xs px-3 py-1.5 rounded-full border-2 border-emerald-500 bg-emerald-50 text-emerald-700 font-medium';
+    }
+
+    function calculateAndSaveProfile() {
+      const age = parseInt(document.getElementById('profileAge').value);
+      const gender = document.getElementById('profileGender').value;
+      const weight = parseFloat(document.getElementById('profileWeight').value);
+      const height = parseFloat(document.getElementById('profileHeight').value);
+
+      if (!age || !weight || !height) {
+        // If no profile data, use smart defaults
+        updateGoalDescription();
+        return;
+      }
+
+      // Mifflin-St Jeor equation
+      let bmr;
+      if (gender === 'male') {
+        bmr = Math.round(10 * weight + 6.25 * height - 5 * age + 5);
+      } else {
+        bmr = Math.round(10 * weight + 6.25 * height - 5 * age - 161);
+      }
+
+      // TDEE = BMR x activity multiplier
+      const activityMultipliers = {
+        sedentary: 1.2,
+        light: 1.375,
+        moderate: 1.55,
+        active: 1.725,
+        veryActive: 1.9
+      };
+
+      const tdee = Math.round(bmr * (activityMultipliers[profileActivity] || 1.55));
+
+      // Calculate target based on goal
+      let targetCal;
+      switch(currentDietGoal) {
+        case 'lose': targetCal = Math.max(1200, tdee - 500); break;
+        case 'gain': targetCal = tdee + 300; break;
+        case 'diabetes': targetCal = Math.min(tdee - 200, 1800); break;
+        default: targetCal = tdee;
+      }
+
+      // Protein goal (g/day based on weight and goal)
+      const proteinGoal = Math.round(weight * dietGoals[currentDietGoal].proteinMult);
+
+      // Save to state
+      userProfile = { age, gender, weight, height, activity: profileActivity, bmr, tdee, targetCal };
+
+      // Update dietGoals with personalized calories
+      dietGoals[currentDietGoal].calories = targetCal;
+
+      // Also update other goals' calories relative to TDEE
+      dietGoals.lose.calories = Math.max(1200, tdee - 500);
+      dietGoals.maintain.calories = tdee;
+      dietGoals.gain.calories = tdee + 300;
+      dietGoals.diabetes.calories = Math.min(tdee - 200, 1800);
+
+      // Save profile to localStorage
+      localStorage.setItem('thaali_user_profile', JSON.stringify({
+        age, gender, weight, height, activity: profileActivity
+      }));
+
+      // Show results
+      document.getElementById('profileResults').classList.remove('hidden');
+      document.getElementById('resultBMR').textContent = bmr;
+      document.getElementById('resultTDEE').textContent = tdee;
+      document.getElementById('resultTarget').textContent = targetCal;
+      document.getElementById('resultProtein').textContent = proteinGoal + 'g';
+
+      // Macro split display
+      const goal = dietGoals[currentDietGoal];
+      const proteinCal = proteinGoal * 4;
+      const fatCal = Math.round(targetCal * goal.fatPct);
+      const carbCal = targetCal - proteinCal - fatCal;
+      const proteinPct = Math.round((proteinCal / targetCal) * 100);
+      const carbPct = Math.round((carbCal / targetCal) * 100);
+      const fatPctDisplay = 100 - proteinPct - carbPct;
+
+      document.getElementById('resultMacroSplit').innerHTML = `
+        <div class="flex gap-1 h-3 rounded-full overflow-hidden">
+          <div class="bg-blue-400 rounded-l-full" style="width:${proteinPct}%" title="Protein ${proteinPct}%"></div>
+          <div class="bg-yellow-400" style="width:${carbPct}%" title="Carbs ${carbPct}%"></div>
+          <div class="bg-red-400 rounded-r-full" style="width:${fatPctDisplay}%" title="Fat ${fatPctDisplay}%"></div>
+        </div>
+        <div class="flex justify-between text-xs text-gray-500 mt-1">
+          <span>🔵 Protein ${proteinPct}%</span>
+          <span>🟡 Carbs ${carbPct}%</span>
+          <span>🔴 Fat ${fatPctDisplay}%</span>
+        </div>
+      `;
+
+      // Update description and badge
+      document.getElementById('goalDescription').textContent =
+        `Your target: ${targetCal} cal/day (BMR: ${bmr}, TDEE: ${tdee})`;
+      document.getElementById('profileBadge').classList.remove('hidden');
+      document.getElementById('profileBadge').textContent = `${targetCal} cal ✓`;
+
+      // Collapse profile after calculation
+      setTimeout(() => {
+        document.getElementById('profileForm').classList.add('hidden');
+        document.getElementById('profileChevron').style.transform = '';
+      }, 2000);
+
+      saveTracker();
+      renderTracker();
+      if (lastAnalysisData) renderAnalysis(lastAnalysisData);
+    }
+
+    function updateGoalDescription() {
+      document.getElementById('goalDescription').textContent = dietGoals[currentDietGoal].desc;
+    }
+
+    function loadUserProfile() {
+      const saved = localStorage.getItem('thaali_user_profile');
+      if (saved) {
+        try {
+          const p = JSON.parse(saved);
+          if (p.age) document.getElementById('profileAge').value = p.age;
+          if (p.gender) document.getElementById('profileGender').value = p.gender;
+          if (p.weight) document.getElementById('profileWeight').value = p.weight;
+          if (p.height) document.getElementById('profileHeight').value = p.height;
+          if (p.activity) { profileActivity = p.activity; setActivity(p.activity); }
+          // Auto-calculate on load
+          calculateAndSaveProfile();
+        } catch(e) { /* ignore */ }
+      }
     }
 
     // ─── Combo Meals (API-backed) ───
@@ -1051,15 +1338,146 @@
     }
 
     // Photo mode
-    function handleMealPhoto(input) {
-      if (input.files && input.files[0]) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          document.getElementById('mealPhotoImg').src = e.target.result;
-          document.getElementById('mealPhotoPreview').classList.remove('hidden');
-        };
-        reader.readAsDataURL(input.files[0]);
+    let photoIdentifiedDishes = [];
+
+    async function analyzeMealPhoto(input) {
+      if (!input.files || !input.files[0]) return;
+
+      const file = input.files[0];
+
+      // Show preview and loading
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        document.getElementById('photoPreviewImg').src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+
+      document.getElementById('photoUploadArea').classList.add('hidden');
+      document.getElementById('photoLoading').classList.remove('hidden');
+      document.getElementById('photoResults').classList.add('hidden');
+      document.getElementById('photoError').classList.add('hidden');
+
+      try {
+        const formData = new FormData();
+        formData.append('photo', file);
+
+        const res = await fetch('/api/thaali-score/photo-analyze', {
+          method: 'POST',
+          body: formData
+        });
+
+        const data = await res.json();
+
+        document.getElementById('photoLoading').classList.add('hidden');
+
+        if (!data.success && data.error === 'rate_limited') {
+          showPhotoError('Daily Limit Reached', data.message || 'Our free AI quota has been used up for today. Please try again tomorrow, or use Build Your Plate mode to add dishes manually.');
+          return;
+        }
+
+        if (!data.success) {
+          showPhotoError('Analysis Failed', data.error || 'Could not analyze the photo. Please try again with a clearer image.');
+          return;
+        }
+
+        if (data.dishes.length === 0) {
+          showPhotoError('No Dishes Found', data.message || 'Could not identify any Indian dishes. Try a clearer photo with visible food items.');
+          return;
+        }
+
+        // Show results
+        photoIdentifiedDishes = data.dishes;
+        document.getElementById('photoResults').classList.remove('hidden');
+        document.getElementById('photoResultTitle').textContent = data.message || `${data.dishes.length} dishes found!`;
+
+        const totalCal = data.dishes.reduce((s, d) => s + d.cal, 0);
+        document.getElementById('photoResultSubtitle').textContent = `Total: ~${totalCal} calories`;
+
+        document.getElementById('photoIdentifiedDishes').innerHTML = data.dishes.map((d, i) => {
+          const vegIcon = d.veg
+            ? '<span class="w-4 h-4 border border-green-600 rounded-sm flex items-center justify-center flex-shrink-0"><span class="w-2 h-2 bg-green-600 rounded-full"></span></span>'
+            : '<span class="w-4 h-4 border border-red-600 rounded-sm flex items-center justify-center flex-shrink-0"><span class="w-2 h-2 bg-red-600 rounded-full"></span></span>';
+          const confidenceBadge = d.confidence === 'high'
+            ? '<span class="text-xs bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full">Exact match</span>'
+            : '<span class="text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full">Best match</span>';
+          const scoreColor = d.healthScore >= 7 ? 'text-emerald-600' : d.healthScore >= 4 ? 'text-amber-600' : 'text-red-500';
+          const giColor = d.gi === 'low' ? 'bg-emerald-50 text-emerald-600' : d.gi === 'medium' ? 'bg-amber-50 text-amber-600' : 'bg-red-50 text-red-600';
+
+          return `
+            <div class="flex items-center gap-3 p-3 rounded-lg border-2 border-gray-100 hover:border-emerald-300 transition photo-dish-card" data-index="${i}">
+              <input type="checkbox" checked class="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500" onchange="togglePhotoDish(${i}, this.checked)">
+              ${vegIcon}
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <p class="font-semibold text-gray-800 text-sm">${d.name}</p>
+                  ${confidenceBadge}
+                  <span class="${giColor} text-xs px-1 py-0.5 rounded">${d.gi ? d.gi[0].toUpperCase() + 'GI' : ''}</span>
+                </div>
+                <p class="text-xs text-gray-400">${d.category} &bull; AI detected: "${d.aiName}"</p>
+              </div>
+              <div class="text-right flex-shrink-0">
+                <p class="font-bold text-sm text-gray-700">${d.cal} cal</p>
+                <p class="text-xs ${scoreColor}">${d.healthScore}/10</p>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        // Show unmatched items
+        if (data.unmatched && data.unmatched.length > 0) {
+          document.getElementById('photoUnmatched').classList.remove('hidden');
+          document.getElementById('photoUnmatchedList').textContent = data.unmatched.map(u => u.name).join(', ');
+        } else {
+          document.getElementById('photoUnmatched').classList.add('hidden');
+        }
+
+      } catch(err) {
+        document.getElementById('photoLoading').classList.add('hidden');
+        console.error('[PhotoMode]', err);
+        showPhotoError('Connection Error', 'Could not reach the server. Please check your internet connection and try again.');
       }
+
+      // Reset file input so same file can be re-uploaded
+      input.value = '';
+    }
+
+    function togglePhotoDish(index, checked) {
+      if (photoIdentifiedDishes[index]) {
+        photoIdentifiedDishes[index]._selected = checked;
+      }
+    }
+
+    function addPhotoDishesToPlate() {
+      const selected = photoIdentifiedDishes.filter((d, i) => d._selected !== false);
+
+      selected.forEach(d => {
+        if (!myPlate.some(p => p.id === d.id)) {
+          myPlate.push({
+            id: d.id, name: d.name, cal: d.cal,
+            category: d.category, veg: d.veg, serving: 1
+          });
+        }
+      });
+
+      // Switch to Build mode and show plate
+      switchMode('build');
+      updateMyPlate();
+      searchDishes();
+      fetchSmartSuggestions();
+    }
+
+    function showPhotoError(title, detail) {
+      document.getElementById('photoError').classList.remove('hidden');
+      document.getElementById('photoErrorMsg').textContent = title;
+      document.getElementById('photoErrorDetail').textContent = detail;
+    }
+
+    function resetPhotoMode() {
+      photoIdentifiedDishes = [];
+      document.getElementById('photoUploadArea').classList.remove('hidden');
+      document.getElementById('photoLoading').classList.add('hidden');
+      document.getElementById('photoResults').classList.add('hidden');
+      document.getElementById('photoError').classList.add('hidden');
     }
 
     // Tracker
@@ -1534,6 +1952,7 @@
     window.addEventListener('DOMContentLoaded', () => {
       loadTracker();
       setDietGoal(currentDietGoal); // restore UI for saved diet goal
+      loadUserProfile();
       searchDishes();
       renderTracker();
       loadCombos();
