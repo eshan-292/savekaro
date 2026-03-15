@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SastaIlaaj - Generic Medicine Finder | SaveKaro</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Tesseract.js for OCR -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
     body { font-family: 'Inter', sans-serif; }
@@ -158,17 +160,34 @@
     </div>
   </div>
 
-  <!-- Prescription Upload Preview -->
+  <!-- Prescription Upload Preview & OCR -->
   <div id="prescriptionPreview" class="hidden max-w-4xl mx-auto px-4 mt-6">
-    <div class="bg-white rounded-xl shadow p-4 flex items-center gap-4">
-      <img id="prescriptionImg" src="" alt="Prescription" class="w-24 h-24 object-cover rounded-lg border">
-      <div>
-        <p class="font-semibold text-gray-800">Prescription uploaded</p>
-        <p class="text-sm text-gray-500">OCR scanning is coming soon. For now, please type the medicine names from your prescription above.</p>
+    <div class="bg-white rounded-xl shadow overflow-hidden">
+      <div class="p-4 flex items-start gap-4">
+        <img id="prescriptionImg" src="" alt="Prescription" class="w-28 h-28 object-cover rounded-lg border">
+        <div class="flex-1">
+          <p class="font-semibold text-gray-800">Prescription Uploaded</p>
+          <p id="ocrStatusText" class="text-sm text-gray-500 mt-1">Scanning your prescription with OCR...</p>
+          <!-- OCR Progress -->
+          <div id="ocrProgressContainer" class="mt-3">
+            <div class="flex items-center justify-between text-xs text-gray-500 mb-1">
+              <span>Scanning...</span>
+              <span id="ocrPercent">0%</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2.5">
+              <div id="ocrProgressBar" class="bg-emerald-500 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+            </div>
+          </div>
+          <!-- Extracted Medicines List -->
+          <div id="ocrMedicinesList" class="hidden mt-3">
+            <p class="text-xs font-semibold text-emerald-700 mb-1">Medicines found in prescription:</p>
+            <div id="ocrMedicinesContainer" class="flex flex-wrap gap-2"></div>
+          </div>
+        </div>
+        <button onclick="document.getElementById('prescriptionPreview').classList.add('hidden')" class="text-gray-400 hover:text-gray-600">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
       </div>
-      <button onclick="document.getElementById('prescriptionPreview').classList.add('hidden')" class="ml-auto text-gray-400 hover:text-gray-600">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-      </button>
     </div>
   </div>
 
@@ -352,9 +371,163 @@
         reader.onload = function(e) {
           document.getElementById('prescriptionImg').src = e.target.result;
           document.getElementById('prescriptionPreview').classList.remove('hidden');
+          // Reset UI
+          document.getElementById('ocrProgressContainer').classList.remove('hidden');
+          document.getElementById('ocrMedicinesList').classList.add('hidden');
+          document.getElementById('ocrStatusText').textContent = 'Scanning your prescription with OCR...';
+          document.getElementById('ocrPercent').textContent = '0%';
+          document.getElementById('ocrProgressBar').style.width = '0%';
+          // Start OCR
+          performPrescriptionOCR(e.target.result);
         };
         reader.readAsDataURL(input.files[0]);
       }
+    }
+
+    async function performPrescriptionOCR(imageDataUrl) {
+      try {
+        const result = await Tesseract.recognize(imageDataUrl, 'eng', {
+          logger: m => {
+            if (m.status === 'recognizing text') {
+              const pct = Math.round(m.progress * 100);
+              document.getElementById('ocrPercent').textContent = pct + '%';
+              document.getElementById('ocrProgressBar').style.width = pct + '%';
+            }
+          }
+        });
+
+        const text = result.data.text;
+        console.log('Prescription OCR text:', text);
+
+        // Extract medicine names from OCR text
+        const medicines = extractMedicineNames(text);
+
+        document.getElementById('ocrProgressContainer').classList.add('hidden');
+
+        if (medicines.length === 0) {
+          document.getElementById('ocrStatusText').innerHTML = '<span class="text-amber-600">Could not detect medicine names clearly. Try a clearer photo, or type the medicine names above.</span>';
+          return;
+        }
+
+        document.getElementById('ocrStatusText').innerHTML = `<span class="text-emerald-600">Found ${medicines.length} potential medicine(s)! Searching for generic alternatives...</span>`;
+        document.getElementById('ocrMedicinesList').classList.remove('hidden');
+
+        // Search each medicine and show results
+        const container = document.getElementById('ocrMedicinesContainer');
+        container.innerHTML = '';
+        let foundCount = 0;
+
+        for (const med of medicines) {
+          const pill = document.createElement('button');
+          pill.className = 'text-xs bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-full font-medium hover:bg-emerald-200 transition';
+          pill.textContent = med;
+          pill.onclick = () => { quickSearch(med); };
+          container.appendChild(pill);
+
+          // Auto-search each medicine
+          try {
+            const res = await fetch('/api/sasta-ilaaj/search', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ query: med })
+            });
+            const data = await res.json();
+            if (data.results && data.results.length > 0) {
+              foundCount++;
+              pill.classList.add('ring-2', 'ring-emerald-400');
+              // Auto-add first match to prescription
+              const match = data.results[0];
+              const cheapestAlt = match.genericAlternatives[match.genericAlternatives.length - 1] || match.genericAlternatives[0];
+              const cheapestPrice = cheapestAlt ? cheapestAlt.price : match.mrp;
+              addToPrescription({ brand: match.brand, mrp: match.mrp, cheapestPrice: cheapestPrice, salt: match.salt });
+            } else {
+              pill.classList.remove('bg-emerald-100', 'text-emerald-700');
+              pill.classList.add('bg-gray-100', 'text-gray-500');
+            }
+          } catch (err) {
+            console.error('Search failed for:', med, err);
+          }
+        }
+
+        if (foundCount > 0) {
+          document.getElementById('ocrStatusText').innerHTML = `<span class="text-emerald-700 font-semibold">Matched ${foundCount} medicine(s) from your prescription! Check your prescription builder below for savings.</span>`;
+          // Scroll to prescription builder
+          setTimeout(() => {
+            document.getElementById('prescriptionBuilder').scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }, 500);
+        } else {
+          document.getElementById('ocrStatusText').innerHTML = '<span class="text-amber-600">Could not match any medicines from our database. Try searching manually above.</span>';
+        }
+
+      } catch (err) {
+        console.error('OCR Error:', err);
+        document.getElementById('ocrProgressContainer').classList.add('hidden');
+        document.getElementById('ocrStatusText').innerHTML = '<span class="text-red-500">OCR failed. Please try a clearer image or type the medicine names above.</span>';
+      }
+    }
+
+    function extractMedicineNames(text) {
+      // Clean up OCR text
+      const cleaned = text
+        .replace(/[|_\[\]{}]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+      const medicines = [];
+      const lines = cleaned.split(/[\n\r]+/);
+
+      // Common medicine name patterns
+      // Matches: "Tab. Dolo 650", "Cap. Amoxicillin 500mg", "Syp. Calpol", "1. Crocin 650mg" etc.
+      const medPatterns = [
+        /(?:tab\.?|cap\.?|syp\.?|inj\.?|oint\.?|cream|drops?|susp\.?|gel)\s+([A-Za-z][A-Za-z0-9\s\-]+\d*(?:mg|ml|gm|mcg)?)/gi,
+        /\d+[\.\)]\s*([A-Z][a-zA-Z]+(?:\s+\d+(?:mg|ml|gm|mcg))?)/g,
+        /(?:^|\n)\s*([A-Z][a-zA-Z]{3,}(?:\s+(?:XT|MR|SR|CR|XL|Plus|Forte|DS|LS|HD|D|H|AM|PM))?(?:\s+\d+(?:mg|ml|gm|mcg)?)?)\s*(?:\d|x|X|tab|cap|$)/gm,
+      ];
+
+      // Known medicine keywords to boost confidence
+      const medKeywords = ['mg', 'tab', 'cap', 'tablet', 'capsule', 'syrup', 'injection', 'cream', 'ointment', 'drops', 'suspension', 'gel', 'od', 'bd', 'tds', 'sos', 'prn', 'daily', 'twice', 'thrice'];
+
+      // Extract using patterns
+      for (const pattern of medPatterns) {
+        let match;
+        while ((match = pattern.exec(cleaned)) !== null) {
+          let name = (match[1] || match[0]).trim();
+          // Clean up
+          name = name.replace(/\s*(tab|cap|syp|od|bd|tds|sos|prn|daily|twice|thrice|after|before|food|meal|morning|evening|night|x\s*\d+)\s*$/gi, '').trim();
+          if (name.length >= 3 && name.length <= 30 && /[A-Za-z]{3,}/.test(name)) {
+            // Avoid common non-medicine words
+            const skipWords = ['patient', 'name', 'date', 'doctor', 'hospital', 'clinic', 'address', 'phone', 'mobile', 'age', 'sex', 'male', 'female', 'diagnosis', 'complaint', 'advice', 'follow', 'next', 'visit', 'prescription', 'rx', 'dr', 'ref', 'reg', 'opd', 'ipd', 'room', 'bed', 'ward'];
+            if (!skipWords.includes(name.toLowerCase()) && !medicines.some(m => m.toLowerCase() === name.toLowerCase())) {
+              medicines.push(name);
+            }
+          }
+        }
+      }
+
+      // If patterns didn't work well, try line-by-line extraction
+      if (medicines.length === 0) {
+        for (const line of lines) {
+          const trimmed = line.trim();
+          // Check if line looks like a medicine entry
+          const hasMedIndicator = medKeywords.some(kw => trimmed.toLowerCase().includes(kw));
+          if (hasMedIndicator && trimmed.length > 3 && trimmed.length < 60) {
+            // Extract the medicine name part
+            let name = trimmed.replace(/^[\d\.\)\-\s]+/, ''); // Remove leading numbers
+            name = name.replace(/(?:tab\.?|cap\.?|syp\.?|inj\.?)\s*/gi, ''); // Remove form prefix
+            name = name.replace(/\s*[\-\u2013]\s*\d+.*$/, ''); // Remove dosage instructions after dash
+            name = name.replace(/\s+(od|bd|tds|qid|sos|prn|hs|ac|pc|stat)(?:\s|$).*/gi, '').trim();
+            name = name.split(/\s{2,}/)[0]; // Take first part if double-spaced
+            if (name.length >= 3 && name.length <= 30 && /[A-Za-z]{3,}/.test(name)) {
+              const skipWords = ['patient', 'name', 'date', 'doctor', 'hospital', 'clinic', 'address', 'phone', 'mobile', 'age', 'sex', 'diagnosis', 'complaint', 'prescription'];
+              if (!skipWords.includes(name.toLowerCase()) && !medicines.some(m => m.toLowerCase() === name.toLowerCase())) {
+                medicines.push(name);
+              }
+            }
+          }
+        }
+      }
+
+      return medicines.slice(0, 10); // Max 10 medicines
     }
 
     async function doSearch() {

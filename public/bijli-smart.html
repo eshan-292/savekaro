@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>BijliSmart - AI Electricity Bill Optimizer | SaveKaro</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Tesseract.js for OCR -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <style>
     body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
     .brand-green { color: #10B981; }
@@ -47,6 +49,54 @@
 
   <!-- MAIN CONTENT -->
   <main class="max-w-5xl mx-auto px-4 py-8">
+
+    <!-- Upload Bill Section -->
+    <section id="billUploadSection" class="mb-6">
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+        <div class="flex flex-col md:flex-row items-center gap-6">
+          <div class="flex-1 text-center md:text-left">
+            <h2 class="text-lg font-bold text-gray-800 mb-1">Upload Your Electricity Bill</h2>
+            <p class="text-sm text-gray-500">Take a photo of your bill — we'll auto-fill state, units & amount using OCR</p>
+          </div>
+          <label class="cursor-pointer inline-flex items-center gap-2 bg-brand text-white px-6 py-3 rounded-xl font-semibold hover:bg-emerald-600 transition text-sm">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            Upload Bill Photo
+            <input type="file" accept="image/*" class="hidden" onchange="handleBillUpload(this)">
+          </label>
+        </div>
+
+        <!-- OCR Progress & Preview (hidden initially) -->
+        <div id="billOcrSection" class="hidden mt-5">
+          <div class="flex items-start gap-4">
+            <img id="billPreviewImg" src="" alt="Bill" class="w-32 h-32 object-cover rounded-lg border">
+            <div class="flex-1">
+              <p id="billOcrStatus" class="text-sm text-gray-600">Scanning your bill...</p>
+              <!-- Progress Bar -->
+              <div id="billOcrProgress" class="mt-2">
+                <div class="flex items-center justify-between text-xs text-gray-500 mb-1">
+                  <span>Reading bill...</span>
+                  <span id="billOcrPercent">0%</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2.5">
+                  <div id="billOcrBar" class="bg-emerald-500 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+              </div>
+              <!-- Extracted Fields -->
+              <div id="billOcrResults" class="hidden mt-3 space-y-2">
+                <div class="flex flex-wrap gap-2">
+                  <span id="billOcrState" class="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-medium"></span>
+                  <span id="billOcrUnits" class="text-xs bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full font-medium"></span>
+                  <span id="billOcrAmount" class="text-xs bg-amber-100 text-amber-700 px-3 py-1 rounded-full font-medium"></span>
+                </div>
+                <button onclick="applyBillOcrData()" class="text-xs bg-brand text-white px-4 py-1.5 rounded-lg font-semibold hover:bg-emerald-600 transition">Auto-fill Form Below</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <p class="text-xs text-gray-400 mt-3 text-center">Your bill is scanned locally in your browser — nothing is uploaded to any server</p>
+      </div>
+    </section>
 
     <!-- Quick Estimate Presets -->
     <section id="presetsSection" class="mb-6">
@@ -407,6 +457,172 @@
   </footer>
 
 <script>
+// ============================================================
+// BILL OCR
+// ============================================================
+let billOcrData = { state: null, units: null, amount: null };
+
+function handleBillUpload(input) {
+  if (!input.files || !input.files[0]) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    document.getElementById('billPreviewImg').src = e.target.result;
+    document.getElementById('billOcrSection').classList.remove('hidden');
+    document.getElementById('billOcrProgress').classList.remove('hidden');
+    document.getElementById('billOcrResults').classList.add('hidden');
+    document.getElementById('billOcrStatus').textContent = 'Scanning your bill...';
+    document.getElementById('billOcrPercent').textContent = '0%';
+    document.getElementById('billOcrBar').style.width = '0%';
+    performBillOCR(e.target.result);
+  };
+  reader.readAsDataURL(input.files[0]);
+}
+
+async function performBillOCR(imageDataUrl) {
+  try {
+    const result = await Tesseract.recognize(imageDataUrl, 'eng', {
+      logger: m => {
+        if (m.status === 'recognizing text') {
+          const pct = Math.round(m.progress * 100);
+          document.getElementById('billOcrPercent').textContent = pct + '%';
+          document.getElementById('billOcrBar').style.width = pct + '%';
+        }
+      }
+    });
+
+    const text = result.data.text;
+    console.log('Bill OCR text:', text);
+
+    document.getElementById('billOcrProgress').classList.add('hidden');
+
+    // Parse bill data
+    billOcrData = parseBillText(text);
+
+    if (!billOcrData.state && !billOcrData.units && !billOcrData.amount) {
+      document.getElementById('billOcrStatus').innerHTML = '<span class="text-amber-600">Could not read bill details clearly. Try a clearer photo, or fill the form manually below.</span>';
+      return;
+    }
+
+    // Show extracted data
+    document.getElementById('billOcrResults').classList.remove('hidden');
+    let foundParts = [];
+    if (billOcrData.state) {
+      document.getElementById('billOcrState').textContent = 'State: ' + (stateNames[billOcrData.state] || billOcrData.state);
+      document.getElementById('billOcrState').classList.remove('hidden');
+      foundParts.push('state');
+    } else {
+      document.getElementById('billOcrState').classList.add('hidden');
+    }
+    if (billOcrData.units) {
+      document.getElementById('billOcrUnits').textContent = 'Units: ' + billOcrData.units + ' kWh';
+      document.getElementById('billOcrUnits').classList.remove('hidden');
+      foundParts.push('units');
+    } else {
+      document.getElementById('billOcrUnits').classList.add('hidden');
+    }
+    if (billOcrData.amount) {
+      document.getElementById('billOcrAmount').textContent = 'Amount: \u20B9' + billOcrData.amount;
+      document.getElementById('billOcrAmount').classList.remove('hidden');
+      foundParts.push('amount');
+    } else {
+      document.getElementById('billOcrAmount').classList.add('hidden');
+    }
+
+    document.getElementById('billOcrStatus').innerHTML = `<span class="text-emerald-600 font-semibold">Extracted ${foundParts.length} detail(s) from your bill!</span>`;
+
+  } catch (err) {
+    console.error('Bill OCR Error:', err);
+    document.getElementById('billOcrProgress').classList.add('hidden');
+    document.getElementById('billOcrStatus').innerHTML = '<span class="text-red-500">OCR failed. Please try a clearer image or fill the form manually.</span>';
+  }
+}
+
+function parseBillText(text) {
+  const result = { state: null, units: null, amount: null };
+  const lower = text.toLowerCase();
+
+  // Detect state from utility/discom names
+  const statePatterns = {
+    delhi: ['bses', 'brpl', 'bypl', 'tpddl', 'ndpl', 'ndmc', 'delhi', 'new delhi'],
+    maharashtra: ['msedcl', 'adani electricity', 'tata power', 'best undertaking', 'maharashtra', 'mumbai', 'pune', 'nagpur'],
+    karnataka: ['bescom', 'mescom', 'hescom', 'gescom', 'cesc mysore', 'karnataka', 'bengaluru', 'bangalore'],
+    tamilnadu: ['tneb', 'tangedco', 'tamil nadu', 'chennai'],
+    up: ['uppcl', 'pvvnl', 'dvvnl', 'mvvnl', 'kesco', 'uttar pradesh', 'lucknow', 'noida'],
+    gujarat: ['ugvcl', 'pgvcl', 'mgvcl', 'dgvcl', 'torrent power', 'gujarat', 'ahmedabad'],
+    rajasthan: ['jvvnl', 'avvnl', 'jdvvnl', 'rajasthan', 'jaipur'],
+    mp: ['mpeb', 'mppkvvcl', 'mpmkvvcl', 'madhya pradesh', 'bhopal', 'indore'],
+    telangana: ['tsspdcl', 'tsnpdcl', 'telangana', 'hyderabad'],
+    kerala: ['kseb', 'kerala', 'kochi', 'thiruvananthapuram'],
+    westbengal: ['wbsedcl', 'cesc kolkata', 'west bengal', 'kolkata'],
+  };
+
+  for (const [state, keywords] of Object.entries(statePatterns)) {
+    if (keywords.some(kw => lower.includes(kw))) {
+      result.state = state;
+      break;
+    }
+  }
+
+  // Extract units consumed
+  const unitPatterns = [
+    /(?:units?\s*consumed|consumption|total\s*units?|units?\s*used|kwh\s*consumed|energy\s*consumed)\s*[:\-]?\s*(\d{1,5})/i,
+    /(\d{2,5})\s*(?:units?|kwh|kw\.?h)/i,
+    /(?:present|current)\s*reading\s*[:\-]?\s*\d+\s*(?:previous|last)\s*reading\s*[:\-]?\s*\d+\s*(?:units?\s*consumed|consumption|difference)\s*[:\-]?\s*(\d{1,5})/i,
+  ];
+  for (const pattern of unitPatterns) {
+    const match = text.match(pattern);
+    if (match) {
+      const val = parseInt(match[1]);
+      if (val >= 10 && val <= 5000) {
+        result.units = val;
+        break;
+      }
+    }
+  }
+
+  // Extract bill amount
+  const amountPatterns = [
+    /(?:total\s*(?:amount|payable|due|bill)|amount\s*(?:payable|due)|net\s*(?:amount|payable)|grand\s*total|bill\s*amount)\s*[:\-]?\s*(?:rs\.?|inr|\u20B9)?\s*(\d[\d,]*\.?\d*)/i,
+    /(?:rs\.?|inr|\u20B9)\s*(\d[\d,]*\.?\d*)\s*(?:\/\-|payable|due)/i,
+    /(?:payable|due|total)\s*(?:rs\.?|inr|\u20B9)?\s*(\d[\d,]*\.?\d*)/i,
+  ];
+  for (const pattern of amountPatterns) {
+    const match = text.match(pattern);
+    if (match) {
+      const val = parseFloat(match[1].replace(/,/g, ''));
+      if (val >= 50 && val <= 50000) {
+        result.amount = Math.round(val);
+        break;
+      }
+    }
+  }
+
+  return result;
+}
+
+function applyBillOcrData() {
+  if (billOcrData.state) {
+    document.getElementById('state').value = billOcrData.state;
+  }
+  if (billOcrData.units) {
+    document.getElementById('unitsConsumed').value = billOcrData.units;
+  }
+  if (billOcrData.amount) {
+    document.getElementById('monthlyBill').value = billOcrData.amount;
+  }
+  // Scroll to form
+  document.getElementById('formSection').scrollIntoView({ behavior: 'smooth' });
+  // Flash highlight on filled fields
+  const fields = ['state', 'unitsConsumed', 'monthlyBill'];
+  fields.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.classList.add('ring-2', 'ring-emerald-400');
+      setTimeout(() => el.classList.remove('ring-2', 'ring-emerald-400'), 3000);
+    }
+  });
+}
+
 // Store last results for sharing
 let lastResultData = null;
 
