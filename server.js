@@ -96,22 +96,28 @@ async function extractWithAI(type, filePathOrText, gender) {
 
   // Second pass: detect and fill missing parameters from expected groups
   const missingNames = aiExtract.detectMissingParameters(mapped);
+  console.log(`[Extract] First pass: ${mapped.length} params mapped. Missing groups check: ${missingNames.length} missing.`);
   if (missingNames.length > 0) {
-    console.log(`[FollowUp] First pass found ${mapped.length} params. Missing from expected groups: ${missingNames.join(', ')}`);
+    console.log(`[FollowUp] Missing from expected groups: ${missingNames.join(', ')}`);
+    console.log(`[FollowUp] Starting second Gemini call for ${missingNames.length} missing params...`);
     try {
       const followUpResults = await aiExtract.extractMissing(type, filePathOrText, missingNames);
+      console.log(`[FollowUp] Second call returned ${followUpResults ? followUpResults.length : 0} raw results`);
       if (followUpResults && followUpResults.length > 0) {
         const followUpMapped = aiExtract.mapToParametersDB(followUpResults, PARAMETERS_DB, findParameter, gender);
+        console.log(`[FollowUp] Mapped to ${followUpMapped.length} DB params`);
         // Merge — only add params not already found
         const existingIds = new Set(mapped.map(m => m.parameterId));
         const newParams = followUpMapped.filter(m => !existingIds.has(m.parameterId));
         if (newParams.length > 0) {
-          console.log(`[FollowUp] Found ${newParams.length} additional params: ${newParams.map(p => p.rawName).join(', ')}`);
+          console.log(`[FollowUp] ✓ Added ${newParams.length} new params: ${newParams.map(p => p.rawName).join(', ')}`);
           mapped = [...mapped, ...newParams];
+        } else {
+          console.log(`[FollowUp] All follow-up params were already found in first pass`);
         }
       }
     } catch (err) {
-      console.log(`[FollowUp] Skipped: ${err.message}`);
+      console.log(`[FollowUp] ✗ Failed: ${err.message}`);
     }
   }
 
