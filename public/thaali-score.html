@@ -121,32 +121,40 @@
         <button onclick="filterCategory('Snacks')" class="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full hover:bg-emerald-50">Snacks</button>
         <button onclick="filterCategory('Sweets')" class="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full hover:bg-emerald-50">Sweets</button>
         <button onclick="filterCategory('Non-Veg')" class="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full hover:bg-emerald-50">Non-Veg</button>
+        <button onclick="filterCategory('Bengali')" class="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full hover:bg-emerald-50">Bengali</button>
+        <button onclick="filterCategory('Kerala')" class="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full hover:bg-emerald-50">Kerala</button>
+        <button onclick="filterCategory('Maharashtrian')" class="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full hover:bg-emerald-50">Maharashtrian</button>
+        <button onclick="filterCategory('Gujarati')" class="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full hover:bg-emerald-50">Gujarati</button>
+        <button onclick="filterCategory('Andhra')" class="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full hover:bg-emerald-50">Andhra</button>
         <button onclick="filterCategory('Drinks')" class="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full hover:bg-emerald-50">Drinks</button>
         <button onclick="filterCategory('Sides')" class="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full hover:bg-emerald-50">Sides</button>
       </div>
     </div>
 
-    <!-- Combo Meals (API-backed) -->
-    <div id="comboMealsSection" class="bg-white rounded-xl shadow-sm p-4 mb-4">
-      <div class="flex items-center justify-between mb-3">
-        <h3 class="text-sm font-bold text-gray-800">🍽️ Ready Combos — One Tap, Full Thali</h3>
-        <div class="flex gap-1">
-          <button onclick="filterCombos('')" class="combo-filter text-xs px-2 py-1 rounded-full bg-emerald-100 text-emerald-700 font-medium">All</button>
-          <button onclick="filterCombos('breakfast')" class="combo-filter text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-500">Breakfast</button>
-          <button onclick="filterCombos('lunch')" class="combo-filter text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-500">Lunch</button>
-          <button onclick="filterCombos('dinner')" class="combo-filter text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-500">Dinner</button>
-        </div>
-      </div>
-      <div id="comboGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-        <p class="col-span-3 text-xs text-gray-400 text-center py-3">Loading combos...</p>
-      </div>
-    </div>
-
-    <!-- Popular Dishes / Search Results -->
+    <!-- Popular Dishes / Search Results (directly below filters for instant feedback) -->
     <div id="popularDishesHeader" class="mb-2">
       <h3 class="text-sm font-bold text-gray-700">Popular Dishes</h3>
     </div>
-    <div id="dishSearchResults" class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6"></div>
+    <div id="dishSearchResults" class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4"></div>
+
+    <!-- Combo Meals (collapsible, below dish results) -->
+    <div id="comboMealsSection" class="bg-white rounded-xl shadow-sm p-4 mb-4">
+      <div class="flex items-center justify-between cursor-pointer" onclick="toggleCombos()">
+        <h3 class="text-sm font-bold text-gray-800">🍽️ Ready Combos — One Tap, Full Thali</h3>
+        <div class="flex items-center gap-2">
+          <div class="flex gap-1" onclick="event.stopPropagation()">
+            <button onclick="filterCombos('')" class="combo-filter text-xs px-2 py-1 rounded-full bg-emerald-100 text-emerald-700 font-medium">All</button>
+            <button onclick="filterCombos('breakfast')" class="combo-filter text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-500">Breakfast</button>
+            <button onclick="filterCombos('lunch')" class="combo-filter text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-500">Lunch</button>
+            <button onclick="filterCombos('dinner')" class="combo-filter text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-500">Dinner</button>
+          </div>
+          <svg id="comboChevron" class="w-4 h-4 text-gray-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </div>
+      </div>
+      <div id="comboGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 mt-3">
+        <p class="col-span-3 text-xs text-gray-400 text-center py-3">Loading combos...</p>
+      </div>
+    </div>
 
     <!-- My Plate -->
     <div id="myPlateSection" class="hidden">
@@ -313,7 +321,11 @@
             <option value="">All India</option>
             <option value="North Indian">North Indian</option>
             <option value="South Indian">South Indian</option>
-            <option value="Breakfast">Breakfast-heavy</option>
+            <option value="Bengali">Bengali</option>
+            <option value="Kerala">Kerala</option>
+            <option value="Maharashtrian">Maharashtrian</option>
+            <option value="Gujarati">Gujarati</option>
+            <option value="Andhra">Andhra</option>
           </select>
         </div>
       </div>
@@ -790,6 +802,13 @@
     // ─── Combo Meals (API-backed) ───
     let allCombos = [];
     let currentComboFilter = '';
+
+    function toggleCombos() {
+      const grid = document.getElementById('comboGrid');
+      const chevron = document.getElementById('comboChevron');
+      grid.classList.toggle('hidden');
+      chevron.style.transform = grid.classList.contains('hidden') ? 'rotate(-90deg)' : '';
+    }
 
     async function loadCombos() {
       try {
