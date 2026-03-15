@@ -235,6 +235,25 @@
       font-weight: 700;
       letter-spacing: 0.5px;
     }
+    .tools-category {
+      margin-bottom: 48px;
+    }
+    .tools-category:last-child {
+      margin-bottom: 0;
+    }
+    .category-header {
+      margin-bottom: 24px;
+    }
+    .category-header h3 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--gray-800);
+      margin-bottom: 6px;
+    }
+    .category-header p {
+      font-size: 0.95rem;
+      color: var(--gray-500);
+    }
 
     /* ─── CALCULATOR ─── */
     .calculator {
@@ -539,52 +558,68 @@
   <section class="tools" id="tools">
     <div class="container">
       <div class="section-header">
-        <h2>5 AI Tools. One Platform. Maximum Savings.</h2>
-        <p>Each tool is designed to save you real money every month — no subscriptions, no hidden fees.</p>
+        <h2>5 AI Tools. Two Missions. One Platform.</h2>
+        <p>Health tools to keep you informed. Savings tools to keep your wallet full.</p>
       </div>
 
-      <div class="tools-grid">
-
-        <div class="tool-card featured">
-          <span class="icon">🩸</span>
-          <h3>SehatScan</h3>
-          <div class="savings">Save ₹500 per report</div>
-          <p class="desc">Upload your blood test report. Get instant AI explanation of every parameter — hemoglobin, sugar, cholesterol, thyroid, vitamins, everything. Stop paying ₹500 to doctors just to read your report.</p>
-          <a href="/sehat-scan" class="try-btn">Try Free →</a>
+      <div class="tools-category">
+        <div class="category-header">
+          <h3>🩺 Sehat — Your Health, Decoded</h3>
+          <p>Understand your body better. Zero doctor fees.</p>
         </div>
+        <div class="tools-grid">
 
-        <div class="tool-card featured">
-          <span class="icon">💊</span>
-          <h3>SastaIlaaj</h3>
-          <div class="savings">Save 80-90% on medicines</div>
-          <p class="desc">Find generic alternatives to expensive branded medicines. Same salt, same effect, fraction of the price. Why pay ₹200 for Crocin when the same Paracetamol costs ₹15?</p>
-          <a href="/sasta-ilaaj" class="try-btn">Try Free →</a>
+          <div class="tool-card featured">
+            <span class="icon">🩸</span>
+            <h3>SehatScan</h3>
+            <div class="savings">Save ₹500 per report</div>
+            <p class="desc">Upload your blood test report. Get instant AI explanation of every parameter — hemoglobin, sugar, cholesterol, thyroid, vitamins, everything. Stop paying ₹500 to doctors just to read your report.</p>
+            <a href="/sehat-scan" class="try-btn">Try Free →</a>
+          </div>
+
+          <div class="tool-card featured">
+            <span class="icon">🍛</span>
+            <h3>ThaaliScore</h3>
+            <div class="savings">Free nutrition tracking</div>
+            <p class="desc">Photo your Indian meal. Get instant calories, protein, carbs, and nutrients. Built for dal-chawal, rajma-rice, and paratha — not burgers and salads. Finally, a nutrition app that understands Indian food.</p>
+            <a href="/thaali-score" class="try-btn">Try Free →</a>
+          </div>
+
         </div>
+      </div>
 
-        <div class="tool-card featured">
-          <span class="icon">🛒</span>
-          <h3>SabseSasta</h3>
-          <div class="savings">Save ₹2,000-5,000/month on groceries</div>
-          <p class="desc">Compare grocery prices across Blinkit, Zepto, BigBasket, and Swiggy Instamart in real-time. Stop overpaying for atta, daal, and oil. One search, cheapest price found.</p>
-          <a href="/sabse-sasta" class="try-btn">Try Free →</a>
+      <div class="tools-category">
+        <div class="category-header">
+          <h3>💰 Bachat — Save Every Rupee</h3>
+          <p>Stop overpaying for medicines, groceries, and electricity.</p>
         </div>
+        <div class="tools-grid">
 
-        <div class="tool-card featured">
-          <span class="icon">🍛</span>
-          <h3>ThaaliScore</h3>
-          <div class="savings">Free nutrition tracking</div>
-          <p class="desc">Photo your Indian meal. Get instant calories, protein, carbs, and nutrients. Built for dal-chawal, rajma-rice, and paratha — not burgers and salads. Finally, a nutrition app that understands Indian food.</p>
-          <a href="/thaali-score" class="try-btn">Try Free →</a>
+          <div class="tool-card featured">
+            <span class="icon">💊</span>
+            <h3>SastaIlaaj</h3>
+            <div class="savings">Save 80-90% on medicines</div>
+            <p class="desc">Find generic alternatives to expensive branded medicines. Same salt, same effect, fraction of the price. Why pay ₹200 for Crocin when the same Paracetamol costs ₹15?</p>
+            <a href="/sasta-ilaaj" class="try-btn">Try Free →</a>
+          </div>
+
+          <div class="tool-card featured">
+            <span class="icon">🛒</span>
+            <h3>SabseSasta</h3>
+            <div class="savings">Save ₹2,000-5,000/month on groceries</div>
+            <p class="desc">Compare grocery prices across Blinkit, Zepto, BigBasket, and Swiggy Instamart in real-time. Stop overpaying for atta, daal, and oil. One search, cheapest price found.</p>
+            <a href="/sabse-sasta" class="try-btn">Try Free →</a>
+          </div>
+
+          <div class="tool-card featured">
+            <span class="icon">⚡</span>
+            <h3>BijliSmart</h3>
+            <div class="savings">Save 20-40% on electricity bills</div>
+            <p class="desc">Upload your electricity bill. AI analyzes your usage pattern and tells you exactly which appliances are costing the most and how to reduce your bill by 20-40%. Works for all state electricity boards.</p>
+            <a href="/bijli-smart" class="try-btn">Try Free →</a>
+          </div>
+
         </div>
-
-        <div class="tool-card featured">
-          <span class="icon">⚡</span>
-          <h3>BijliSmart</h3>
-          <div class="savings">Save 20-40% on electricity bills</div>
-          <p class="desc">Upload your electricity bill. AI analyzes your usage pattern and tells you exactly which appliances are costing the most and how to reduce your bill by 20-40%. Works for all state electricity boards.</p>
-          <a href="/bijli-smart" class="try-btn">Try Free →</a>
-        </div>
-
       </div>
     </div>
   </section>
@@ -846,11 +881,12 @@
           <p>India's #1 AI platform for saving money and staying healthy. Built with love in India, for every Indian family.</p>
         </div>
         <div class="footer-col">
-          <h4>Tools</h4>
+          <h4>Health Tools</h4>
           <a href="/sehat-scan">SehatScan</a>
+          <a href="/thaali-score">ThaaliScore</a>
+          <h4 style="margin-top:16px;">Savings Tools</h4>
           <a href="/sasta-ilaaj">SastaIlaaj</a>
           <a href="/sabse-sasta">SabseSasta</a>
-          <a href="/thaali-score">ThaaliScore</a>
           <a href="/bijli-smart">BijliSmart</a>
         </div>
         <div class="footer-col">

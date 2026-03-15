@@ -307,6 +307,37 @@ app.get('/api/sasta-ilaaj/categories', sastaIlaaj.handleCategories);
 app.post('/api/thaali-score/analyze', thaaliScore.handleAnalyze);
 app.get('/api/thaali-score/search', thaaliScore.handleSearch);
 app.get('/api/thaali-score/dish/:id', thaaliScore.handleGetDish);
+app.get('/api/thaali-score/combos', thaaliScore.handleCombos);
+app.get('/api/thaali-score/combo/:comboId', (req, res) => thaaliScore.handleComboAnalyze(req, res));
+app.post('/api/thaali-score/suggestions', thaaliScore.handleSuggestions);
+app.get('/api/thaali-score/nutrient-rich', (req, res) => {
+  // Filter dishes by a specific nutrient — used for SehatScan cross-link
+  const { nutrient, veg, limit } = req.query;
+  const validNutrients = ['iron', 'calcium', 'vitC', 'vitB12', 'folate', 'protein'];
+  if (!nutrient || !validNutrients.includes(nutrient)) {
+    return res.json({ error: 'Valid nutrients: iron, calcium, vitC, vitB12, folate, protein' });
+  }
+  let filtered = thaaliScore.dishes;
+  if (veg === 'true') filtered = filtered.filter(d => d.veg);
+
+  // Sort by the nutrient (protein is top-level, others are in micro)
+  const sorted = [...filtered].sort((a, b) => {
+    if (nutrient === 'protein') return b.protein - a.protein;
+    const aVal = (a.micro && a.micro[nutrient]) || 0;
+    const bVal = (b.micro && b.micro[nutrient]) || 0;
+    return bVal - aVal;
+  }).slice(0, parseInt(limit) || 15);
+
+  res.json({
+    nutrient,
+    dishes: sorted.map(d => ({
+      id: d.id, name: d.name, category: d.category, veg: d.veg,
+      cal: d.cal, serving: d.serving,
+      value: nutrient === 'protein' ? d.protein : (d.micro && d.micro[nutrient]) || 0,
+      unit: nutrient === 'protein' ? 'g' : ['vitB12'].includes(nutrient) ? 'mcg' : ['folate'].includes(nutrient) ? 'mcg' : 'mg'
+    }))
+  });
+});
 
 // ─── BijliSmart API ───
 app.post('/api/bijli-smart/analyze', bijliSmart.handleAnalyze);

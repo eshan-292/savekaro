@@ -118,26 +118,19 @@
       </div>
     </div>
 
-    <!-- Quick Thali Templates -->
-    <div id="thaliTemplates" class="bg-white rounded-xl shadow-sm p-4 mb-4">
-      <h3 class="text-sm font-bold text-gray-800 mb-3">Quick Thali Templates</h3>
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
-        <button onclick="loadThaliTemplate('healthy_north')" class="text-left p-3 rounded-lg border-2 border-gray-100 hover:border-emerald-400 hover:bg-emerald-50 transition">
-          <p class="text-sm font-semibold text-gray-800">Healthy North Indian</p>
-          <p class="text-xs text-gray-400 mt-1">Dal, Roti, Sabzi, Raita, Salad</p>
-        </button>
-        <button onclick="loadThaliTemplate('south_breakfast')" class="text-left p-3 rounded-lg border-2 border-gray-100 hover:border-emerald-400 hover:bg-emerald-50 transition">
-          <p class="text-sm font-semibold text-gray-800">South Indian Breakfast</p>
-          <p class="text-xs text-gray-400 mt-1">Idli, Sambar, Chutney, Coffee</p>
-        </button>
-        <button onclick="loadThaliTemplate('high_protein')" class="text-left p-3 rounded-lg border-2 border-gray-100 hover:border-emerald-400 hover:bg-emerald-50 transition">
-          <p class="text-sm font-semibold text-gray-800">High Protein Thali</p>
-          <p class="text-xs text-gray-400 mt-1">Chicken Curry, Dal, Brown Rice, Curd</p>
-        </button>
-        <button onclick="loadThaliTemplate('weight_loss')" class="text-left p-3 rounded-lg border-2 border-gray-100 hover:border-emerald-400 hover:bg-emerald-50 transition">
-          <p class="text-sm font-semibold text-gray-800">Weight Loss Thali</p>
-          <p class="text-xs text-gray-400 mt-1">Salad, Grilled Chicken, Dal, Roti</p>
-        </button>
+    <!-- Combo Meals (API-backed) -->
+    <div id="comboMealsSection" class="bg-white rounded-xl shadow-sm p-4 mb-4">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-sm font-bold text-gray-800">🍽️ Ready Combos — One Tap, Full Thali</h3>
+        <div class="flex gap-1">
+          <button onclick="filterCombos('')" class="combo-filter text-xs px-2 py-1 rounded-full bg-emerald-100 text-emerald-700 font-medium">All</button>
+          <button onclick="filterCombos('breakfast')" class="combo-filter text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-500">Breakfast</button>
+          <button onclick="filterCombos('lunch')" class="combo-filter text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-500">Lunch</button>
+          <button onclick="filterCombos('dinner')" class="combo-filter text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-500">Dinner</button>
+        </div>
+      </div>
+      <div id="comboGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+        <p class="col-span-3 text-xs text-gray-400 text-center py-3">Loading combos...</p>
       </div>
     </div>
 
@@ -159,6 +152,8 @@
       <div id="myPlateItems" class="flex flex-wrap gap-2 mb-4"></div>
       <!-- Serving size legend -->
       <p id="servingSizeLegend" class="hidden text-xs text-gray-400 mb-3">Click serving buttons to adjust portion size per dish.</p>
+      <!-- Smart Suggestions -->
+      <div id="smartSuggestions" class="hidden mb-4"></div>
       <button onclick="analyzeMyPlate()" class="w-full bg-brand text-white py-3 rounded-xl font-semibold hover:bg-emerald-600 transition text-base">
         Analyze My Thali
       </button>
@@ -266,6 +261,12 @@
         <!-- Meal Rating -->
         <div id="mealRatings" class="mb-6"></div>
 
+        <!-- GI Summary (for diabetics) -->
+        <div id="giSummary" class="hidden mb-6"></div>
+
+        <!-- Micronutrient Highlights -->
+        <div id="microHighlights" class="hidden mb-6"></div>
+
         <!-- Healthier Swaps -->
         <div id="swapsSection" class="hidden mb-6">
           <h4 class="font-semibold text-gray-700 mb-3">💡 Healthier Swap Suggestions</h4>
@@ -325,39 +326,149 @@
       if (lastAnalysisData) renderAnalysis(lastAnalysisData);
     }
 
-    // Quick Thali Templates
-    const thaliTemplates = {
-      healthy_north: [
-        { id: 901, name: 'Dal Tadka', cal: 180, category: 'Dals', veg: true, serving: 1 },
-        { id: 902, name: 'Roti', cal: 120, category: 'Rice/Breads', veg: true, serving: 1 },
-        { id: 903, name: 'Mixed Veg Sabzi', cal: 130, category: 'North Indian', veg: true, serving: 1 },
-        { id: 904, name: 'Raita', cal: 70, category: 'Sides', veg: true, serving: 1 },
-        { id: 905, name: 'Green Salad', cal: 35, category: 'Sides', veg: true, serving: 1 },
-      ],
-      south_breakfast: [
-        { id: 906, name: 'Idli (2 pcs)', cal: 130, category: 'South Indian', veg: true, serving: 1 },
-        { id: 907, name: 'Sambar', cal: 120, category: 'South Indian', veg: true, serving: 1 },
-        { id: 908, name: 'Coconut Chutney', cal: 60, category: 'Sides', veg: true, serving: 1 },
-        { id: 909, name: 'Filter Coffee', cal: 90, category: 'Drinks', veg: true, serving: 1 },
-      ],
-      high_protein: [
-        { id: 910, name: 'Chicken Curry', cal: 320, category: 'Non-Veg', veg: false, serving: 1 },
-        { id: 911, name: 'Dal Fry', cal: 190, category: 'Dals', veg: true, serving: 1 },
-        { id: 912, name: 'Brown Rice', cal: 180, category: 'Rice/Breads', veg: true, serving: 1 },
-        { id: 913, name: 'Curd', cal: 80, category: 'Sides', veg: true, serving: 1 },
-      ],
-      weight_loss: [
-        { id: 914, name: 'Green Salad', cal: 35, category: 'Sides', veg: true, serving: 1 },
-        { id: 915, name: 'Grilled Chicken', cal: 220, category: 'Non-Veg', veg: false, serving: 1 },
-        { id: 916, name: 'Dal', cal: 160, category: 'Dals', veg: true, serving: 1 },
-        { id: 917, name: 'Roti', cal: 120, category: 'Rice/Breads', veg: true, serving: 1 },
-      ],
-    };
+    // ─── Combo Meals (API-backed) ───
+    let allCombos = [];
+    let currentComboFilter = '';
 
+    async function loadCombos() {
+      try {
+        const res = await fetch('/api/thaali-score/combos');
+        const data = await res.json();
+        allCombos = data.combos || [];
+        renderCombos(allCombos);
+      } catch(e) {
+        document.getElementById('comboGrid').innerHTML = '<p class="col-span-3 text-xs text-gray-400 text-center py-3">Could not load combos</p>';
+      }
+    }
+
+    function filterCombos(mealType) {
+      currentComboFilter = mealType;
+      document.querySelectorAll('.combo-filter').forEach(btn => {
+        btn.className = 'combo-filter text-xs px-2 py-1 rounded-full ' + (btn.textContent.trim().toLowerCase() === (mealType || 'all') ? 'bg-emerald-100 text-emerald-700 font-medium' : 'bg-gray-100 text-gray-500');
+      });
+      const filtered = mealType ? allCombos.filter(c => c.mealType === mealType) : allCombos;
+      renderCombos(filtered);
+    }
+
+    function renderCombos(combos) {
+      const grid = document.getElementById('comboGrid');
+      if (combos.length === 0) {
+        grid.innerHTML = '<p class="col-span-3 text-xs text-gray-400 text-center py-3">No combos found</p>';
+        return;
+      }
+      grid.innerHTML = combos.map(c => {
+        const vegIcon = c.veg
+          ? '<span class="w-3 h-3 border border-green-600 rounded-sm inline-flex items-center justify-center"><span class="w-1.5 h-1.5 bg-green-600 rounded-full"></span></span>'
+          : '<span class="w-3 h-3 border border-red-600 rounded-sm inline-flex items-center justify-center"><span class="w-1.5 h-1.5 bg-red-600 rounded-full"></span></span>';
+        const mealBadge = { breakfast: '🌅', lunch: '🌞', dinner: '🌙' }[c.mealType] || '🍽️';
+        return `
+          <button onclick="loadCombo('${c.id}')" class="text-left p-3 rounded-lg border-2 border-gray-100 hover:border-emerald-400 hover:bg-emerald-50 transition group">
+            <div class="flex items-center gap-1.5 mb-1">
+              ${vegIcon}
+              <p class="text-sm font-semibold text-gray-800 group-hover:text-emerald-700">${c.name}</p>
+              <span class="text-xs ml-auto">${mealBadge}</span>
+            </div>
+            <p class="text-xs text-gray-400">${c.desc}</p>
+            <div class="flex items-center gap-2 mt-1.5">
+              <span class="text-xs font-bold text-emerald-600">${c.nutrition.cal} cal</span>
+              <span class="text-xs text-gray-400">P:${c.nutrition.protein}g</span>
+              <span class="text-xs text-gray-400">C:${c.nutrition.carbs}g</span>
+              <span class="text-xs text-gray-400 ml-auto">${c.region}</span>
+            </div>
+          </button>
+        `;
+      }).join('');
+    }
+
+    async function loadCombo(comboId) {
+      try {
+        const res = await fetch('/api/thaali-score/combo/' + comboId);
+        const data = await res.json();
+        if (data.error) return;
+        // Load dishes into plate
+        myPlate = data.dishes.map(d => ({
+          id: d.id, name: d.name, cal: d.nutrition.cal,
+          category: d.category, veg: d.veg, serving: 1
+        }));
+        updateMyPlate();
+        fetchSmartSuggestions();
+        searchDishes();
+      } catch(e) { console.error(e); }
+    }
+
+    // Legacy template support (fallback)
     function loadThaliTemplate(templateKey) {
-      myPlate = thaliTemplates[templateKey].map(d => ({ ...d }));
-      updateMyPlate();
-      searchDishes();
+      // Redirect to combo system
+      const mapping = { healthy_north: 'combo_4', south_breakfast: 'combo_6', high_protein: 'combo_14', weight_loss: 'combo_13' };
+      if (mapping[templateKey]) loadCombo(mapping[templateKey]);
+    }
+
+    // ─── Smart Suggestions ───
+    async function fetchSmartSuggestions() {
+      if (myPlate.length === 0) {
+        document.getElementById('smartSuggestions').classList.add('hidden');
+        return;
+      }
+      try {
+        const res = await fetch('/api/thaali-score/suggestions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ dishes: myPlate.map(d => d.id) })
+        });
+        const data = await res.json();
+        renderSmartSuggestions(data.suggestions || []);
+      } catch(e) {
+        document.getElementById('smartSuggestions').classList.add('hidden');
+      }
+    }
+
+    function renderSmartSuggestions(suggestions) {
+      const container = document.getElementById('smartSuggestions');
+      if (suggestions.length === 0) {
+        container.classList.add('hidden');
+        return;
+      }
+      container.classList.remove('hidden');
+      container.innerHTML = `
+        <div class="bg-blue-50 rounded-xl p-3 border border-blue-100">
+          <p class="text-xs font-bold text-blue-800 mb-2">💡 Smart Suggestions — Apki thali mein kya add karein?</p>
+          ${suggestions.map(s => `
+            <div class="flex items-start gap-2 mb-2 last:mb-0">
+              <span class="text-sm">${s.emoji}</span>
+              <div class="flex-1">
+                <p class="text-xs text-blue-800">${s.message}</p>
+                ${s.suggested && s.suggested.length > 0 ? `
+                  <div class="flex flex-wrap gap-1 mt-1">
+                    ${s.suggested.map(d => `
+                      <button onclick="quickAddDish(${d.id}, '${(d.name||'').replace(/'/g,"\\'")}')" class="text-xs bg-white text-blue-700 border border-blue-200 px-2 py-0.5 rounded-full hover:bg-blue-100 transition">+ ${d.name}</button>
+                    `).join('')}
+                  </div>
+                ` : ''}
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    async function quickAddDish(id, name) {
+      // Fetch full dish info and add to plate
+      try {
+        const res = await fetch('/api/thaali-score/dish/' + id);
+        const d = await res.json();
+        if (d && !myPlate.some(p => p.id === d.id)) {
+          myPlate.push({ id: d.id, name: d.name, cal: d.cal, category: d.category, veg: d.veg, serving: 1 });
+          updateMyPlate();
+          fetchSmartSuggestions();
+          searchDishes();
+        }
+      } catch(e) {
+        // Fallback: add with minimal info
+        if (!myPlate.some(p => p.id === id)) {
+          myPlate.push({ id, name, cal: 0, category: '', veg: true, serving: 1 });
+          updateMyPlate();
+        }
+      }
     }
 
     // Popular dishes for initial load
@@ -489,7 +600,10 @@
               </div>
               <div class="text-right">
                 <p class="font-bold text-sm text-gray-700">${d.cal} cal</p>
-                <p class="text-xs ${scoreColor} font-medium">${d.healthScore}/10</p>
+                <div class="flex items-center gap-1 justify-end">
+                  ${d.gi ? `<span class="text-xs px-1 py-0.5 rounded ${d.gi === 'low' ? 'bg-emerald-50 text-emerald-600' : d.gi === 'medium' ? 'bg-amber-50 text-amber-600' : 'bg-red-50 text-red-600'}">${d.gi[0].toUpperCase()}GI</span>` : ''}
+                  <p class="text-xs ${scoreColor} font-medium">${d.healthScore}/10</p>
+                </div>
               </div>
             </div>
             ${inPlate ? '<p class="text-xs text-emerald-600 font-medium mt-1 text-right">Added to plate</p>' : ''}
@@ -513,11 +627,13 @@
 
       if (myPlate.length === 0) {
         section.classList.add('hidden');
+        document.getElementById('smartSuggestions').classList.add('hidden');
         return;
       }
 
       section.classList.remove('hidden');
       document.getElementById('servingSizeLegend').classList.remove('hidden');
+      fetchSmartSuggestions(); // Auto-fetch suggestions when plate changes
       const totalCal = myPlate.reduce((s, d) => s + Math.round(d.cal * (d.serving || 1)), 0);
       count.textContent = myPlate.length + ' items \u00B7 ' + totalCal + ' cal';
       items.innerHTML = myPlate.map(d => {
@@ -632,6 +748,91 @@
         </div>
       `).join('');
 
+      // GI Summary (show for all goals, highlight for diabetes)
+      const giSection = document.getElementById('giSummary');
+      if (data.dishes && data.dishes.some(d => d.gi)) {
+        giSection.classList.remove('hidden');
+        const giCounts = { low: 0, medium: 0, high: 0 };
+        data.dishes.forEach(d => { if (d.gi && giCounts[d.gi] !== undefined) giCounts[d.gi]++; });
+        const giTotal = giCounts.low + giCounts.medium + giCounts.high;
+        const highPct = giTotal > 0 ? Math.round((giCounts.high / giTotal) * 100) : 0;
+        const isDiabetic = currentDietGoal === 'diabetes';
+        const giBg = highPct > 50 ? 'bg-red-50 border-red-200' : highPct > 25 ? 'bg-amber-50 border-amber-200' : 'bg-emerald-50 border-emerald-200';
+        giSection.innerHTML = `
+          <h4 class="font-semibold text-gray-700 mb-2">🩸 Glycemic Index (GI) — Blood Sugar Impact</h4>
+          <div class="${giBg} border rounded-xl p-4">
+            <div class="flex gap-4 mb-2">
+              <div class="text-center flex-1">
+                <span class="inline-block w-3 h-3 rounded-full bg-emerald-500 mb-1"></span>
+                <p class="text-lg font-bold text-emerald-700">${giCounts.low}</p>
+                <p class="text-xs text-gray-500">Low GI</p>
+              </div>
+              <div class="text-center flex-1">
+                <span class="inline-block w-3 h-3 rounded-full bg-amber-500 mb-1"></span>
+                <p class="text-lg font-bold text-amber-700">${giCounts.medium}</p>
+                <p class="text-xs text-gray-500">Medium GI</p>
+              </div>
+              <div class="text-center flex-1">
+                <span class="inline-block w-3 h-3 rounded-full bg-red-500 mb-1"></span>
+                <p class="text-lg font-bold text-red-700">${giCounts.high}</p>
+                <p class="text-xs text-gray-500">High GI</p>
+              </div>
+            </div>
+            ${isDiabetic && giCounts.high > 0 ? `<p class="text-xs text-red-700 font-medium mt-1">⚠️ ${giCounts.high} high-GI item${giCounts.high > 1 ? 's' : ''} detected. For diabetes management, prefer low-GI foods like dals, green veggies, and millets.</p>` : ''}
+            ${!isDiabetic && giCounts.high > 1 ? `<p class="text-xs text-amber-700 mt-1">💡 Multiple high-GI items may cause blood sugar spikes. Consider swapping white rice for brown rice or roti.</p>` : ''}
+            ${giCounts.high === 0 ? `<p class="text-xs text-emerald-700 mt-1">✅ Great! All items are low-to-medium GI — good for steady energy.</p>` : ''}
+          </div>
+        `;
+      } else {
+        giSection.classList.add('hidden');
+      }
+
+      // Micronutrient Highlights
+      const microSection = document.getElementById('microHighlights');
+      if (data.dishes && data.dishes.some(d => d.micro)) {
+        microSection.classList.remove('hidden');
+        const microTotals = { iron: 0, calcium: 0, vitC: 0, vitB12: 0, folate: 0 };
+        data.dishes.forEach(d => {
+          if (d.micro) {
+            microTotals.iron += d.micro.iron || 0;
+            microTotals.calcium += d.micro.calcium || 0;
+            microTotals.vitC += d.micro.vitC || 0;
+            microTotals.vitB12 += d.micro.vitB12 || 0;
+            microTotals.folate += d.micro.folate || 0;
+          }
+        });
+        // RDA for micronutrients
+        const microRDA = { iron: 17, calcium: 1000, vitC: 80, vitB12: 2.4, folate: 400 };
+        const microItems = [
+          { key: 'iron', label: 'Iron', unit: 'mg', rda: microRDA.iron, icon: '🩸', color: 'text-red-600' },
+          { key: 'calcium', label: 'Calcium', unit: 'mg', rda: microRDA.calcium, icon: '🦴', color: 'text-blue-600' },
+          { key: 'vitC', label: 'Vitamin C', unit: 'mg', rda: microRDA.vitC, icon: '🍊', color: 'text-orange-600' },
+          { key: 'vitB12', label: 'Vitamin B12', unit: 'mcg', rda: microRDA.vitB12, icon: '🧬', color: 'text-purple-600' },
+          { key: 'folate', label: 'Folate', unit: 'mcg', rda: microRDA.folate, icon: '🌿', color: 'text-green-600' },
+        ];
+        microSection.innerHTML = `
+          <h4 class="font-semibold text-gray-700 mb-3">🔬 Micronutrients in This Meal</h4>
+          <div class="grid grid-cols-5 gap-2">
+            ${microItems.map(m => {
+              const val = microTotals[m.key];
+              const pct = Math.round((val / m.rda) * 100);
+              const pctColor = pct >= 30 ? 'text-emerald-600' : pct >= 15 ? 'text-amber-600' : 'text-red-500';
+              return `
+                <div class="bg-gray-50 rounded-lg p-2 text-center">
+                  <span class="text-lg">${m.icon}</span>
+                  <p class="text-sm font-bold ${m.color}">${val.toFixed(1)}</p>
+                  <p class="text-xs text-gray-400">${m.unit}</p>
+                  <p class="text-xs font-medium ${pctColor}">${pct}% RDA</p>
+                </div>
+              `;
+            }).join('')}
+          </div>
+          <p class="text-xs text-gray-400 mt-2">Based on Indian RDA for adults. One meal should ideally cover 25-40% of daily needs.</p>
+        `;
+      } else {
+        microSection.classList.add('hidden');
+      }
+
       // Walking Info
       document.getElementById('walkingInfo').innerHTML = `
         <span class="text-3xl">🚶</span>
@@ -692,14 +893,19 @@
         document.getElementById('swapsSection').classList.add('hidden');
       }
 
-      // Per-dish list
+      // Per-dish list with GI badges
       document.getElementById('perDishList').innerHTML = data.dishes.map(d => {
         const scoreColor = d.healthScore >= 7 ? 'bg-emerald-100 text-emerald-700' : d.healthScore >= 4 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700';
         const vitStr = d.vitamins.slice(0, 4).join(', ');
+        const giColor = d.gi === 'low' ? 'bg-emerald-100 text-emerald-700' : d.gi === 'medium' ? 'bg-amber-100 text-amber-700' : d.gi === 'high' ? 'bg-red-100 text-red-700' : '';
+        const giBadge = d.gi ? `<span class="${giColor} text-xs px-1.5 py-0.5 rounded-full font-medium">${d.gi.toUpperCase()} GI</span>` : '';
         return `
           <div class="bg-gray-50 rounded-lg p-3 flex items-center justify-between">
             <div>
-              <p class="font-medium text-gray-800 text-sm">${d.name}</p>
+              <div class="flex items-center gap-1.5">
+                <p class="font-medium text-gray-800 text-sm">${d.name}</p>
+                ${giBadge}
+              </div>
               <p class="text-xs text-gray-400">${d.serving} &middot; ${vitStr}</p>
             </div>
             <div class="flex items-center gap-3">
@@ -890,10 +1096,11 @@
       if (e.target === this) closeTrackerModal();
     });
 
-    // Initial load: show some popular dishes
+    // Initial load: show popular dishes + load combos
     window.addEventListener('DOMContentLoaded', () => {
       searchDishes();
       renderTracker();
+      loadCombos();
     });
   </script>
 </body>
