@@ -432,7 +432,66 @@
       .disclaimer { margin-top: 20px; }
       body { background: white; }
     }
+    /* OCR Progress */
+    .ocr-progress {
+      display: none; text-align: center; padding: 60px 20px;
+      max-width: 600px; margin: 0 auto;
+    }
+    .ocr-progress.active { display: block; }
+    .ocr-progress h3 { font-size: 1.2rem; font-weight: 700; color: var(--gray-800); margin-bottom: 20px; }
+    .progress-bar-container {
+      width: 100%; height: 12px; background: var(--gray-200);
+      border-radius: 6px; overflow: hidden; margin-bottom: 12px;
+    }
+    .progress-bar-fill {
+      height: 100%; background: linear-gradient(90deg, var(--green-400), var(--green-600));
+      border-radius: 6px; transition: width 0.3s ease; width: 0%;
+    }
+    .ocr-status {
+      font-size: 0.9rem; color: var(--gray-600); margin-bottom: 8px;
+      min-height: 24px;
+    }
+    .ocr-percent {
+      font-size: 1.5rem; font-weight: 800; color: var(--green-600);
+      margin-bottom: 4px;
+    }
+    .ocr-substatus {
+      font-size: 0.8rem; color: var(--gray-400);
+    }
+    .ocr-preview {
+      margin-top: 20px; text-align: left;
+      background: var(--gray-50); border: 1px solid var(--gray-200);
+      border-radius: 12px; padding: 16px;
+      max-height: 200px; overflow-y: auto;
+      font-family: 'Courier New', monospace; font-size: 0.75rem;
+      color: var(--gray-600); line-height: 1.5;
+      display: none;
+    }
+    .ocr-preview.active { display: block; }
+    .ocr-preview .extracted-label {
+      font-family: 'Inter', sans-serif; font-weight: 600;
+      color: var(--green-700); margin-bottom: 8px; display: block;
+      font-size: 0.8rem;
+    }
+
+    /* Image preview */
+    .image-preview {
+      display: none; margin-top: 16px;
+      border-radius: 12px; overflow: hidden;
+      border: 1px solid var(--gray-200);
+      max-height: 200px;
+    }
+    .image-preview.active { display: block; }
+    .image-preview img {
+      width: 100%; height: auto; display: block;
+      max-height: 200px; object-fit: contain;
+      background: var(--gray-100);
+    }
   </style>
+  <!-- Tesseract.js for client-side OCR (free, runs in browser) -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <!-- PDF.js for rendering scanned PDFs to images -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 </head>
 <body>
 
@@ -452,7 +511,7 @@
     <div class="container">
       <div class="badge">🩸 Free AI Health Tool</div>
       <h1>SehatScan — Blood Test Report Analyzer</h1>
-      <p>Upload your blood test report (PDF or photo). Get instant AI explanation of every parameter in simple Hindi-English.</p>
+      <p>Upload your blood test report (PDF or photo). Our OCR reads it instantly — right in your browser. Get AI explanation of every parameter in simple Hindi-English.</p>
       <div class="privacy-badge">
         <span class="shield">🛡️</span>
         Your data is 100% private and never stored. Reports are deleted immediately after analysis.
@@ -479,6 +538,9 @@
           </div>
           <input type="file" class="file-input" id="file-input" accept=".pdf,.png,.jpg,.jpeg,.webp">
           <div id="file-name" style="margin-top:12px;font-size:0.9rem;color:var(--green-600);font-weight:600;display:none;"></div>
+          <div class="image-preview" id="image-preview">
+            <img id="image-preview-img" src="" alt="Report preview">
+          </div>
         </div>
 
         <!-- Text paste -->
@@ -528,12 +590,29 @@ Vitamin B12   165     pg/mL    200 - 900"></textarea>
     </div>
   </section>
 
-  <!-- LOADING -->
+  <!-- LOADING (for text/demo) -->
   <section class="loading" id="loading">
     <div class="container">
       <div class="spinner"></div>
       <p class="loading-text" id="loading-text">Reading your report...</p>
-      <p style="font-size:0.85rem;color:var(--gray-400);margin-top:8px;">This usually takes 10-15 seconds</p>
+      <p style="font-size:0.85rem;color:var(--gray-400);margin-top:8px;">This usually takes 5-10 seconds</p>
+    </div>
+  </section>
+
+  <!-- OCR PROGRESS (for images/scanned PDFs) -->
+  <section class="ocr-progress" id="ocr-progress">
+    <div class="container">
+      <h3 id="ocr-title">📸 Scanning your report with OCR...</h3>
+      <div class="ocr-percent" id="ocr-percent">0%</div>
+      <div class="progress-bar-container">
+        <div class="progress-bar-fill" id="ocr-bar"></div>
+      </div>
+      <div class="ocr-status" id="ocr-status">Initializing OCR engine...</div>
+      <div class="ocr-substatus" id="ocr-substatus">This runs entirely in your browser — your data never leaves your device</div>
+      <div class="ocr-preview" id="ocr-preview">
+        <span class="extracted-label">✅ Extracted text from your report:</span>
+        <div id="ocr-extracted-text"></div>
+      </div>
     </div>
   </section>
 
@@ -606,6 +685,11 @@ Vitamin B12   165     pg/mL    200 - 900"></textarea>
     let currentAnalysis = null;
     let loadingInterval = null;
 
+    // Set PDF.js worker
+    if (window.pdfjsLib) {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+
     // Loading text cycling
     const loadingMessages = [
       'Reading your report...',
@@ -667,9 +751,112 @@ Vitamin B12   165     pg/mL    200 - 900"></textarea>
       const fn = document.getElementById('file-name');
       fn.style.display = 'block';
       fn.textContent = '✅ ' + file.name + ' (' + (file.size / 1024).toFixed(0) + ' KB)';
+
+      // Show image preview for image files
+      const ext = file.name.split('.').pop().toLowerCase();
+      const preview = document.getElementById('image-preview');
+      if (['png', 'jpg', 'jpeg', 'webp'].includes(ext)) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          document.getElementById('image-preview-img').src = e.target.result;
+          preview.classList.add('active');
+        };
+        reader.readAsDataURL(file);
+      } else {
+        preview.classList.remove('active');
+      }
     }
 
-    // Analyze
+    // ── OCR PROGRESS HELPERS ──
+    function showOCRProgress() {
+      document.getElementById('upload-section').style.display = 'none';
+      document.getElementById('ocr-progress').classList.add('active');
+    }
+    function updateOCRProgress(percent, status, substatus) {
+      document.getElementById('ocr-percent').textContent = Math.round(percent) + '%';
+      document.getElementById('ocr-bar').style.width = percent + '%';
+      if (status) document.getElementById('ocr-status').textContent = status;
+      if (substatus) document.getElementById('ocr-substatus').textContent = substatus;
+    }
+    function showExtractedText(text) {
+      const preview = document.getElementById('ocr-preview');
+      document.getElementById('ocr-extracted-text').textContent = text.substring(0, 1000);
+      preview.classList.add('active');
+    }
+    function hideOCRProgress() {
+      document.getElementById('ocr-progress').classList.remove('active');
+    }
+
+    // ── CLIENT-SIDE OCR WITH TESSERACT.JS ──
+    async function performOCR(imageSource) {
+      showOCRProgress();
+      updateOCRProgress(5, 'Loading OCR engine...', 'Downloading language data (one-time, ~15MB)');
+
+      try {
+        const worker = await Tesseract.createWorker('eng', 1, {
+          logger: (m) => {
+            if (m.status === 'recognizing text') {
+              const pct = 20 + (m.progress * 70); // 20% to 90%
+              updateOCRProgress(pct, 'Reading text from your report...',
+                `Scanning ${Math.round(m.progress * 100)}% complete`);
+            } else if (m.status === 'loading language traineddata') {
+              updateOCRProgress(10, 'Loading language data...', 'This is cached after first use');
+            } else if (m.status === 'initializing api') {
+              updateOCRProgress(15, 'Initializing OCR engine...', 'Almost ready');
+            }
+          }
+        });
+
+        updateOCRProgress(20, 'Scanning your report...', 'Extracting text from image');
+
+        const { data } = await worker.recognize(imageSource);
+        const extractedText = data.text;
+
+        updateOCRProgress(92, 'Text extracted! Analyzing parameters...', `Found ${extractedText.split('\n').filter(l => l.trim()).length} lines of text`);
+        showExtractedText(extractedText);
+
+        await worker.terminate();
+
+        updateOCRProgress(95, 'Sending to analyzer...', 'Matching against 86 blood test parameters');
+
+        // Small delay to show the extracted text
+        await new Promise(r => setTimeout(r, 1000));
+
+        return extractedText;
+      } catch (err) {
+        console.error('OCR Error:', err);
+        throw new Error('OCR failed: ' + err.message);
+      }
+    }
+
+    // ── PDF TO IMAGES (for scanned PDFs) ──
+    async function pdfToImages(file) {
+      updateOCRProgress(5, 'Opening PDF...', 'Rendering pages');
+
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      const numPages = Math.min(pdf.numPages, 5); // Max 5 pages
+
+      updateOCRProgress(8, `PDF has ${pdf.numPages} page(s). Processing ${numPages}...`, 'Rendering to high-res images');
+
+      const canvases = [];
+      for (let i = 1; i <= numPages; i++) {
+        const page = await pdf.getPage(i);
+        const scale = 2.5; // Higher scale = better OCR
+        const viewport = page.getViewport({ scale });
+        const canvas = document.createElement('canvas');
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        const ctx = canvas.getContext('2d');
+        await page.render({ canvasContext: ctx, viewport }).promise;
+        canvases.push(canvas);
+        updateOCRProgress(8 + (i / numPages * 10), `Rendered page ${i}/${numPages}`, 'Converting to image for OCR');
+      }
+
+      return canvases;
+    }
+
+    // ── MAIN ANALYZE FUNCTION ──
     async function analyzeReport() {
       const btn = document.getElementById('analyze-btn');
       btn.disabled = true;
@@ -679,50 +866,182 @@ Vitamin B12   165     pg/mL    200 - 900"></textarea>
       const age = document.getElementById('age').value;
       const reportText = document.getElementById('report-text').value;
 
-      document.getElementById('upload-section').style.display = 'none';
-      document.getElementById('loading').classList.add('active');
-      startLoadingText();
-
       try {
-        let response;
-
+        // CASE 1: User pasted text → send directly to server
         if (reportText.trim()) {
-          response = await fetch('/api/sehat-scan/analyze', {
+          document.getElementById('upload-section').style.display = 'none';
+          document.getElementById('loading').classList.add('active');
+          startLoadingText();
+
+          const response = await fetch('/api/sehat-scan/analyze', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ reportText, gender, age })
           });
-        } else if (currentFile) {
-          const formData = new FormData();
-          formData.append('report', currentFile);
-          formData.append('gender', gender);
-          formData.append('age', age);
-          response = await fetch('/api/sehat-scan/analyze', {
-            method: 'POST',
-            body: formData
-          });
-        } else {
-          // Demo mode
-          response = await fetch('/api/sehat-scan/demo');
+          const data = await response.json();
+          stopLoadingText();
+          document.getElementById('loading').classList.remove('active');
+
+          if (data.success) {
+            currentAnalysis = data.analysis;
+            renderResults(data.analysis, data.message);
+          } else {
+            throw new Error(data.error || 'Analysis failed');
+          }
+          return;
         }
 
-        const data = await response.json();
+        // CASE 2: File uploaded
+        if (currentFile) {
+          const ext = currentFile.name.split('.').pop().toLowerCase();
+          let extractedText = '';
 
-        if (data.success) {
-          currentAnalysis = data.analysis;
-          renderResults(data.analysis, data.message);
-        } else {
-          alert('Analysis failed: ' + (data.error || 'Unknown error'));
-          resetPage();
+          if (['png', 'jpg', 'jpeg', 'webp'].includes(ext)) {
+            // IMAGE → Client-side OCR with Tesseract.js
+            const imageUrl = URL.createObjectURL(currentFile);
+            extractedText = await performOCR(imageUrl);
+            URL.revokeObjectURL(imageUrl);
+
+          } else if (ext === 'pdf') {
+            // PDF → Try text extraction first, fall back to OCR
+            showOCRProgress();
+            updateOCRProgress(3, 'Opening PDF...', 'Checking if text is extractable');
+
+            // First try server-side text extraction (fast for digital PDFs)
+            const formData = new FormData();
+            formData.append('report', currentFile);
+            formData.append('gender', gender);
+            formData.append('age', age);
+
+            const response = await fetch('/api/sehat-scan/analyze', {
+              method: 'POST',
+              body: formData
+            });
+            const data = await response.json();
+
+            // If server found parameters, great — use those results
+            if (data.success && data.mode === 'parsed' && data.analysis) {
+              updateOCRProgress(100, 'Done! Text PDF processed successfully.', `Found ${data.parametersFound || 'multiple'} parameters`);
+              await new Promise(r => setTimeout(r, 500));
+              hideOCRProgress();
+              currentAnalysis = data.analysis;
+              renderResults(data.analysis, null);
+              return;
+            }
+
+            // If server couldn't parse (scanned PDF) → OCR with Tesseract
+            updateOCRProgress(5, 'Scanned PDF detected — running OCR...', 'Rendering pages to images');
+
+            try {
+              const canvases = await pdfToImages(currentFile);
+              let allText = '';
+
+              for (let i = 0; i < canvases.length; i++) {
+                document.getElementById('ocr-title').textContent = `📸 Scanning page ${i + 1}/${canvases.length}...`;
+                const pageText = await performOCROnCanvas(canvases[i], i, canvases.length);
+                allText += pageText + '\n';
+              }
+              extractedText = allText;
+            } catch (ocrErr) {
+              console.error('PDF OCR failed:', ocrErr);
+              // Fall back to demo with message
+              hideOCRProgress();
+              document.getElementById('loading').classList.add('active');
+              startLoadingText();
+              const demoResp = await fetch('/api/sehat-scan/demo');
+              const demoData = await demoResp.json();
+              stopLoadingText();
+              document.getElementById('loading').classList.remove('active');
+              currentAnalysis = demoData.analysis;
+              renderResults(demoData.analysis, 'Could not read this PDF. Showing demo analysis. Try pasting the report text instead.');
+              return;
+            }
+          }
+
+          // Now send extracted OCR text to server for analysis
+          if (extractedText.trim()) {
+            updateOCRProgress(96, 'Analyzing extracted text...', 'Matching parameters against database');
+
+            const response = await fetch('/api/sehat-scan/analyze', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ reportText: extractedText, gender, age })
+            });
+            const data = await response.json();
+
+            updateOCRProgress(100, 'Analysis complete!', '');
+            await new Promise(r => setTimeout(r, 500));
+            hideOCRProgress();
+
+            if (data.success) {
+              currentAnalysis = data.analysis;
+              const mode = data.mode === 'demo' ?
+                'OCR extracted text but couldn\'t find standard blood parameters. Showing demo. Try uploading a clearer photo or paste the text.' : null;
+              renderResults(data.analysis, data.message || mode);
+            } else {
+              throw new Error(data.error || 'Analysis failed');
+            }
+          } else {
+            // No text extracted
+            hideOCRProgress();
+            document.getElementById('loading').classList.add('active');
+            startLoadingText();
+            const demoResp = await fetch('/api/sehat-scan/demo');
+            const demoData = await demoResp.json();
+            stopLoadingText();
+            document.getElementById('loading').classList.remove('active');
+            currentAnalysis = demoData.analysis;
+            renderResults(demoData.analysis, 'Could not extract text from the image. The photo may be too blurry. Try a clearer photo or paste the text directly.');
+          }
+          return;
         }
+
+        // CASE 3: No file, no text → demo
+        document.getElementById('upload-section').style.display = 'none';
+        document.getElementById('loading').classList.add('active');
+        startLoadingText();
+        const demoResp = await fetch('/api/sehat-scan/demo');
+        const demoData = await demoResp.json();
+        stopLoadingText();
+        document.getElementById('loading').classList.remove('active');
+        currentAnalysis = demoData.analysis;
+        renderResults(demoData.analysis, 'No report uploaded. Showing demo analysis.');
+
       } catch (err) {
         console.error(err);
-        alert('Something went wrong. Please try again.');
+        hideOCRProgress();
+        stopLoadingText();
+        document.getElementById('loading').classList.remove('active');
+        alert('Something went wrong: ' + err.message + '. Please try again.');
         resetPage();
       }
 
       btn.disabled = false;
       btn.textContent = '🔍 Analyze My Report — Free';
+    }
+
+    // OCR for a canvas element (used for PDF pages)
+    async function performOCROnCanvas(canvas, pageIdx, totalPages) {
+      const basePercent = 20 + (pageIdx / totalPages * 70);
+
+      try {
+        const worker = await Tesseract.createWorker('eng', 1, {
+          logger: (m) => {
+            if (m.status === 'recognizing text') {
+              const pct = basePercent + (m.progress * (70 / totalPages));
+              updateOCRProgress(pct, `Reading page ${pageIdx + 1}/${totalPages}...`,
+                `${Math.round(m.progress * 100)}% of this page`);
+            }
+          }
+        });
+
+        const { data } = await worker.recognize(canvas);
+        await worker.terminate();
+        return data.text;
+      } catch (err) {
+        console.error('Page OCR error:', err);
+        return '';
+      }
     }
 
     function loadDemo() {
@@ -732,10 +1051,14 @@ Vitamin B12   165     pg/mL    200 - 900"></textarea>
       fetch('/api/sehat-scan/demo')
         .then(r => r.json())
         .then(data => {
+          stopLoadingText();
+          document.getElementById('loading').classList.remove('active');
           currentAnalysis = data.analysis;
           renderResults(data.analysis, 'Showing demo analysis with a sample report.');
         })
         .catch(() => {
+          stopLoadingText();
+          document.getElementById('loading').classList.remove('active');
           alert('Failed to load demo.');
           resetPage();
         });
@@ -949,10 +1272,18 @@ Vitamin B12   165     pg/mL    200 - 900"></textarea>
       document.getElementById('upload-section').style.display = 'block';
       document.getElementById('loading').classList.remove('active');
       document.getElementById('results').classList.remove('active');
+      hideOCRProgress();
+      stopLoadingText();
       currentFile = null;
       document.getElementById('file-input').value = '';
       document.getElementById('file-name').style.display = 'none';
+      document.getElementById('image-preview').classList.remove('active');
       document.getElementById('report-text').value = '';
+      document.getElementById('ocr-preview').classList.remove('active');
+      document.getElementById('ocr-title').textContent = '📸 Scanning your report with OCR...';
+      const btn = document.getElementById('analyze-btn');
+      btn.disabled = false;
+      btn.textContent = '🔍 Analyze My Report — Free';
       window.scrollTo(0, 0);
     }
 
