@@ -888,6 +888,12 @@ Vitamin B12   165     pg/mL    200 - 900"></textarea>
         return true;
       }
 
+      // Rate limit exhausted — show subscription prompt
+      if (data.mode === 'rate_limited') {
+        showRateLimitMessage(data.message);
+        return false;
+      }
+
       // Invalid — not a blood report
       if (data.mode === 'invalid') {
         showInvalidReport(data.message || 'This does not appear to be a blood test report.');
@@ -904,9 +910,9 @@ Vitamin B12   165     pg/mL    200 - 900"></textarea>
         return false;
       }
 
-      // No text extracted from PDF
-      if (data.mode === 'no_text') {
-        // Return false to trigger OCR fallback
+      // AI not configured or other error
+      if (data.mode === 'no_ai' || data.mode === 'error') {
+        showInvalidReport(data.message || 'AI analysis is temporarily unavailable. Please try again later.');
         return false;
       }
 
@@ -953,6 +959,43 @@ Vitamin B12   165     pg/mL    200 - 900"></textarea>
       `;
     }
 
+    // Show rate limit exhausted message with subscription CTA
+    function showRateLimitMessage(message) {
+      hideOCRProgress();
+      stopLoadingText();
+      document.getElementById('loading').classList.remove('active');
+      document.getElementById('results').classList.add('active');
+
+      const container = document.getElementById('results').querySelector('.container');
+      container.innerHTML = `
+        <div style="text-align:center; padding:60px 20px; max-width:600px; margin:0 auto;">
+          <div style="font-size:4rem; margin-bottom:16px;">⏳</div>
+          <h2 style="font-size:1.5rem; font-weight:800; color:var(--gray-900); margin-bottom:16px;">
+            Daily Free Limit Reached
+          </h2>
+          <p style="font-size:1rem; color:var(--gray-600); line-height:1.7; margin-bottom:24px;">
+            ${message || 'Our AI-powered analysis has a daily free quota. Please try again tomorrow.'}
+          </p>
+          <div style="background:var(--yellow-50); border:1px solid #fde68a; border-radius:14px; padding:20px; margin-bottom:24px;">
+            <p style="font-weight:700; color:var(--yellow-600); margin-bottom:8px;">🕐 Free tier resets every 24 hours</p>
+            <p style="font-size:0.9rem; color:var(--gray-600);">
+              SehatScan uses Google's Gemini AI to accurately read your blood reports. The free tier has a daily limit on the number of scans.
+            </p>
+          </div>
+          <div style="background:linear-gradient(135deg, var(--green-50), #ecfdf5); border:2px solid var(--green-300); border-radius:14px; padding:24px; margin-bottom:24px;">
+            <p style="font-weight:800; color:var(--green-700); font-size:1.1rem; margin-bottom:8px;">🚀 Want unlimited scans?</p>
+            <p style="font-size:0.9rem; color:var(--gray-600); margin-bottom:16px;">
+              Subscribe to SaveKaro Pro for unlimited AI-powered blood report analysis, priority processing, and more.
+            </p>
+            <button class="action-btn primary" style="background:var(--green-600); font-size:1rem; padding:12px 32px;" onclick="alert('Coming soon! We\\'ll notify you when subscriptions are available.')">
+              ✨ Get SaveKaro Pro — Coming Soon
+            </button>
+          </div>
+          <button class="action-btn secondary" onclick="resetPage()">🔄 Try Again Later</button>
+        </div>
+      `;
+    }
+
     function resetAndPaste() {
       resetPage();
       switchTab('text');
@@ -994,124 +1037,34 @@ Vitamin B12   165     pg/mL    200 - 900"></textarea>
           const ext = currentFile.name.split('.').pop().toLowerCase();
           let extractedText = '';
 
-          if (['png', 'jpg', 'jpeg', 'webp'].includes(ext)) {
-            // IMAGE → Send to server for AI analysis (Gemini Vision)
-            showOCRProgress();
-            updateOCRProgress(10, 'Uploading image...', 'Sending to AI for analysis');
+          // All file types (image + PDF) → Send to server for AI analysis
+          showOCRProgress();
+          const isImage = ['png', 'jpg', 'jpeg', 'webp'].includes(ext);
+          updateOCRProgress(10, isImage ? 'Uploading image...' : 'Uploading PDF...', 'Analyzing with AI');
 
-            const formData = new FormData();
-            formData.append('report', currentFile);
-            formData.append('gender', gender);
-            formData.append('age', age);
+          const formData = new FormData();
+          formData.append('report', currentFile);
+          formData.append('gender', gender);
+          formData.append('age', age);
 
-            const response = await fetch('/api/sehat-scan/analyze', {
-              method: 'POST',
-              body: formData
-            });
-            const data = await response.json();
+          const response = await fetch('/api/sehat-scan/analyze', {
+            method: 'POST',
+            body: formData
+          });
+          const data = await response.json();
 
-            // AI successfully analyzed the image
-            if ((data.mode === 'ai' || data.mode === 'parsed') && data.analysis) {
-              updateOCRProgress(100, 'Done!', `Found ${data.parametersFound} parameters`);
-              await new Promise(r => setTimeout(r, 500));
-              hideOCRProgress();
-              handleAnalysisResponse(data);
-              return;
-            }
-
-            // AI not available — fall back to client-side OCR
-            if (data.mode === 'no_ai') {
-              updateOCRProgress(15, 'AI unavailable — using OCR...', 'Running in-browser text recognition');
-              const imageUrl = URL.createObjectURL(currentFile);
-              extractedText = await performOCR(imageUrl);
-              URL.revokeObjectURL(imageUrl);
-            } else {
-              // Other error modes
-              hideOCRProgress();
-              handleAnalysisResponse(data);
-              return;
-            }
-
-          } else if (ext === 'pdf') {
-            // PDF → Send to server (AI first, then regex fallback)
-            showOCRProgress();
-            updateOCRProgress(3, 'Uploading PDF...', 'Analyzing with AI');
-
-            const formData = new FormData();
-            formData.append('report', currentFile);
-            formData.append('gender', gender);
-            formData.append('age', age);
-
-            const response = await fetch('/api/sehat-scan/analyze', {
-              method: 'POST',
-              body: formData
-            });
-            const data = await response.json();
-
-            // Server successfully analyzed (AI or regex)
-            if ((data.mode === 'ai' || data.mode === 'parsed') && data.analysis) {
-              const label = data.mode === 'ai' ? 'AI-analyzed' : 'Text PDF processed';
-              updateOCRProgress(100, `Done! ${label}.`, `Found ${data.parametersFound} parameters`);
-              await new Promise(r => setTimeout(r, 500));
-              hideOCRProgress();
-              handleAnalysisResponse(data);
-              return;
-            }
-
-            // Insufficient from text extraction — show error
-            if (data.mode === 'insufficient') {
-              hideOCRProgress();
-              handleAnalysisResponse(data);
-              return;
-            }
-
-            // No text / scanned PDF → try client-side OCR as last resort
-            if (data.mode === 'no_text' || data.mode === 'invalid') {
-              updateOCRProgress(5, 'Scanned PDF detected — running OCR...', 'Rendering pages to images');
-
-              try {
-                const canvases = await pdfToImages(currentFile);
-                let allText = '';
-
-                for (let i = 0; i < canvases.length; i++) {
-                  document.getElementById('ocr-title').textContent = `Scanning page ${i + 1}/${canvases.length}...`;
-                  const pageText = await performOCROnCanvas(canvases[i], i, canvases.length);
-                  allText += pageText + '\n';
-                }
-                extractedText = allText;
-              } catch (ocrErr) {
-                console.error('PDF OCR failed:', ocrErr);
-                hideOCRProgress();
-                showInvalidReport('Could not read this PDF. The file may be corrupted or password-protected.');
-                return;
-              }
-            }
-          }
-
-          // Send extracted OCR text to server for analysis
-          if (extractedText.trim()) {
-            updateOCRProgress(96, 'Analyzing extracted text...', 'Matching against 86 blood test parameters');
-
-            const response = await fetch('/api/sehat-scan/analyze', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ reportText: extractedText, gender, age })
-            });
-            const data = await response.json();
-
-            updateOCRProgress(100, 'Done!', '');
+          // AI successfully analyzed
+          if (data.mode === 'ai' && data.analysis) {
+            updateOCRProgress(100, 'Done! AI-analyzed.', `Found ${data.parametersFound} parameters`);
             await new Promise(r => setTimeout(r, 500));
             hideOCRProgress();
-
             handleAnalysisResponse(data);
-          } else {
-            // No text extracted at all
-            hideOCRProgress();
-            showInvalidReport(
-              'Could not extract any text from this image.',
-              'The photo may be too blurry, too dark, or not a blood test report. Try taking a clearer photo with good lighting, or paste the report text directly.'
-            );
+            return;
           }
+
+          // Any error/rate limit/invalid — let handleAnalysisResponse deal with it
+          hideOCRProgress();
+          handleAnalysisResponse(data);
           return;
         }
 

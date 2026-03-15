@@ -72,22 +72,25 @@ app.get('/api/sehat-scan/parameters', (req, res) => {
   res.json({ success: true, count: params.length, parameters: params });
 });
 
-// Helper: Try AI extraction first, fall back to regex
+// Helper: AI extraction with multi-key + multi-model support
+// Throws RATE_LIMIT_EXHAUSTED if all keys/models are exhausted
+// Throws NO_API_KEY if no keys configured
+// Returns null only if AI returns empty results (not a blood report)
 async function extractWithAI(type, filePathOrText) {
-  if (!aiExtract.isAvailable()) return null;
-  try {
-    let aiResults;
-    if (type === 'pdf') aiResults = await aiExtract.extractFromPDF(filePathOrText);
-    else if (type === 'image') aiResults = await aiExtract.extractFromImage(filePathOrText);
-    else aiResults = await aiExtract.extractFromText(filePathOrText);
-
-    if (!aiResults || aiResults.length === 0) return null;
-    const mapped = aiExtract.mapToParametersDB(aiResults, PARAMETERS_DB, findParameter);
-    return mapped.length > 0 ? mapped : null;
-  } catch (err) {
-    console.error('AI extraction failed, falling back to regex:', err.message);
-    return null;
+  if (!aiExtract.isAvailable()) {
+    const err = new Error('NO_API_KEY');
+    err.code = 'NO_API_KEY';
+    throw err;
   }
+
+  let aiResults;
+  if (type === 'pdf') aiResults = await aiExtract.extractFromPDF(filePathOrText);
+  else if (type === 'image') aiResults = await aiExtract.extractFromImage(filePathOrText);
+  else aiResults = await aiExtract.extractFromText(filePathOrText);
+
+  if (!aiResults || aiResults.length === 0) return null;
+  const mapped = aiExtract.mapToParametersDB(aiResults, PARAMETERS_DB, findParameter);
+  return mapped.length > 0 ? mapped : null;
 }
 
 // API: Analyze blood report
@@ -119,15 +122,55 @@ app.post('/api/sehat-scan/analyze', upload.single('report'), async (req, res) =>
       return res.json({ success: true, mode, parametersFound: parsed.length, analysis, aiPowered: mode === 'ai' });
     }
 
+    // Helper: handle AI errors (rate limits, no key, etc.)
+    function handleAIError(err, filePath) {
+      if (filePath) fs.unlink(filePath, () => {});
+
+      if (err.code === 'RATE_LIMIT_EXHAUSTED' || (err.message && err.message.includes('RATE_LIMIT_EXHAUSTED'))) {
+        return res.json({
+          success: true,
+          mode: 'rate_limited',
+          message: '⚠️ Daily free analysis limit reached! Our AI-powered analysis uses Google Gemini which has a daily free quota. The limit resets every 24 hours. Please try again tomorrow, or subscribe for unlimited scans.',
+          parametersFound: 0,
+          retryAfter: 'tomorrow'
+        });
+      }
+
+      if (err.code === 'NO_API_KEY' || (err.message && err.message.includes('NO_API_KEY'))) {
+        return res.json({
+          success: true,
+          mode: 'no_ai',
+          message: 'AI analysis is not configured on this server. Please contact the administrator.',
+          parametersFound: 0
+        });
+      }
+
+      // Unknown AI error
+      console.error('AI extraction error:', err);
+      return res.json({
+        success: true,
+        mode: 'error',
+        message: 'Something went wrong during analysis. Please try again in a minute.',
+        parametersFound: 0
+      });
+    }
+
     // If manual text was provided
     if (req.body.reportText) {
-      // Try AI first
-      const aiParsed = await extractWithAI('text', req.body.reportText);
-      if (aiParsed) return sendAnalysis(aiParsed, 'ai');
+      try {
+        const aiParsed = await extractWithAI('text', req.body.reportText);
+        if (aiParsed) return sendAnalysis(aiParsed, 'ai');
 
-      // Fallback to regex
-      const parsed = parseReportText(req.body.reportText);
-      return sendAnalysis(parsed, 'parsed');
+        // AI returned empty — not a blood report
+        return res.json({
+          success: true,
+          mode: 'invalid',
+          message: 'Could not find any blood test parameters. Please make sure you are pasting text from a blood test report.',
+          parametersFound: 0
+        });
+      } catch (err) {
+        return handleAIError(err, null);
+      }
     }
 
     // If file was uploaded
@@ -136,60 +179,21 @@ app.post('/api/sehat-scan/analyze', upload.single('report'), async (req, res) =>
       const filePath = req.file.path;
 
       try {
-        if (ext === '.pdf') {
-          // Try AI extraction on PDF first
-          const aiParsed = await extractWithAI('pdf', filePath);
-          if (aiParsed) {
-            fs.unlink(filePath, () => {});
-            return sendAnalysis(aiParsed, 'ai');
-          }
-
-          // Fallback: extract text from PDF and parse with regex
-          try {
-            const pdfParse = require('pdf-parse');
-            const dataBuffer = fs.readFileSync(filePath);
-            const pdfData = await pdfParse(dataBuffer);
-            const text = pdfData.text;
-            const parsed = parseReportText(text);
-            fs.unlink(filePath, () => {});
-
-            if (parsed.length === 0) {
-              return res.json({
-                success: true,
-                mode: 'no_text',
-                message: 'Could not extract parameters from this PDF. Try pasting the report text directly.',
-                extractedText: text.substring(0, 500),
-                parametersFound: 0
-              });
-            }
-            return sendAnalysis(parsed, 'parsed');
-          } catch (pdfErr) {
-            fs.unlink(filePath, () => {});
-            return res.json({
-              success: true,
-              mode: 'no_text',
-              message: 'Could not read this PDF. Try re-uploading or pasting the report text.',
-              parametersFound: 0
-            });
-          }
-        } else {
-          // Image file — send to AI (Gemini Vision)
-          const aiParsed = await extractWithAI('image', filePath);
-          fs.unlink(filePath, () => {});
-
-          if (aiParsed) return sendAnalysis(aiParsed, 'ai');
-
-          // No AI available — tell user to paste text
-          return res.json({
-            success: true,
-            mode: 'no_ai',
-            message: 'Image analysis requires AI. Please paste the report text instead, or upload a PDF.',
-            parametersFound: 0
-          });
-        }
-      } catch (fileErr) {
+        const type = ext === '.pdf' ? 'pdf' : 'image';
+        const aiParsed = await extractWithAI(type, filePath);
         fs.unlink(filePath, () => {});
-        throw fileErr;
+
+        if (aiParsed) return sendAnalysis(aiParsed, 'ai');
+
+        // AI returned empty — not a blood report
+        return res.json({
+          success: true,
+          mode: 'invalid',
+          message: 'Could not find any blood test parameters. Please make sure you are uploading a blood test report.',
+          parametersFound: 0
+        });
+      } catch (err) {
+        return handleAIError(err, filePath);
       }
     }
 
@@ -205,6 +209,11 @@ app.post('/api/sehat-scan/analyze', upload.single('report'), async (req, res) =>
     console.error('Analysis error:', err);
     res.status(500).json({ success: false, error: 'Analysis failed. Please try again.' });
   }
+});
+
+// API: AI status (check key health)
+app.get('/api/sehat-scan/ai-status', (req, res) => {
+  res.json({ success: true, ...aiExtract.getStatus() });
 });
 
 // API: Demo analysis
