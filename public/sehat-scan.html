@@ -777,6 +777,177 @@
       font-size: 0.75rem; color: var(--green-600);
       margin-top: 12px; font-weight: 600;
     }
+
+    /* ═══ FEATURE 1: Risk Scores Section ═══ */
+    .risk-scores-section {
+      max-width: 700px; margin: 32px auto 0;
+    }
+    .risk-scores-section h2 {
+      font-size: 1.4rem; font-weight: 700; margin-bottom: 20px; text-align: center;
+    }
+    .risk-score-card {
+      background: var(--white); border-radius: 14px;
+      border: 1px solid var(--gray-200); padding: 20px;
+      margin-bottom: 14px; transition: box-shadow 0.2s;
+    }
+    .risk-score-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+    .risk-score-card.risk-green { border-left: 5px solid var(--green-500); }
+    .risk-score-card.risk-yellow { border-left: 5px solid var(--yellow-500); }
+    .risk-score-card.risk-red { border-left: 5px solid var(--red-500); }
+    .risk-score-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 10px; flex-wrap: wrap; gap: 8px;
+    }
+    .risk-score-name { font-weight: 700; font-size: 0.95rem; color: var(--gray-800); }
+    .risk-score-value {
+      font-size: 1.3rem; font-weight: 800; padding: 4px 14px;
+      border-radius: 8px;
+    }
+    .risk-score-value.green { background: var(--green-100); color: var(--green-700); }
+    .risk-score-value.yellow { background: var(--yellow-100); color: var(--yellow-600); }
+    .risk-score-value.red { background: var(--red-100); color: var(--red-700); }
+    .risk-score-category {
+      font-size: 0.85rem; font-weight: 600; margin-bottom: 8px;
+    }
+    .risk-score-category.green { color: var(--green-600); }
+    .risk-score-category.yellow { color: var(--yellow-600); }
+    .risk-score-category.red { color: var(--red-600); }
+    .risk-score-explanation {
+      font-size: 0.85rem; color: var(--gray-600); line-height: 1.6; margin-bottom: 8px;
+    }
+    .risk-score-recommendation {
+      font-size: 0.85rem; color: var(--gray-700); line-height: 1.6;
+      background: var(--gray-50); padding: 10px 14px; border-radius: 8px;
+      border-left: 3px solid var(--green-400);
+    }
+
+    /* ═══ FEATURE 2: Medicine Interactions Section ═══ */
+    .medicine-section {
+      max-width: 700px; margin: 32px auto 0;
+    }
+    .medicine-section h2 {
+      font-size: 1.4rem; font-weight: 700; margin-bottom: 8px; text-align: center;
+    }
+    .medicine-section .section-subtitle {
+      font-size: 0.88rem; color: var(--gray-500); text-align: center; margin-bottom: 20px;
+    }
+    .medicine-card {
+      background: var(--white); border: 1px solid var(--gray-200);
+      border-radius: 14px; margin-bottom: 14px; overflow: hidden;
+    }
+    .medicine-card-header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 16px 20px; cursor: pointer; transition: background 0.2s;
+    }
+    .medicine-card-header:hover { background: var(--gray-50); }
+    .medicine-card-title {
+      font-weight: 700; font-size: 0.95rem; color: var(--gray-800);
+    }
+    .medicine-card-condition {
+      font-size: 0.8rem; color: var(--gray-500); margin-top: 2px;
+    }
+    .medicine-card-brands {
+      font-size: 0.78rem; color: var(--green-600); font-weight: 500;
+    }
+    .medicine-card-toggle {
+      font-size: 1.2rem; color: var(--gray-400); transition: transform 0.3s;
+      flex-shrink: 0; margin-left: 12px;
+    }
+    .medicine-card-toggle.open { transform: rotate(180deg); }
+    .medicine-card-body {
+      display: none; padding: 0 20px 20px; border-top: 1px solid var(--gray-100);
+    }
+    .medicine-card-body.open { display: block; }
+    .med-list-section {
+      margin-top: 14px;
+    }
+    .med-list-section h4 {
+      font-size: 0.82rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.3px; margin-bottom: 8px;
+    }
+    .med-list-section h4.avoid { color: var(--red-600); }
+    .med-list-section h4.helpful { color: var(--green-600); }
+    .med-list-section h4.timing { color: var(--blue-600); }
+    .med-list-section h4.warnings { color: var(--yellow-600); }
+    .med-list-section h4.tip { color: var(--green-700); }
+    .med-list-section ul {
+      list-style: none; padding: 0; margin: 0;
+    }
+    .med-list-section ul li {
+      font-size: 0.85rem; color: var(--gray-700); padding: 4px 0 4px 20px;
+      position: relative; line-height: 1.6;
+    }
+    .med-list-section ul li::before {
+      position: absolute; left: 0; top: 4px;
+    }
+    .med-list-section.avoid-section ul li::before { content: '❌'; }
+    .med-list-section.helpful-section ul li::before { content: '✅'; }
+    .med-list-section.warning-section ul li::before { content: '⚠️'; }
+    .med-timing {
+      font-size: 0.85rem; color: var(--blue-600); padding: 6px 12px;
+      background: var(--blue-50); border-radius: 8px; margin-top: 6px;
+    }
+    .med-indian-tip {
+      font-size: 0.88rem; color: var(--green-700); padding: 10px 14px;
+      background: linear-gradient(135deg, var(--green-50), #ecfdf5);
+      border-radius: 8px; margin-top: 10px; line-height: 1.6;
+      border-left: 3px solid var(--green-500);
+    }
+    .medicine-disclaimer {
+      font-size: 0.8rem; color: var(--yellow-600); text-align: center;
+      background: var(--yellow-50); border: 1px solid var(--yellow-100);
+      border-radius: 10px; padding: 12px 16px; margin-top: 16px; line-height: 1.5;
+    }
+
+    /* ═══ FEATURE 3: Diet Plan Bridge ═══ */
+    .diet-bridge-section {
+      max-width: 700px; margin: 32px auto 0;
+    }
+    .diet-bridge-card {
+      background: linear-gradient(135deg, #fef3c7, #fde68a);
+      border: 2px solid #f59e0b; border-radius: 16px;
+      padding: 28px; text-align: center; position: relative;
+      overflow: hidden;
+    }
+    .diet-bridge-card::before {
+      content: ''; position: absolute; top: -40px; right: -40px;
+      width: 120px; height: 120px; background: rgba(255,255,255,0.2);
+      border-radius: 50%;
+    }
+    .diet-bridge-card h3 {
+      font-size: 1.2rem; font-weight: 800; color: var(--gray-900);
+      margin-bottom: 10px;
+    }
+    .diet-bridge-summary {
+      font-size: 0.95rem; color: var(--gray-700); line-height: 1.6;
+      margin-bottom: 16px; font-weight: 500;
+    }
+    .diet-bridge-deficiencies {
+      display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;
+      margin-bottom: 18px;
+    }
+    .diet-bridge-tag {
+      display: inline-block; padding: 5px 14px; border-radius: 20px;
+      font-size: 0.82rem; font-weight: 600;
+    }
+    .diet-bridge-tag.boost {
+      background: var(--green-100); color: var(--green-700);
+    }
+    .diet-bridge-tag.avoid {
+      background: var(--red-100); color: var(--red-700);
+    }
+    .diet-bridge-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--green-600); color: var(--white);
+      padding: 14px 32px; border-radius: 12px; border: none;
+      font-size: 1rem; font-weight: 700; cursor: pointer;
+      font-family: inherit; transition: all 0.2s;
+      text-decoration: none;
+    }
+    .diet-bridge-btn:hover {
+      background: var(--green-700); transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
+    }
   </style>
   <!-- Tesseract.js for client-side OCR (free, runs in browser) -->
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
@@ -960,6 +1131,35 @@ Vitamin B12   165     pg/mL    200 - 900"></textarea>
 
       <!-- Parameter cards -->
       <div class="params-grid" id="params-grid"></div>
+
+      <!-- FEATURE 1: Health Risk Assessment -->
+      <div class="risk-scores-section" id="risk-scores-section" style="display:none;">
+        <h2>🏥 Health Risk Assessment</h2>
+        <div id="risk-scores-list"></div>
+      </div>
+
+      <!-- FEATURE 2: Medicine-Food Interactions -->
+      <div class="medicine-section" id="medicine-section" style="display:none;">
+        <h2>💊 Possible Medicines & Food Interactions</h2>
+        <p class="section-subtitle">Based on your report, you may be prescribed these medicines. Here's what to eat and avoid.</p>
+        <div id="medicine-list"></div>
+        <div class="medicine-disclaimer">
+          <strong>⚠️ Disclaimer:</strong> This is informational only. Medicine suggestions are based on your blood values, not a prescription.
+          Always follow your doctor's advice. Never start or stop any medicine without consulting your doctor.
+        </div>
+      </div>
+
+      <!-- FEATURE 3: Diet Plan Bridge -->
+      <div class="diet-bridge-section" id="diet-bridge-section" style="display:none;">
+        <div class="diet-bridge-card">
+          <h3>🍽️ Get a Personalized Meal Plan Based on Your Report</h3>
+          <div class="diet-bridge-summary" id="diet-bridge-summary"></div>
+          <div class="diet-bridge-deficiencies" id="diet-bridge-tags"></div>
+          <a class="diet-bridge-btn" id="diet-bridge-btn" href="#" target="_blank">
+            Open ThaaliScore with My Health Profile →
+          </a>
+        </div>
+      </div>
 
       <!-- Recommendations -->
       <div class="reco-section">
@@ -1712,6 +1912,15 @@ Vitamin B12   165     pg/mL    200 - 900"></textarea>
           </div>`;
       });
 
+      // Feature 1: Risk Scores
+      renderRiskScores(analysis);
+
+      // Feature 2: Medicine Interactions
+      renderMedicineInteractions(analysis);
+
+      // Feature 3: Diet Bridge
+      renderDietBridge(analysis);
+
       // Indian Diet Tips
       renderDietTips(analysis.parameters);
 
@@ -2381,6 +2590,182 @@ Vitamin B12   165     pg/mL    200 - 900"></textarea>
       const label = labelInput ? labelInput.value.trim() : '';
       saveReport(currentAnalysis, label);
       renderTrackingSection(currentAnalysis);
+    }
+
+    // ═══════════════════════════════════════════════
+    // FEATURE 1: Risk Scores Rendering
+    // ═══════════════════════════════════════════════
+    async function renderRiskScores(analysis) {
+      const section = document.getElementById('risk-scores-section');
+      const list = document.getElementById('risk-scores-list');
+      if (!section || !list) return;
+
+      const gender = document.getElementById('gender').value || 'default';
+      const age = document.getElementById('age').value || '35';
+
+      try {
+        const response = await fetch('/api/sehat-scan/risk-scores', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ parameters: analysis.parameters, age, gender })
+        });
+        const data = await response.json();
+
+        if (!data.success || !data.scores || data.scores.length === 0) {
+          section.style.display = 'none';
+          return;
+        }
+
+        section.style.display = 'block';
+        let html = '';
+        data.scores.forEach(s => {
+          html += `
+            <div class="risk-score-card risk-${s.color}">
+              <div class="risk-score-header">
+                <span class="risk-score-name">${s.name}</span>
+                <span class="risk-score-value ${s.color}">${s.score}</span>
+              </div>
+              <div class="risk-score-category ${s.color}">${s.category}</div>
+              <div class="risk-score-explanation">${s.explanation}</div>
+              <div class="risk-score-recommendation">💡 ${s.recommendation}</div>
+            </div>`;
+        });
+        list.innerHTML = html;
+      } catch (err) {
+        console.error('Risk scores error:', err);
+        section.style.display = 'none';
+      }
+    }
+
+    // ═══════════════════════════════════════════════
+    // FEATURE 2: Medicine Interactions Rendering
+    // ═══════════════════════════════════════════════
+    async function renderMedicineInteractions(analysis) {
+      const section = document.getElementById('medicine-section');
+      const list = document.getElementById('medicine-list');
+      if (!section || !list) return;
+
+      try {
+        const response = await fetch('/api/sehat-scan/medicine-interactions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ parameters: analysis.parameters })
+        });
+        const data = await response.json();
+
+        if (!data.success || !data.medicines || data.medicines.length === 0) {
+          section.style.display = 'none';
+          return;
+        }
+
+        section.style.display = 'block';
+        let html = '';
+        data.medicines.forEach((med, idx) => {
+          const brandsStr = med.brandNames.slice(0, 4).join(', ');
+          html += `
+            <div class="medicine-card">
+              <div class="medicine-card-header" onclick="toggleMedicineCard(${idx})">
+                <div>
+                  <div class="medicine-card-title">💊 ${med.medicine}</div>
+                  <div class="medicine-card-condition">${med.condition}</div>
+                  <div class="medicine-card-brands">Brands: ${brandsStr}</div>
+                </div>
+                <span class="medicine-card-toggle" id="med-toggle-${idx}">▼</span>
+              </div>
+              <div class="medicine-card-body" id="med-body-${idx}">
+                <div class="med-list-section helpful-section">
+                  <h4 class="helpful">✅ Foods That Help</h4>
+                  <ul>${med.helpful.map(f => `<li>${f}</li>`).join('')}</ul>
+                </div>
+                <div class="med-list-section avoid-section">
+                  <h4 class="avoid">❌ Foods to Avoid</h4>
+                  <ul>${med.avoid.map(f => `<li>${f}</li>`).join('')}</ul>
+                </div>
+                <div class="med-list-section">
+                  <h4 class="timing">⏰ Timing</h4>
+                  <div class="med-timing">${med.timing}</div>
+                </div>
+                <div class="med-list-section warning-section">
+                  <h4 class="warnings">⚠️ Warnings</h4>
+                  <ul>${med.warnings.map(w => `<li>${w}</li>`).join('')}</ul>
+                </div>
+                <div class="med-indian-tip">💡 <strong>Indian Tip:</strong> ${med.indianTip}</div>
+              </div>
+            </div>`;
+        });
+        list.innerHTML = html;
+      } catch (err) {
+        console.error('Medicine interactions error:', err);
+        section.style.display = 'none';
+      }
+    }
+
+    function toggleMedicineCard(idx) {
+      const body = document.getElementById(`med-body-${idx}`);
+      const toggle = document.getElementById(`med-toggle-${idx}`);
+      if (body.classList.contains('open')) {
+        body.classList.remove('open');
+        toggle.classList.remove('open');
+      } else {
+        body.classList.add('open');
+        toggle.classList.add('open');
+      }
+    }
+
+    // ═══════════════════════════════════════════════
+    // FEATURE 3: Diet Plan Bridge Rendering
+    // ═══════════════════════════════════════════════
+    async function renderDietBridge(analysis) {
+      const section = document.getElementById('diet-bridge-section');
+      const summary = document.getElementById('diet-bridge-summary');
+      const tags = document.getElementById('diet-bridge-tags');
+      const btn = document.getElementById('diet-bridge-btn');
+      if (!section || !summary || !tags || !btn) return;
+
+      try {
+        const response = await fetch('/api/sehat-scan/diet-recommendation', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ parameters: analysis.parameters })
+        });
+        const data = await response.json();
+
+        if (!data.success || !data.recommendation || !data.recommendation.hasDietRecommendations) {
+          section.style.display = 'none';
+          return;
+        }
+
+        const rec = data.recommendation;
+        section.style.display = 'block';
+        summary.textContent = `Your report suggests: ${rec.summary}`;
+
+        // Render tags
+        let tagsHTML = '';
+        rec.dietProfile.boostNutrients.forEach(n => {
+          tagsHTML += `<span class="diet-bridge-tag boost">↑ ${n}</span>`;
+        });
+        rec.dietProfile.avoidCategories.forEach(c => {
+          tagsHTML += `<span class="diet-bridge-tag avoid">↓ ${c}</span>`;
+        });
+        if (rec.dietProfile.preferLowGI) {
+          tagsHTML += `<span class="diet-bridge-tag avoid">Low GI preferred</span>`;
+        }
+        tags.innerHTML = tagsHTML;
+
+        // Build the ThaaliScore URL with encoded diet profile
+        const profileData = {
+          boost: rec.dietProfile.boostNutrients,
+          avoid: rec.dietProfile.avoidCategories,
+          maxCal: rec.dietProfile.maxCalories,
+          lowGI: rec.dietProfile.preferLowGI,
+          deficiencies: rec.deficiencies.map(d => d.nutrient)
+        };
+        const encoded = btoa(JSON.stringify(profileData));
+        btn.href = `/thaali-score.html?dietProfile=${encoded}`;
+      } catch (err) {
+        console.error('Diet bridge error:', err);
+        section.style.display = 'none';
+      }
     }
 
     function generateSummaryText() {

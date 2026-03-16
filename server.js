@@ -6,7 +6,8 @@ const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 const fs = require('fs');
 
-const { PARAMETERS_DB, parseReportText, analyzeResults, getDemoAnalysis, MIN_VALID_PARAMETERS, findParameter } = require('./lib/sehat-scan');
+const sehatScan = require('./lib/sehat-scan');
+const { PARAMETERS_DB, parseReportText, analyzeResults, getDemoAnalysis, MIN_VALID_PARAMETERS, findParameter } = sehatScan;
 const aiExtract = require('./lib/ai-extract');
 const { generateDoctorSummary } = require('./lib/ai-extract');
 const sastaIlaaj = require('./lib/sasta-ilaaj');
@@ -285,6 +286,27 @@ app.get('/api/sehat-scan/demo', (req, res) => {
   res.json({ success: true, mode: 'demo', analysis: getDemoAnalysis() });
 });
 
+// API: Clinical Risk Scores
+app.post('/api/sehat-scan/risk-scores', (req, res) => {
+  const { parameters, age, gender } = req.body || {};
+  if (!parameters) return res.status(400).json({ error: 'No parameters provided' });
+  res.json({ scores: sehatScan.calculateRiskScores(parameters, age, gender) });
+});
+
+// API: Medicine-Food Interactions
+app.post('/api/sehat-scan/medicine-interactions', (req, res) => {
+  const { parameters } = req.body || {};
+  if (!parameters) return res.status(400).json({ error: 'No parameters provided' });
+  res.json({ medicines: sehatScan.getPossibleMedicines(parameters) });
+});
+
+// API: Diet Recommendation Bridge (SehatScan → ThaaliScore)
+app.post('/api/sehat-scan/diet-recommendation', (req, res) => {
+  const { parameters } = req.body || {};
+  if (!parameters) return res.status(400).json({ error: 'No parameters provided' });
+  res.json(sehatScan.generateDietRecommendation(parameters));
+});
+
 // ─── Tool Pages ───
 app.get('/sasta-ilaaj', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'sasta-ilaaj.html'));
@@ -316,6 +338,32 @@ app.get('/api/thaali-score/festivals', thaaliScore.handleFestivals);
 app.get('/api/thaali-score/festival/:festivalId/dishes', thaaliScore.handleFestivalDishes);
 app.post('/api/thaali-score/nuskhe', thaaliScore.handleNuskhe);
 app.post('/api/thaali-score/grocery-list', thaaliScore.handleGroceryList);
+
+// ─── ThaaliScore Ayurveda & Budget ───
+app.post('/api/thaali-score/prakriti', (req, res) => {
+  const { answers } = req.body || {};
+  if (!answers || !Array.isArray(answers)) return res.status(400).json({ error: 'Provide quiz answers array' });
+  // Count dosha types
+  const counts = { vata: 0, pitta: 0, kapha: 0 };
+  answers.forEach(a => { if (counts[a] !== undefined) counts[a]++; });
+  const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  const dominant = sorted[0][0];
+  const secondary = sorted[1][0];
+  const rules = thaaliScore.prakritiDietRules[dominant];
+  // Filter dishes
+  const favored = thaaliScore.dishes.filter(d => {
+    const score = rules.dishFilter(d);
+    return score > 0;
+  }).slice(0, 30).map(d => ({ id: d.id, name: d.name, category: d.category, veg: d.veg, cal: d.cal, healthScore: d.healthScore }));
+  const avoid = thaaliScore.dishes.filter(d => {
+    const score = rules.dishFilter(d);
+    return score < 0;
+  }).slice(0, 15).map(d => ({ id: d.id, name: d.name, category: d.category, cal: d.cal }));
+  res.json({ dominant, secondary, counts, rules: { title: rules.title, emoji: rules.emoji, description: rules.description, favor: rules.favor, avoid: rules.avoid, mealTiming: rules.mealTiming, spices: rules.spices }, favored, avoid });
+});
+
+app.post('/api/thaali-score/budget-plan', thaaliScore.handleBudgetPlan);
+
 // ─── ThaaliScore Photo Mode (Gemini Vision) ───
 app.post('/api/thaali-score/photo-analyze', upload.single('photo'), async (req, res) => {
   if (!req.file) {

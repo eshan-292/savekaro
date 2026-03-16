@@ -18,6 +18,14 @@
     .dish-card { transition: all 0.2s ease; }
     .score-ring { transition: stroke-dashoffset 0.5s ease; }
     .tab-active { border-bottom: 3px solid #10B981; color: #10B981; font-weight: 600; }
+    .allergen-active { border-color: #EF4444 !important; background-color: #FEF2F2 !important; color: #DC2626 !important; text-decoration: line-through; }
+    .portion-tooltip { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); background: #1F2937; color: white; padding: 8px 12px; border-radius: 8px; font-size: 11px; white-space: nowrap; z-index: 40; pointer-events: none; opacity: 0; transition: opacity 0.2s; }
+    .portion-tooltip::after { content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border: 5px solid transparent; border-top-color: #1F2937; }
+    .portion-trigger:hover .portion-tooltip { opacity: 1; }
+    .swap-popup { position: absolute; right: 0; top: 100%; z-index: 30; min-width: 280px; }
+    .prakriti-option { transition: all 0.2s; }
+    .prakriti-option:hover { border-color: #A855F7; background-color: #FAF5FF; }
+    .prakriti-option.selected { border-color: #A855F7; background-color: #F3E8FF; }
   </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -97,6 +105,9 @@
       <button onclick="switchMode('festivals')" id="tabFestivals" class="px-6 py-3 text-sm font-medium text-gray-500 hover:text-gray-700">
         🎉 Festivals
       </button>
+      <button onclick="switchMode('ayurveda')" id="tabAyurveda" class="px-6 py-3 text-sm font-medium text-gray-500 hover:text-gray-700">
+        🧘 Ayurveda
+      </button>
     </div>
   </div>
 
@@ -137,6 +148,16 @@
         <button onclick="filterCategory('Street Food')" class="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full hover:bg-emerald-50">Street Food</button>
         <button onclick="filterCategory('Drinks')" class="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full hover:bg-emerald-50">Drinks</button>
         <button onclick="filterCategory('Sides')" class="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full hover:bg-emerald-50">Sides</button>
+      </div>
+      <!-- Allergen Filters -->
+      <div id="allergenFilters" class="flex flex-wrap gap-2 mt-3 pt-3 border-t border-gray-100">
+        <span class="text-xs font-semibold text-gray-500 self-center">Allergen-Free:</span>
+        <button onclick="toggleAllergen('gluten')" id="allergenGluten" class="allergen-btn text-xs px-3 py-1 rounded-full border border-gray-200 text-gray-500 hover:border-red-400 transition font-medium">🌾 Gluten-Free</button>
+        <button onclick="toggleAllergen('dairy')" id="allergenDairy" class="allergen-btn text-xs px-3 py-1 rounded-full border border-gray-200 text-gray-500 hover:border-red-400 transition font-medium">🥛 Dairy-Free</button>
+        <button onclick="toggleAllergen('nuts')" id="allergenNuts" class="allergen-btn text-xs px-3 py-1 rounded-full border border-gray-200 text-gray-500 hover:border-red-400 transition font-medium">🥜 Nut-Free</button>
+        <button onclick="toggleAllergen('egg')" id="allergenEgg" class="allergen-btn text-xs px-3 py-1 rounded-full border border-gray-200 text-gray-500 hover:border-red-400 transition font-medium">🥚 Egg-Free</button>
+        <button onclick="toggleAllergen('shellfish')" id="allergenShellfish" class="allergen-btn text-xs px-3 py-1 rounded-full border border-gray-200 text-gray-500 hover:border-red-400 transition font-medium">🦐 Shellfish-Free</button>
+        <button onclick="toggleAllergen('soy')" id="allergenSoy" class="allergen-btn text-xs px-3 py-1 rounded-full border border-gray-200 text-gray-500 hover:border-red-400 transition font-medium">🫘 Soy-Free</button>
       </div>
     </div>
 
@@ -346,10 +367,50 @@
           </select>
         </div>
       </div>
-      <button onclick="generateMealPlan()" class="w-full bg-brand text-white py-3 rounded-xl font-semibold hover:bg-emerald-600 transition flex items-center justify-center gap-2">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-        Generate 7-Day Plan
-      </button>
+      <!-- Budget Section -->
+      <div class="mt-4 pt-4 border-t border-gray-100">
+        <div class="flex items-center justify-between mb-2">
+          <h4 class="text-sm font-semibold text-gray-700">💰 Budget Mode</h4>
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" id="budgetToggle" onchange="toggleBudgetMode()" class="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500">
+            <span class="text-xs text-gray-500">Enable</span>
+          </label>
+        </div>
+        <div id="budgetControls" class="hidden">
+          <div class="mb-3">
+            <div class="flex justify-between text-xs text-gray-500 mb-1">
+              <span>Weekly Budget</span>
+              <span id="budgetDisplay" class="font-bold text-emerald-600">₹2000</span>
+            </div>
+            <input type="range" id="budgetSlider" min="500" max="5000" step="100" value="2000" oninput="updateBudgetDisplay()" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-emerald-500">
+            <div class="flex justify-between text-xs text-gray-300 mt-0.5">
+              <span>₹500</span><span>₹5000</span>
+            </div>
+          </div>
+          <div class="flex gap-2 mb-3">
+            <button onclick="setBudgetPreset(800)" class="text-xs px-3 py-1.5 rounded-full border border-gray-200 text-gray-500 hover:border-emerald-400 transition font-medium">🎓 Student (₹800)</button>
+            <button onclick="setBudgetPreset(3000)" class="text-xs px-3 py-1.5 rounded-full border border-gray-200 text-gray-500 hover:border-emerald-400 transition font-medium">👨‍👩‍👧‍👦 Family (₹3000)</button>
+            <button onclick="setBudgetPreset(5000)" class="text-xs px-3 py-1.5 rounded-full border border-gray-200 text-gray-500 hover:border-emerald-400 transition font-medium">✨ Premium (₹5000)</button>
+          </div>
+          <div id="budgetBreakdown" class="bg-emerald-50 rounded-lg p-3 text-xs text-emerald-700 mb-3">
+            <div class="grid grid-cols-3 gap-2 text-center">
+              <div><p class="font-bold text-lg" id="budgetPerDay">₹286</p><p>Per Day</p></div>
+              <div><p class="font-bold text-lg" id="budgetPerMeal">₹95</p><p>Per Meal</p></div>
+              <div><p class="font-bold text-lg" id="budgetSavings">-</p><p>vs Eating Out</p></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex gap-2 mt-4">
+        <button onclick="generateMealPlan()" class="flex-1 bg-brand text-white py-3 rounded-xl font-semibold hover:bg-emerald-600 transition flex items-center justify-center gap-2">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+          Generate 7-Day Plan
+        </button>
+        <button onclick="generateBudgetPlan()" id="budgetPlanBtn" class="hidden px-5 py-3 bg-amber-500 text-white rounded-xl font-semibold hover:bg-amber-600 transition flex items-center justify-center gap-2">
+          💰 Budget Plan
+        </button>
+      </div>
     </div>
 
     <!-- Weekly Summary -->
@@ -403,6 +464,104 @@
         <button onclick="closeFestivalDishes()" class="text-sm text-gray-400 hover:text-gray-600">✕ Close</button>
       </div>
       <div id="festivalDishesGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-2"></div>
+    </div>
+  </section>
+
+  <!-- Ayurveda Mode -->
+  <section id="ayurvedaMode" class="hidden max-w-4xl mx-auto px-4 py-6">
+    <!-- Quiz UI -->
+    <div id="prakritiQuizSection" class="bg-white rounded-xl shadow-sm p-5 mb-4">
+      <h3 class="font-bold text-gray-900 mb-1">🧘 Discover Your Ayurvedic Body Type (Prakriti)</h3>
+      <p class="text-sm text-gray-500 mb-4">Answer 10 questions to find your dosha and get personalized Indian diet recommendations.</p>
+      <!-- Progress bar -->
+      <div class="mb-4">
+        <div class="flex justify-between text-xs text-gray-400 mb-1">
+          <span>Question <span id="prakritiQNum">1</span>/10</span>
+          <span id="prakritiProgress">0% complete</span>
+        </div>
+        <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
+          <div id="prakritiProgressBar" class="h-full bg-purple-500 rounded-full transition-all duration-300" style="width:0%"></div>
+        </div>
+      </div>
+      <!-- Question area -->
+      <div id="prakritiQuestionArea">
+        <p id="prakritiQuestionText" class="text-lg font-semibold text-gray-800 mb-4"></p>
+        <div id="prakritiOptions" class="space-y-2"></div>
+      </div>
+      <!-- Navigation -->
+      <div class="flex justify-between mt-4">
+        <button onclick="prakritiPrev()" id="prakritiBtnPrev" class="text-sm text-gray-400 hover:text-gray-600 px-4 py-2 rounded-lg border border-gray-200 hidden">Back</button>
+        <div></div>
+      </div>
+    </div>
+
+    <!-- Results (hidden until quiz complete) -->
+    <div id="prakritiResults" class="hidden">
+      <div id="prakritiResultCard" class="bg-gradient-to-r from-purple-500 to-indigo-500 rounded-xl p-6 text-white mb-4">
+        <div class="flex items-center gap-3 mb-3">
+          <span id="prakritiEmoji" class="text-4xl"></span>
+          <div>
+            <h3 id="prakritiTitle" class="text-xl font-bold"></h3>
+            <p id="prakritiDescription" class="text-white/80 text-sm"></p>
+          </div>
+        </div>
+        <div class="grid grid-cols-3 gap-3 mt-4">
+          <div class="bg-white/20 rounded-lg p-3 text-center">
+            <p class="text-2xl font-bold" id="prakritiVataCount">0</p>
+            <p class="text-xs text-white/70">Vata</p>
+          </div>
+          <div class="bg-white/20 rounded-lg p-3 text-center">
+            <p class="text-2xl font-bold" id="prakritiPittaCount">0</p>
+            <p class="text-xs text-white/70">Pitta</p>
+          </div>
+          <div class="bg-white/20 rounded-lg p-3 text-center">
+            <p class="text-2xl font-bold" id="prakritiKaphaCount">0</p>
+            <p class="text-xs text-white/70">Kapha</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Diet Advice -->
+      <div class="grid md:grid-cols-2 gap-4 mb-4">
+        <div class="bg-white rounded-xl shadow-sm p-4">
+          <h4 class="font-semibold text-emerald-700 mb-2">✅ Foods to Favor</h4>
+          <ul id="prakritiFavor" class="text-sm text-gray-600 space-y-1"></ul>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm p-4">
+          <h4 class="font-semibold text-red-600 mb-2">🚫 Foods to Avoid</h4>
+          <ul id="prakritiAvoid" class="text-sm text-gray-600 space-y-1"></ul>
+        </div>
+      </div>
+      <div class="grid md:grid-cols-2 gap-4 mb-4">
+        <div class="bg-white rounded-xl shadow-sm p-4">
+          <h4 class="font-semibold text-gray-700 mb-2">🕐 Meal Timing</h4>
+          <p id="prakritiMealTiming" class="text-sm text-gray-600"></p>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm p-4">
+          <h4 class="font-semibold text-gray-700 mb-2">🌿 Best Spices</h4>
+          <div id="prakritiSpices" class="flex flex-wrap gap-1"></div>
+        </div>
+      </div>
+
+      <!-- Recommended Dishes -->
+      <div class="bg-white rounded-xl shadow-sm p-4 mb-4">
+        <h4 class="font-semibold text-gray-800 mb-3">🍽️ Recommended Dishes for You</h4>
+        <div id="prakritiDishesGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-80 overflow-y-auto"></div>
+      </div>
+      <div class="bg-white rounded-xl shadow-sm p-4 mb-4">
+        <h4 class="font-semibold text-red-600 mb-3">⚠️ Dishes to Limit</h4>
+        <div id="prakritiAvoidDishesGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-60 overflow-y-auto"></div>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex gap-3">
+        <button onclick="applyPrakritiToPlanner()" class="flex-1 bg-purple-600 text-white py-3 rounded-xl font-semibold hover:bg-purple-700 transition">
+          🧘 Apply to Meal Planner
+        </button>
+        <button onclick="retakePrakritiQuiz()" class="px-5 py-3 rounded-xl border-2 border-gray-200 text-gray-600 hover:border-gray-300 transition font-medium">
+          Retake Quiz
+        </button>
+      </div>
     </div>
   </section>
 
@@ -1011,12 +1170,13 @@
 
     // Mode switching
     function switchMode(mode) {
-      ['build','photo','tracker','planner','festivals'].forEach(m => {
+      ['build','photo','tracker','planner','festivals','ayurveda'].forEach(m => {
         document.getElementById(m + 'Mode').classList.toggle('hidden', m !== mode);
         const tab = document.getElementById('tab' + m.charAt(0).toUpperCase() + m.slice(1));
         if (m === mode) tab.classList.add('tab-active');
         else { tab.classList.remove('tab-active'); tab.className = tab.className.replace('tab-active','').trim(); }
       });
+      if (mode === 'ayurveda' && !prakritiQuizData) loadPrakritiQuiz();
     }
 
     // Dish search with debounce
@@ -2245,11 +2405,556 @@
       }
     }
 
+    // ─── FEATURE 1: Ayurvedic Prakriti Quiz ───
+    let prakritiAnswers = [];
+    let prakritiCurrentQ = 0;
+    let prakritiQuizData = null;
+    let userPrakriti = null;
+
+    async function loadPrakritiQuiz() {
+      // Quiz questions are hardcoded to avoid extra API call
+      prakritiQuizData = {
+        questions: [
+          { id: 1, text: "What is your body frame?", options: [
+            { text: "Thin, light, hard to gain weight", type: "vata" },
+            { text: "Medium, athletic, proportionate", type: "pitta" },
+            { text: "Large, heavy, gains weight easily", type: "kapha" }
+          ]},
+          { id: 2, text: "How is your digestion?", options: [
+            { text: "Irregular, gas, bloating", type: "vata" },
+            { text: "Strong, acidic, gets hungry often", type: "pitta" },
+            { text: "Slow, feels heavy after meals", type: "kapha" }
+          ]},
+          { id: 3, text: "Your skin type?", options: [
+            { text: "Dry, rough, cool", type: "vata" },
+            { text: "Oily, warm, prone to rashes", type: "pitta" },
+            { text: "Thick, moist, smooth", type: "kapha" }
+          ]},
+          { id: 4, text: "How do you handle stress?", options: [
+            { text: "Anxious, worried, restless", type: "vata" },
+            { text: "Irritable, angry, frustrated", type: "pitta" },
+            { text: "Calm but withdrawn, lethargic", type: "kapha" }
+          ]},
+          { id: 5, text: "Your sleep pattern?", options: [
+            { text: "Light sleeper, difficulty falling asleep", type: "vata" },
+            { text: "Moderate, wake up feeling hot", type: "pitta" },
+            { text: "Deep, heavy, hard to wake up", type: "kapha" }
+          ]},
+          { id: 6, text: "Your appetite?", options: [
+            { text: "Variable, forget to eat sometimes", type: "vata" },
+            { text: "Strong, can't skip meals", type: "pitta" },
+            { text: "Low but steady, can skip meals", type: "kapha" }
+          ]},
+          { id: 7, text: "Weather preference?", options: [
+            { text: "Hate cold, love warmth", type: "vata" },
+            { text: "Hate heat, love cool weather", type: "pitta" },
+            { text: "Hate damp/cold, like warm & dry", type: "kapha" }
+          ]},
+          { id: 8, text: "Your energy pattern?", options: [
+            { text: "Bursts of energy, tire quickly", type: "vata" },
+            { text: "Moderate, sustained energy", type: "pitta" },
+            { text: "Slow to start, good stamina once going", type: "kapha" }
+          ]},
+          { id: 9, text: "Your hair type?", options: [
+            { text: "Dry, frizzy, thin", type: "vata" },
+            { text: "Fine, straight, early greying", type: "pitta" },
+            { text: "Thick, oily, wavy", type: "kapha" }
+          ]},
+          { id: 10, text: "How do you learn?", options: [
+            { text: "Quick to learn, quick to forget", type: "vata" },
+            { text: "Sharp, focused, analytical", type: "pitta" },
+            { text: "Slow to learn, never forgets", type: "kapha" }
+          ]}
+        ]
+      };
+
+      // Check if already completed
+      const saved = localStorage.getItem('thaali_prakriti');
+      if (saved) {
+        try {
+          const data = JSON.parse(saved);
+          if (data.prakriti && data.profile) {
+            userPrakriti = data;
+            showPrakritiResults(data);
+            return;
+          }
+        } catch(e) {}
+      }
+
+      prakritiAnswers = new Array(10).fill(null);
+      prakritiCurrentQ = 0;
+      renderPrakritiQuestion();
+    }
+
+    function renderPrakritiQuestion() {
+      if (!prakritiQuizData) return;
+      const q = prakritiQuizData.questions[prakritiCurrentQ];
+      const pct = Math.round((prakritiCurrentQ / 10) * 100);
+
+      document.getElementById('prakritiQNum').textContent = prakritiCurrentQ + 1;
+      document.getElementById('prakritiProgress').textContent = pct + '% complete';
+      document.getElementById('prakritiProgressBar').style.width = pct + '%';
+      document.getElementById('prakritiQuestionText').textContent = q.text;
+
+      const prevBtn = document.getElementById('prakritiBtnPrev');
+      if (prakritiCurrentQ > 0) prevBtn.classList.remove('hidden');
+      else prevBtn.classList.add('hidden');
+
+      document.getElementById('prakritiOptions').innerHTML = q.options.map((opt, i) => {
+        const selected = prakritiAnswers[prakritiCurrentQ] === opt.type;
+        return `
+          <button onclick="selectPrakritiAnswer('${opt.type}', ${i})" class="prakriti-option w-full text-left p-3 rounded-lg border-2 ${selected ? 'border-purple-500 bg-purple-50' : 'border-gray-200'} hover:border-purple-400 transition">
+            <p class="text-sm font-medium text-gray-800">${opt.text}</p>
+          </button>
+        `;
+      }).join('');
+    }
+
+    function selectPrakritiAnswer(type, idx) {
+      prakritiAnswers[prakritiCurrentQ] = type;
+      // Auto-advance after brief delay
+      setTimeout(() => {
+        if (prakritiCurrentQ < 9) {
+          prakritiCurrentQ++;
+          renderPrakritiQuestion();
+        } else {
+          submitPrakritiQuiz();
+        }
+      }, 300);
+      // Show selected state
+      renderPrakritiQuestion();
+    }
+
+    function prakritiPrev() {
+      if (prakritiCurrentQ > 0) {
+        prakritiCurrentQ--;
+        renderPrakritiQuestion();
+      }
+    }
+
+    async function submitPrakritiQuiz() {
+      const validAnswers = prakritiAnswers.filter(a => a !== null);
+      if (validAnswers.length < 5) { alert('Please answer at least 5 questions'); return; }
+
+      try {
+        const res = await fetch('/api/thaali-score/prakriti', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ answers: validAnswers })
+        });
+        const data = await res.json();
+        userPrakriti = data;
+        localStorage.setItem('thaali_prakriti', JSON.stringify(data));
+        showPrakritiResults(data);
+      } catch(e) {
+        console.error('Prakriti error:', e);
+      }
+    }
+
+    async function showPrakritiResults(data) {
+      document.getElementById('prakritiQuizSection').classList.add('hidden');
+      document.getElementById('prakritiResults').classList.remove('hidden');
+
+      const profile = data.profile;
+      const prakriti = data.prakriti;
+
+      document.getElementById('prakritiEmoji').textContent = profile.emoji;
+      document.getElementById('prakritiTitle').textContent = profile.title;
+      document.getElementById('prakritiDescription').textContent = profile.description;
+      document.getElementById('prakritiVataCount').textContent = prakriti.counts.vata;
+      document.getElementById('prakritiPittaCount').textContent = prakriti.counts.pitta;
+      document.getElementById('prakritiKaphaCount').textContent = prakriti.counts.kapha;
+
+      document.getElementById('prakritiFavor').innerHTML = profile.favor.map(f => `<li class="flex items-start gap-1"><span class="text-emerald-500 mt-0.5">+</span> ${f}</li>`).join('');
+      document.getElementById('prakritiAvoid').innerHTML = profile.avoid.map(a => `<li class="flex items-start gap-1"><span class="text-red-400 mt-0.5">-</span> ${a}</li>`).join('');
+      document.getElementById('prakritiMealTiming').textContent = profile.mealTiming;
+      document.getElementById('prakritiSpices').innerHTML = profile.spices.map(s => `<span class="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-full">${s}</span>`).join('');
+
+      // Load dishes
+      try {
+        const res = await fetch('/api/thaali-score/prakriti/' + prakriti.dominant + '/dishes');
+        const dishData = await res.json();
+
+        document.getElementById('prakritiDishesGrid').innerHTML = (dishData.favored || []).map(d => {
+          const vegIcon = d.veg ? '\uD83D\uDFE2' : '\uD83D\uDD34';
+          return `
+            <div class="flex items-center justify-between p-2.5 rounded-lg border border-emerald-200 bg-emerald-50 hover:border-emerald-400 transition cursor-pointer" onclick="quickAddDish(${d.id}, '${(d.name||'').replace(/'/g,"\\'")}')">
+              <div>
+                <span class="text-sm font-medium text-gray-800">${vegIcon} ${d.name}</span>
+                <p class="text-xs text-gray-400">${d.category} \u00B7 ${d.healthScore}/10</p>
+              </div>
+              <div class="text-right">
+                <p class="text-xs font-bold text-gray-700">${d.cal} cal</p>
+                <p class="text-xs text-emerald-500">+ Add</p>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        document.getElementById('prakritiAvoidDishesGrid').innerHTML = (dishData.avoid || []).map(d => {
+          const vegIcon = d.veg ? '\uD83D\uDFE2' : '\uD83D\uDD34';
+          return `
+            <div class="flex items-center justify-between p-2.5 rounded-lg border border-red-200 bg-red-50">
+              <div>
+                <span class="text-sm font-medium text-gray-800">${vegIcon} ${d.name}</span>
+                <p class="text-xs text-gray-400">${d.category} \u00B7 ${d.healthScore}/10</p>
+              </div>
+              <p class="text-xs font-bold text-red-500">${d.cal} cal</p>
+            </div>
+          `;
+        }).join('');
+      } catch(e) { console.error('Prakriti dishes error:', e); }
+    }
+
+    function retakePrakritiQuiz() {
+      localStorage.removeItem('thaali_prakriti');
+      userPrakriti = null;
+      prakritiAnswers = new Array(10).fill(null);
+      prakritiCurrentQ = 0;
+      document.getElementById('prakritiQuizSection').classList.remove('hidden');
+      document.getElementById('prakritiResults').classList.add('hidden');
+      renderPrakritiQuestion();
+    }
+
+    function applyPrakritiToPlanner() {
+      if (!userPrakriti) return;
+      switchMode('planner');
+      // Show a notification
+      alert('Prakriti preference (' + userPrakriti.profile.title + ') noted! Generate a meal plan and it will prioritize your dosha-friendly foods.');
+    }
+
+    // ─── FEATURE 2: Budget Meal Planner ───
+    let budgetModeEnabled = false;
+
+    function toggleBudgetMode() {
+      budgetModeEnabled = document.getElementById('budgetToggle').checked;
+      document.getElementById('budgetControls').classList.toggle('hidden', !budgetModeEnabled);
+      document.getElementById('budgetPlanBtn').classList.toggle('hidden', !budgetModeEnabled);
+      if (budgetModeEnabled) updateBudgetDisplay();
+    }
+
+    function updateBudgetDisplay() {
+      const val = parseInt(document.getElementById('budgetSlider').value);
+      document.getElementById('budgetDisplay').textContent = '\u20B9' + val;
+      document.getElementById('budgetPerDay').textContent = '\u20B9' + Math.round(val / 7);
+      document.getElementById('budgetPerMeal').textContent = '\u20B9' + Math.round(val / 21);
+      const eatingOut = 7 * 3 * 150;
+      const savings = eatingOut - val;
+      document.getElementById('budgetSavings').textContent = savings > 0 ? 'Save \u20B9' + savings : '-';
+    }
+
+    function setBudgetPreset(amount) {
+      document.getElementById('budgetSlider').value = amount;
+      updateBudgetDisplay();
+    }
+
+    async function generateBudgetPlan() {
+      const budget = parseInt(document.getElementById('budgetSlider').value) || 2000;
+      try {
+        const res = await fetch('/api/thaali-score/budget-plan', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ budget, days: 7, vegPref: plannerVeg, region: plannerRegion })
+        });
+        const data = await res.json();
+        renderBudgetPlan(data);
+      } catch(e) { console.error('Budget plan error:', e); }
+    }
+
+    function renderBudgetPlan(data) {
+      // Show summary
+      document.getElementById('planSummary').classList.remove('hidden');
+      document.getElementById('planGoalBadge').textContent = 'Budget: \u20B9' + data.budget + '/week';
+      document.getElementById('planSummaryStats').innerHTML = `
+        <div class="text-center"><p class="text-2xl font-bold">\u20B9${data.perDayAvg}</p><p class="text-xs text-white/70">Per day</p></div>
+        <div class="text-center"><p class="text-2xl font-bold">\u20B9${data.perMealAvg}</p><p class="text-xs text-white/70">Per meal</p></div>
+        <div class="text-center"><p class="text-2xl font-bold">\u20B9${data.totalCost}</p><p class="text-xs text-white/70">Total week</p></div>
+        <div class="text-center"><p class="text-2xl font-bold">\u20B9${data.savings}</p><p class="text-xs text-white/70">You save!</p></div>
+      `;
+
+      // Day cards with cost
+      const dayEmojis = ['\uD83D\uDFE1','\uD83D\uDFE2','\uD83D\uDD35','\uD83D\uDFE3','\uD83D\uDFE0','\uD83D\uDD34','\u26AA'];
+      document.getElementById('planGrid').innerHTML = data.plan.map((day, i) => {
+        const mealHTML = (label, emoji, dishes) => {
+          if (!dishes || dishes.length === 0) return '';
+          const mealCost = dishes.reduce((s, d) => s + (d.cost || 0), 0);
+          const mealCal = dishes.reduce((s, d) => s + d.cal, 0);
+          return `
+            <div class="mb-3">
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-xs font-semibold text-gray-500">${emoji} ${label}</span>
+                <span class="text-xs text-gray-400">${mealCal} cal \u00B7 \u20B9${mealCost}</span>
+              </div>
+              ${dishes.map(d => `
+                <div class="flex items-center justify-between py-0.5">
+                  <span class="text-sm text-gray-700">${d.veg ? '\uD83D\uDFE2' : '\uD83D\uDD34'} ${d.name}</span>
+                  <span class="text-xs text-gray-400">${d.cal}cal \u00B7 \u20B9${d.cost}</span>
+                </div>
+              `).join('')}
+            </div>
+          `;
+        };
+        return `
+          <div class="bg-white rounded-xl shadow-sm overflow-hidden fade-in">
+            <div class="flex items-center justify-between px-4 py-3 bg-gray-50 border-b">
+              <div class="flex items-center gap-2">
+                <span>${dayEmojis[i]}</span>
+                <span class="font-semibold text-gray-900">${day.day}</span>
+              </div>
+              <span class="text-sm font-bold text-amber-600">\u20B9${day.dayCost}</span>
+            </div>
+            <div class="p-4">
+              ${mealHTML('Breakfast', '\uD83C\uDF05', day.breakfast)}
+              ${mealHTML('Lunch', '\uD83C\uDF1E', day.lunch)}
+              ${mealHTML('Dinner', '\uD83C\uDF19', day.dinner)}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // Savings tips
+      if (data.savingsTips) {
+        document.getElementById('planGrid').innerHTML += `
+          <div class="bg-amber-50 rounded-xl p-4 border border-amber-200">
+            <h4 class="font-semibold text-amber-800 mb-2">\uD83D\uDCA1 Money-Saving Tips</h4>
+            ${data.savingsTips.map(t => `<p class="text-sm text-amber-700 mb-1">\u2022 ${t}</p>`).join('')}
+            <p class="text-sm font-bold text-amber-800 mt-2">\uD83D\uDCB0 You save \u20B9${data.savings} vs eating out this week!</p>
+          </div>
+        `;
+      }
+
+      document.getElementById('grocerySection').classList.remove('hidden');
+    }
+
+    // ─── FEATURE 3: Allergen Filters ───
+    let excludeAllergens = [];
+
+    function loadAllergenPrefs() {
+      const saved = localStorage.getItem('thaali_allergens');
+      if (saved) {
+        try {
+          excludeAllergens = JSON.parse(saved);
+          excludeAllergens.forEach(a => {
+            const el = document.getElementById('allergen' + a.charAt(0).toUpperCase() + a.slice(1));
+            if (el) el.classList.add('allergen-active');
+          });
+        } catch(e) {}
+      }
+    }
+
+    function toggleAllergen(allergen) {
+      const idx = excludeAllergens.indexOf(allergen);
+      if (idx >= 0) excludeAllergens.splice(idx, 1);
+      else excludeAllergens.push(allergen);
+
+      const el = document.getElementById('allergen' + allergen.charAt(0).toUpperCase() + allergen.slice(1));
+      if (el) el.classList.toggle('allergen-active');
+
+      localStorage.setItem('thaali_allergens', JSON.stringify(excludeAllergens));
+      searchDishes(); // Re-filter results
+    }
+
+    // Allergen detection for dish cards
+    const allergenKeywordsLocal = {
+      gluten: ["wheat", "maida", "atta", "roti", "naan", "paratha", "bread", "pasta", "semolina", "suji", "chapati", "bhatura", "kulcha", "puri", "samosa", "kachori"],
+      dairy: ["paneer", "curd", "dahi", "milk", "cream", "malai", "cheese", "butter", "ghee", "kheer", "raita", "lassi", "buttermilk", "chaas", "rabdi", "kulfi", "rasmalai", "rasgulla", "sandesh", "barfi"],
+      nuts: ["cashew", "kaju", "almond", "badam", "pista", "walnut", "akhrot", "peanut", "mungfali"],
+      egg: ["egg", "anda", "omelette", "bhurji"],
+      shellfish: ["prawn", "shrimp", "crab", "lobster", "jhinga", "chingri"],
+      soy: ["soy", "tofu", "soya"]
+    };
+    const allergenEmojis = { gluten: '\uD83C\uDF3E', dairy: '\uD83E\uDD5B', nuts: '\uD83E\uDD5C', egg: '\uD83E\uDD5A', shellfish: '\uD83E\uDD90', soy: '\uD83E\uDED8' };
+
+    function detectAllergens(dishName) {
+      const name = dishName.toLowerCase();
+      const found = [];
+      Object.keys(allergenKeywordsLocal).forEach(key => {
+        if (allergenKeywordsLocal[key].some(kw => name.includes(kw))) found.push(key);
+      });
+      return found;
+    }
+
+    function shouldExcludeDish(dishName) {
+      if (excludeAllergens.length === 0) return false;
+      const allergens = detectAllergens(dishName);
+      return excludeAllergens.some(ex => allergens.includes(ex));
+    }
+
+    function getAllergenBadges(dishName) {
+      const allergens = detectAllergens(dishName);
+      if (allergens.length === 0) return '';
+      return allergens.map(a => `<span class="text-xs" title="${a}">${allergenEmojis[a]}</span>`).join('');
+    }
+
+    // ─── FEATURE 4: Substitution Engine ───
+    async function showSubstitutions(dishId, dishName, event) {
+      event.stopPropagation();
+      // Close any open popups
+      document.querySelectorAll('.swap-popup').forEach(el => el.remove());
+
+      try {
+        const res = await fetch('/api/thaali-score/substitutions/' + dishId);
+        const data = await res.json();
+        if (!data.substitutions || data.substitutions.length === 0) return;
+
+        const popup = document.createElement('div');
+        popup.className = 'swap-popup bg-white rounded-xl shadow-lg border-2 border-emerald-200 p-3';
+        popup.innerHTML = `
+          <div class="flex items-center justify-between mb-2">
+            <p class="text-xs font-bold text-gray-700">\uD83D\uDD04 Swaps for ${dishName}</p>
+            <button onclick="this.closest('.swap-popup').remove()" class="text-gray-400 hover:text-gray-600 text-xs">\u2715</button>
+          </div>
+          ${data.substitutions.slice(0, 5).map(s => `
+            <div class="flex items-start gap-2 p-2 rounded-lg bg-gray-50 mb-1 last:mb-0">
+              <span class="text-xs mt-0.5">\u2192</span>
+              <div class="flex-1">
+                <p class="text-xs font-medium text-gray-700">Instead of <strong>${s.from}</strong>, try <strong>${s.to}</strong></p>
+                <p class="text-xs text-emerald-600">${s.saveMsg}${s.saveCal > 0 ? ' \u2022 Save ' + s.saveCal + ' cal' : ''}</p>
+                ${s.allergenSwap ? '<span class="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full">Allergy-safe swap</span>' : ''}
+              </div>
+            </div>
+          `).join('')}
+        `;
+
+        const btn = event.target.closest('.dish-card') || event.target.closest('.swap-btn-container');
+        if (btn) {
+          btn.style.position = 'relative';
+          btn.appendChild(popup);
+        }
+
+        // Close on outside click
+        setTimeout(() => {
+          document.addEventListener('click', function closePopup(e) {
+            if (!popup.contains(e.target)) { popup.remove(); document.removeEventListener('click', closePopup); }
+          });
+        }, 100);
+      } catch(e) { console.error('Substitution error:', e); }
+    }
+
+    // ─── FEATURE 5: Portion Visualizer ───
+    const portionVisualsLocal = {
+      "bowl": { visual: "\uD83E\uDD32 Both palms cupped", grams: "200g", household: "1 katori" },
+      "plate": { visual: "\uD83C\uDF7D\uFE0F Dinner plate", grams: "250-300g", household: "1 plate" },
+      "roti": { visual: "\u270B Open palm size", grams: "30g", household: "1 chapati" },
+      "cup": { visual: "\u270A Closed fist", grams: "150-200ml", household: "1 cup" },
+      "tbsp": { visual: "\uD83D\uDC4D Thumb tip", grams: "15g", household: "1 tablespoon" },
+      "glass": { visual: "\uD83E\uDD64 Tall glass", grams: "200-250ml", household: "1 glass" },
+      "slice": { visual: "\uD83D\uDCF1 Phone size", grams: "30-40g", household: "1 slice" },
+      "dosa": { visual: "\uD83D\uDCCF 10-12 inches", grams: "60g batter", household: "1 dosa" },
+      "pcs": { visual: "\u270C\uFE0F Pieces", grams: "varies", household: "pieces" },
+      "pc": { visual: "\uD83D\uDD90\uFE0F One hand", grams: "varies", household: "1 piece" },
+      "serving": { visual: "\uD83E\uDD1B Fist size", grams: "150-200g", household: "1 portion" }
+    };
+
+    function getPortionInfo(serving) {
+      if (!serving) return null;
+      const s = serving.toLowerCase();
+      for (const key of Object.keys(portionVisualsLocal)) {
+        if (s.includes(key)) return portionVisualsLocal[key];
+      }
+      return portionVisualsLocal['serving'];
+    }
+
+    function portionTooltipHTML(serving) {
+      const info = getPortionInfo(serving);
+      if (!info) return '';
+      return `<span class="portion-trigger relative inline-flex items-center cursor-help ml-1"><span class="text-gray-400 hover:text-emerald-500 text-xs">\u24D8</span><span class="portion-tooltip">${info.visual} \u00B7 ${info.grams} \u00B7 ${info.household}</span></span>`;
+    }
+
+    // ─── Override renderDishResults to include allergen badges, portion tooltip, and swap button ───
+    const _originalRenderDishResults = renderDishResults;
+    renderDishResults = function(results) {
+      // Filter by allergens
+      if (excludeAllergens.length > 0) {
+        results = results.filter(d => !shouldExcludeDish(d.name));
+      }
+
+      const container = document.getElementById('dishSearchResults');
+      if (results.length === 0) {
+        container.innerHTML = '<p class="col-span-2 text-center text-gray-400 py-4">No dishes found matching your filters. Try adjusting allergen or category filters.</p>';
+        return;
+      }
+      container.innerHTML = results.map(d => {
+        const inPlate = myPlate.some(p => p.id === d.id);
+        const vegBadge = d.veg
+          ? '<span class="w-4 h-4 border border-green-600 rounded-sm flex items-center justify-center"><span class="w-2 h-2 bg-green-600 rounded-full"></span></span>'
+          : '<span class="w-4 h-4 border border-red-600 rounded-sm flex items-center justify-center"><span class="w-2 h-2 bg-red-600 rounded-full"></span></span>';
+        const scoreColor = d.healthScore >= 7 ? 'text-emerald-600' : d.healthScore >= 4 ? 'text-amber-600' : 'text-red-500';
+        const allergenBadges = getAllergenBadges(d.name);
+        const portionTip = portionTooltipHTML(d.serving);
+        return `
+          <div class="dish-card bg-white rounded-lg border-2 ${inPlate ? 'border-emerald-400 bg-emerald-50' : 'border-gray-100'} p-3 cursor-pointer" onclick="toggleDish(${d.id}, '${d.name.replace(/'/g,"\\'")}', ${d.cal}, '${d.category}', ${d.veg})">
+            <div class="flex items-start justify-between">
+              <div class="flex items-center gap-2">
+                ${vegBadge}
+                <div>
+                  <p class="font-semibold text-gray-800 text-sm">${d.name} ${allergenBadges}</p>
+                  <p class="text-xs text-gray-400">${d.category} &middot; ${d.serving}${portionTip}</p>
+                </div>
+              </div>
+              <div class="text-right">
+                <p class="font-bold text-sm text-gray-700">${d.cal} cal</p>
+                <div class="flex items-center gap-1 justify-end">
+                  ${d.gi ? `<span class="text-xs px-1 py-0.5 rounded ${d.gi === 'low' ? 'bg-emerald-50 text-emerald-600' : d.gi === 'medium' ? 'bg-amber-50 text-amber-600' : 'bg-red-50 text-red-600'}">${d.gi[0].toUpperCase()}GI</span>` : ''}
+                  <p class="text-xs ${scoreColor} font-medium">${d.healthScore}/10</p>
+                </div>
+              </div>
+            </div>
+            <div class="flex items-center justify-between mt-1">
+              ${inPlate ? '<p class="text-xs text-emerald-600 font-medium">Added to plate</p>' : '<span></span>'}
+              <button onclick="event.stopPropagation(); showSubstitutions(${d.id}, '${d.name.replace(/'/g,"\\'")}', event)" class="swap-btn-container text-xs text-purple-500 hover:text-purple-700 font-medium">\uD83D\uDD04 Swap</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    };
+
+    // ─── Override updateMyPlate to include portion tooltip and swap button ───
+    const _originalUpdateMyPlate = updateMyPlate;
+    updateMyPlate = function() {
+      const section = document.getElementById('myPlateSection');
+      const items = document.getElementById('myPlateItems');
+      const count = document.getElementById('plateCount');
+
+      if (myPlate.length === 0) {
+        section.classList.add('hidden');
+        document.getElementById('smartSuggestions').classList.add('hidden');
+        return;
+      }
+
+      section.classList.remove('hidden');
+      document.getElementById('servingSizeLegend').classList.remove('hidden');
+      fetchSmartSuggestions();
+      const totalCal = myPlate.reduce((s, d) => s + Math.round(d.cal * (d.serving || 1)), 0);
+      count.textContent = myPlate.length + ' items \u00B7 ' + totalCal + ' cal';
+      items.innerHTML = myPlate.map(d => {
+        const sv = d.serving || 1;
+        const adjCal = Math.round(d.cal * sv);
+        const allergenBadges = getAllergenBadges(d.name);
+        return `
+        <div class="bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2 flex flex-col gap-1 text-sm">
+          <div class="flex items-center gap-2">
+            <span class="font-medium text-emerald-800">${d.name}</span>
+            ${allergenBadges}
+            <span class="text-xs text-emerald-500">${adjCal}cal${sv !== 1 ? ' (' + sv + 'x)' : ''}</span>
+            <button onclick="event.stopPropagation(); showSubstitutions(${d.id}, '${d.name.replace(/'/g,"\\'")}', event)" class="swap-btn-container text-xs text-purple-400 hover:text-purple-600 ml-1" title="Find swaps">\uD83D\uDD04</button>
+            <button onclick="event.stopPropagation(); toggleDish(${d.id}, '${d.name.replace(/'/g,"\\'")}', ${d.cal}, '${d.category}', ${d.veg})" class="text-emerald-400 hover:text-red-500 ml-1">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+          </div>
+          <div class="flex gap-1">
+            ${[0.5, 1, 1.5, 2].map(m => `<button onclick="event.stopPropagation(); adjustServing(${d.id}, ${m})" class="text-xs px-2 py-0.5 rounded-full ${sv === m ? 'bg-emerald-500 text-white' : 'bg-white text-emerald-600 border border-emerald-200 hover:bg-emerald-100'} transition">${m}x</button>`).join('')}
+          </div>
+        </div>`;
+      }).join('');
+    };
+
     // Initial load: restore state + show popular dishes + load combos
     window.addEventListener('DOMContentLoaded', () => {
       loadTracker();
       setDietGoal(currentDietGoal); // restore UI for saved diet goal
       loadUserProfile();
+      loadAllergenPrefs(); // Feature 3: restore allergen filters
       searchDishes();
       renderTracker();
       loadCombos();
