@@ -111,7 +111,7 @@
         </div>
       </div>
       <!-- Quick category filters -->
-      <div class="flex flex-wrap gap-2 mt-3">
+      <div id="categoryFilters" class="flex flex-wrap gap-2 mt-3">
         <button onclick="filterCategory('')" class="text-xs bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full font-medium">All</button>
         <button onclick="filterCategory('Breakfast')" class="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full hover:bg-emerald-50">Breakfast</button>
         <button onclick="filterCategory('North Indian')" class="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full hover:bg-emerald-50">North Indian</button>
@@ -1030,7 +1030,7 @@
       const q = document.getElementById('dishSearch').value.trim();
       const header = document.getElementById('popularDishesHeader');
 
-      // If no search query, show popular dishes
+      // If no search query and no category, show popular dishes
       if (!q && !currentCategory) {
         header.classList.remove('hidden');
         header.querySelector('h3').textContent = 'Popular Dishes';
@@ -1046,17 +1046,15 @@
         header.querySelector('h3').textContent = currentCategory || 'Popular Dishes';
       }
 
+      // Pass both query and category to API so backend filters properly
       let url = '/api/thaali-score/search?q=' + encodeURIComponent(q);
+      if (currentCategory) url += '&category=' + encodeURIComponent(currentCategory);
       try {
         const res = await fetch(url);
         const data = await res.json();
         let results = data.results || [];
-        if (currentCategory) results = results.filter(d => d.category === currentCategory);
-        if (results.length === 0 && !q) {
-          // Fallback to popular dishes filtered by category
-          let filtered = popularDishes;
-          if (currentCategory) filtered = popularDishes.filter(d => d.category === currentCategory);
-          renderDishResults(filtered);
+        if (results.length === 0 && !q && currentCategory) {
+          renderDishResults([{ id: 0, name: 'No dishes found in ' + currentCategory, cal: 0, category: currentCategory, veg: true, serving: '-', healthScore: 0 }]);
         } else {
           renderDishResults(results);
         }
@@ -1064,12 +1062,21 @@
         // Fallback to popular dishes on network error
         let filtered = popularDishes;
         if (currentCategory) filtered = popularDishes.filter(d => d.category === currentCategory);
-        renderDishResults(filtered);
+        renderDishResults(filtered.length > 0 ? filtered : popularDishes);
       }
     }
 
     function filterCategory(cat) {
       currentCategory = cat;
+      // Highlight active category button
+      document.querySelectorAll('#categoryFilters button').forEach(btn => {
+        const btnCat = btn.getAttribute('onclick').match(/filterCategory\('(.*)'\)/)?.[1] || '';
+        if (btnCat === cat) {
+          btn.className = 'text-xs bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full font-medium';
+        } else {
+          btn.className = 'text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full hover:bg-emerald-50';
+        }
+      });
       searchDishes();
     }
 
