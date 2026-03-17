@@ -1128,6 +1128,7 @@
     }
 
     // Popular dishes — IDs match backend database (1-305)
+    // Fallback popular dishes (used if API unavailable). Includes every category so filters work offline too.
     const popularDishes = [
       { id: 13, name: 'Dal Tadka', cal: 180, category: 'Dals', veg: true, serving: '1 bowl (200g)', healthScore: 8, gi: 'low' },
       { id: 76, name: 'Roti (Chapati)', cal: 80, category: 'Rice/Breads', veg: true, serving: '1 pc (30g dry)', healthScore: 8, gi: 'medium' },
@@ -1141,6 +1142,22 @@
       { id: 55, name: 'Poha', cal: 220, category: 'Breakfast', veg: true, serving: '1 plate (200g)', healthScore: 7, gi: 'medium' },
       { id: 191, name: 'Mixed Veg Raita', cal: 70, category: 'Sides', veg: true, serving: '1 bowl (100g)', healthScore: 7, gi: 'low' },
       { id: 107, name: 'Gulab Jamun', cal: 300, category: 'Sweets', veg: true, serving: '2 pcs (80g)', healthScore: 2, gi: 'high' },
+      { id: 100, name: 'Masala Chai', cal: 100, category: 'Drinks', veg: true, serving: '1 cup (150ml)', healthScore: 5, gi: 'medium' },
+      { id: 306, name: 'Machher Jhol', cal: 200, category: 'Bengali', veg: false, serving: '1 bowl (250g)', healthScore: 8, gi: 'low' },
+      { id: 326, name: 'Idiyappam', cal: 180, category: 'Kerala', veg: true, serving: '3 pcs (150g)', healthScore: 7, gi: 'medium' },
+      { id: 366, name: 'Sabudana Vada', cal: 250, category: 'Maharashtrian', veg: true, serving: '3 pcs (120g)', healthScore: 5, gi: 'high' },
+      { id: 394, name: 'Fafda', cal: 320, category: 'Gujarati', veg: true, serving: '4 pcs (100g)', healthScore: 4, gi: 'high' },
+      { id: 381, name: 'Gongura Chicken', cal: 280, category: 'Andhra', veg: false, serving: '1 bowl (200g)', healthScore: 7, gi: 'low' },
+      { id: 511, name: 'Chettinad Chicken', cal: 320, category: 'Tamil Nadu', veg: false, serving: '1 bowl (200g)', healthScore: 7, gi: 'low' },
+      { id: 551, name: 'Sarson ka Saag', cal: 180, category: 'Punjabi', veg: true, serving: '1 bowl (200g)', healthScore: 9, gi: 'low' },
+      { id: 581, name: 'Dal Baati Churma', cal: 550, category: 'Rajasthani', veg: true, serving: '1 plate', healthScore: 5, gi: 'medium' },
+      { id: 621, name: 'Rogan Josh', cal: 350, category: 'Kashmiri', veg: false, serving: '1 bowl (200g)', healthScore: 6, gi: 'low' },
+      { id: 651, name: 'Vindaloo', cal: 350, category: 'Goan', veg: false, serving: '1 bowl (200g)', healthScore: 5, gi: 'low' },
+      { id: 676, name: 'Dalma', cal: 160, category: 'Odisha', veg: true, serving: '1 bowl (200g)', healthScore: 9, gi: 'low' },
+      { id: 701, name: 'Litti Chokha', cal: 350, category: 'Bihari', veg: true, serving: '2 pcs + chokha', healthScore: 7, gi: 'medium' },
+      { id: 726, name: 'Masor Tenga', cal: 180, category: 'Assamese', veg: false, serving: '1 bowl (200g)', healthScore: 8, gi: 'low' },
+      { id: 746, name: 'Pani Puri', cal: 200, category: 'Street Food', veg: true, serving: '6 pcs', healthScore: 4, gi: 'high' },
+      { id: 160, name: 'Veg Hakka Noodles', cal: 320, category: 'Chinese', veg: true, serving: '1 plate (250g)', healthScore: 4, gi: 'high' },
     ];
 
     // Serving size adjuster
@@ -1667,6 +1684,20 @@
 
       const file = input.files[0];
 
+      // Client-side file size validation (10MB max)
+      if (file.size > 10 * 1024 * 1024) {
+        showPhotoError('File Too Large', 'Please upload an image smaller than 10MB. Try compressing or resizing your photo.');
+        input.value = '';
+        return;
+      }
+
+      // Validate it's actually an image
+      if (!file.type.startsWith('image/')) {
+        showPhotoError('Invalid File', 'Please upload an image file (JPG, PNG, etc.).');
+        input.value = '';
+        return;
+      }
+
       // Show preview and loading
       const reader = new FileReader();
       reader.onload = function(e) {
@@ -1698,7 +1729,10 @@
         }
 
         if (!data.success) {
-          showPhotoError('Analysis Failed', data.error || 'Could not analyze the photo. Please try again with a clearer image.');
+          const errMsg = data.error === 'AI not configured'
+            ? 'AI photo analysis is not set up yet. Set GEMINI_API_KEY in your .env file (free at aistudio.google.com/apikey). Use Build Your Plate mode to add dishes manually.'
+            : (data.error || 'Could not analyze the photo. Please try again with a clearer image.');
+          showPhotoError('Analysis Failed', errMsg);
           return;
         }
 

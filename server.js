@@ -364,6 +364,14 @@ app.post('/api/thaali-score/prakriti', (req, res) => {
 
 app.post('/api/thaali-score/budget-plan', thaaliScore.handleBudgetPlan);
 
+// ─── ThaaliScore Substitutions ───
+app.get('/api/thaali-score/substitutions/:id', (req, res) => {
+  const dish = thaaliScore.dishes.find(d => d.id === parseInt(req.params.id));
+  if (!dish) return res.status(404).json({ error: 'Dish not found' });
+  const subs = thaaliScore.getSubstitutions ? thaaliScore.getSubstitutions(dish) : [];
+  res.json({ dish: dish.name, substitutions: subs });
+});
+
 // ─── ThaaliScore Photo Mode (Gemini Vision) ───
 app.post('/api/thaali-score/photo-analyze', upload.single('photo'), async (req, res) => {
   if (!req.file) {
