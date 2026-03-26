@@ -12,8 +12,7 @@ const aiExtract = require('./lib/ai-extract');
 const { generateDoctorSummary } = require('./lib/ai-extract');
 const sastaIlaaj = require('./lib/sasta-ilaaj');
 const thaaliScore = require('./lib/thaali-score');
-const bijliSmart = require('./lib/bijli-smart');
-const sabseSasta = require('./lib/sabse-sasta');
+
 const { analyzePhotoBuffer, matchDishesToDB, detectMimeType } = require('./lib/photo-analyze');
 
 const app = express();
@@ -314,13 +313,6 @@ app.get('/sasta-ilaaj', (req, res) => {
 app.get('/thaali-score', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'thaali-score.html'));
 });
-app.get('/bijli-smart', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'bijli-smart.html'));
-});
-app.get('/sabse-sasta', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'sabse-sasta.html'));
-});
-
 // ─── SastaIlaaj API ───
 app.post('/api/sasta-ilaaj/search', sastaIlaaj.handleSearch);
 app.post('/api/sasta-ilaaj/by-salt', sastaIlaaj.handleBySalt);
@@ -457,15 +449,6 @@ app.get('/api/thaali-score/nutrient-rich', (req, res) => {
   });
 });
 
-// ─── BijliSmart API ───
-app.post('/api/bijli-smart/analyze', bijliSmart.handleAnalyze);
-
-// ─── SabseSasta API ───
-app.get('/api/sabse-sasta/search', sabseSasta.handleSearch);
-app.get('/api/sabse-sasta/categories', sabseSasta.handleCategories);
-app.post('/api/sabse-sasta/compare-cart', sabseSasta.handleCompareCart);
-app.get('/api/sabse-sasta/product/:id', sabseSasta.handleGetProduct);
-
 // ─── WhatsApp Bot ───
 const whatsappBot = require('./lib/whatsapp-bot');
 
@@ -541,8 +524,7 @@ if (process.env.VERCEL !== '1') {
     console.log(`    SehatScan:    http://localhost:${PORT}/sehat-scan`);
     console.log(`    SastaIlaaj:   http://localhost:${PORT}/sasta-ilaaj`);
     console.log(`    ThaaliScore:  http://localhost:${PORT}/thaali-score`);
-    console.log(`    BijliSmart:   http://localhost:${PORT}/bijli-smart`);
-    console.log(`    SabseSasta:   http://localhost:${PORT}/sabse-sasta\n`);
+    console.log(`    SehatScan:    http://localhost:${PORT}/sehat-scan\n`);
   });
 }
 

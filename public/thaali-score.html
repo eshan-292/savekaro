@@ -26,6 +26,7 @@
     .prakriti-option { transition: all 0.2s; }
     .prakriti-option:hover { border-color: #A855F7; background-color: #FAF5FF; }
     .prakriti-option.selected { border-color: #A855F7; background-color: #F3E8FF; }
+    #nutritionChevron { transition: transform 0.3s ease; }
   </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -41,8 +42,6 @@
         <a href="/sasta-ilaaj" class="hover:text-gray-900">SastaIlaaj</a>
         <a href="/thaali-score" class="brand-green font-semibold">ThaaliScore</a>
         <a href="/sehat-scan" class="hover:text-gray-900">SehatScan</a>
-        <a href="/bijli-smart" class="hover:text-gray-900">BijliSmart</a>
-        <a href="/sabse-sasta" class="hover:text-gray-900">SabseSasta</a>
       </nav>
       <button id="mobileMenuBtn" class="md:hidden p-2">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
@@ -53,8 +52,6 @@
       <a href="/sasta-ilaaj" class="block text-gray-600 hover:text-gray-900">SastaIlaaj</a>
       <a href="/thaali-score" class="block brand-green font-semibold">ThaaliScore</a>
       <a href="/sehat-scan" class="block text-gray-600 hover:text-gray-900">SehatScan</a>
-      <a href="/bijli-smart" class="block text-gray-600 hover:text-gray-900">BijliSmart</a>
-      <a href="/sabse-sasta" class="block text-gray-600 hover:text-gray-900">SabseSasta</a>
     </div>
   </header>
 
@@ -599,6 +596,26 @@
 
         <!-- Micronutrient Highlights -->
         <div id="microHighlights" class="hidden mb-6"></div>
+
+        <!-- Nutrient Deficiency / Excess Alerts -->
+        <div id="nutrientAlerts" class="hidden mb-6"></div>
+
+        <!-- Complete Nutrition Breakdown Panel -->
+        <div id="fullNutritionPanel" class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6 hidden">
+          <div class="flex items-center justify-between cursor-pointer" onclick="toggleNutritionPanel()">
+            <h3 class="text-sm font-bold text-gray-800">Complete Nutrition Breakdown</h3>
+            <span id="nutritionChevron" class="text-gray-400 transition-transform">&#9660;</span>
+          </div>
+          <div id="nutritionDetails" class="mt-3 hidden">
+            <h4 class="text-xs font-bold text-gray-500 uppercase mb-2">Minerals</h4>
+            <div class="space-y-2" id="mineralBars"></div>
+            <h4 class="text-xs font-bold text-gray-500 uppercase mb-2 mt-4">Vitamins</h4>
+            <div class="space-y-2" id="vitaminBars"></div>
+            <h4 class="text-xs font-bold text-gray-500 uppercase mb-2 mt-4">Other</h4>
+            <div class="space-y-2" id="otherBars"></div>
+          </div>
+        </div>
+
         <!-- Dadi ke Nuskhe -->
         <div id="nuskheSection" class="hidden mb-6"></div>
 
@@ -735,6 +752,19 @@
     </div>
   </footer>
 
+  <!-- Dish Nutrient Popup Modal -->
+  <div id="dishNutrientModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-end md:items-center justify-center" onclick="if(event.target===this)closeDishNutrientModal()">
+    <div class="bg-white w-full md:w-96 md:rounded-xl rounded-t-xl p-5 max-h-[80vh] overflow-y-auto">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="font-bold text-gray-900 text-sm" id="dishNutrientTitle">Dish Nutrients</h3>
+        <button onclick="closeDishNutrientModal()" class="text-gray-400 hover:text-gray-600">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div id="dishNutrientContent"></div>
+    </div>
+  </div>
+
   <script>
     // State
     let myPlate = [];
@@ -748,6 +778,190 @@
       activity: 'moderate', bmr: null, tdee: null, targetCal: null
     };
     let profileActivity = 'moderate';
+
+    // ─── Full RDA reference (mirrors backend) ───
+    const fullRDA = {
+      iron: { male: 17, female: 21, unit: 'mg' },
+      calcium: { male: 1000, female: 1000, unit: 'mg' },
+      zinc: { male: 12, female: 10, unit: 'mg' },
+      magnesium: { male: 340, female: 310, unit: 'mg' },
+      phosphorus: { male: 700, female: 700, unit: 'mg' },
+      potassium: { male: 3500, female: 3500, unit: 'mg' },
+      sodium: { male: 2000, female: 2000, unit: 'mg' },
+      selenium: { male: 40, female: 40, unit: 'mcg' },
+      copper: { male: 2, female: 2, unit: 'mg' },
+      manganese: { male: 5, female: 5, unit: 'mg' },
+      vitA: { male: 1000, female: 840, unit: 'mcg' },
+      vitB1: { male: 1.4, female: 1.1, unit: 'mg' },
+      vitB2: { male: 1.7, female: 1.3, unit: 'mg' },
+      vitB3: { male: 16, female: 14, unit: 'mg' },
+      vitB5: { male: 5, female: 5, unit: 'mg' },
+      vitB6: { male: 2, female: 2, unit: 'mg' },
+      vitB12: { male: 2.2, female: 2.2, unit: 'mcg' },
+      vitC: { male: 80, female: 65, unit: 'mg' },
+      vitD: { male: 15, female: 15, unit: 'mcg' },
+      vitE: { male: 10, female: 8, unit: 'mg' },
+      vitK: { male: 55, female: 55, unit: 'mcg' },
+      folate: { male: 300, female: 300, unit: 'mcg' },
+      omega3: { male: 1600, female: 1100, unit: 'mg' },
+      cholesterol: { male: 300, female: 300, unit: 'mg' },
+      sugar: { male: 30, female: 25, unit: 'g' },
+    };
+    const nutrientLabels = {
+      iron:'Iron', calcium:'Calcium', zinc:'Zinc', magnesium:'Magnesium', phosphorus:'Phosphorus',
+      potassium:'Potassium', sodium:'Sodium', selenium:'Selenium', copper:'Copper', manganese:'Manganese',
+      vitA:'Vitamin A', vitB1:'B1 (Thiamine)', vitB2:'B2 (Riboflavin)', vitB3:'B3 (Niacin)',
+      vitB5:'B5 (Pantothenic)', vitB6:'Vitamin B6', vitB12:'Vitamin B12', vitC:'Vitamin C',
+      vitD:'Vitamin D', vitE:'Vitamin E', vitK:'Vitamin K', folate:'Folate',
+      omega3:'Omega-3', cholesterol:'Cholesterol', sugar:'Added Sugar'
+    };
+    const mineralKeys = ['iron','calcium','zinc','magnesium','phosphorus','potassium','sodium','selenium','copper','manganese'];
+    const vitaminKeys = ['vitA','vitB1','vitB2','vitB3','vitB5','vitB6','vitB12','vitC','vitD','vitE','vitK','folate'];
+    const otherKeys = ['omega3','cholesterol','sugar'];
+
+    function getUserGender() {
+      return (userProfile && userProfile.gender) || 'male';
+    }
+    function getRDA(key) {
+      const r = fullRDA[key];
+      if (!r) return 0;
+      return r[getUserGender()] || r.male || 0;
+    }
+
+    function toggleNutritionPanel() {
+      const details = document.getElementById('nutritionDetails');
+      const chevron = document.getElementById('nutritionChevron');
+      if (details.classList.contains('hidden')) {
+        details.classList.remove('hidden');
+        chevron.style.transform = 'rotate(180deg)';
+      } else {
+        details.classList.add('hidden');
+        chevron.style.transform = '';
+      }
+    }
+
+    function buildNutrientBar(key, value, rdaVal, unit) {
+      const pct = rdaVal > 0 ? Math.round((value / rdaVal) * 100) : 0;
+      let barColor = 'bg-red-400';
+      if (pct >= 100) barColor = 'bg-blue-500';
+      else if (pct >= 50) barColor = 'bg-emerald-500';
+      else if (pct >= 25) barColor = 'bg-amber-500';
+      if (key === 'sodium' || key === 'cholesterol' || key === 'sugar') {
+        if (pct > 100) barColor = 'bg-red-500';
+        else if (pct > 75) barColor = 'bg-amber-500';
+        else barColor = 'bg-emerald-500';
+      }
+      const label = nutrientLabels[key] || key;
+      const displayVal = value < 10 ? value.toFixed(1) : Math.round(value);
+      return '<div class="flex items-center gap-2">' +
+        '<span class="text-xs text-gray-600 w-24 truncate" title="' + label + '">' + label + '</span>' +
+        '<div class="flex-1 bg-gray-100 rounded-full h-2">' +
+        '<div class="' + barColor + ' h-2 rounded-full transition-all duration-500" style="width:' + Math.min(pct, 100) + '%"></div>' +
+        '</div>' +
+        '<span class="text-xs text-gray-500 w-28 text-right">' + displayVal + '/' + rdaVal + ' ' + unit + ' (' + pct + '%)</span>' +
+        '</div>';
+    }
+
+    function renderFullNutritionPanel(microTotals) {
+      const panel = document.getElementById('fullNutritionPanel');
+      panel.classList.remove('hidden');
+      function renderBars(keys, containerId) {
+        const container = document.getElementById(containerId);
+        container.innerHTML = keys.map(function(k) {
+          var rdaVal = getRDA(k);
+          var unit = (fullRDA[k] && fullRDA[k].unit) || '';
+          var val = microTotals[k] || 0;
+          return buildNutrientBar(k, val, rdaVal, unit);
+        }).join('');
+      }
+      renderBars(mineralKeys, 'mineralBars');
+      renderBars(vitaminKeys, 'vitaminBars');
+      renderBars(otherKeys, 'otherBars');
+    }
+
+    function renderNutrientAlerts(deficiencies, excesses) {
+      var section = document.getElementById('nutrientAlerts');
+      if ((!deficiencies || deficiencies.length === 0) && (!excesses || excesses.length === 0)) {
+        section.classList.add('hidden');
+        return;
+      }
+      section.classList.remove('hidden');
+      var html = '';
+      if (deficiencies && deficiencies.length > 0) {
+        var sorted = deficiencies.slice().sort(function(a,b){return a.percent - b.percent;}).slice(0, 6);
+        var lowList = sorted.map(function(d){return d.nutrient + ' (' + d.percent + '%)';}).join(', ');
+        var tips = [];
+        var defNames = sorted.map(function(d){return d.nutrient;});
+        if (defNames.some(function(n){return n.includes('D');})) tips.push('sunlight exposure + fortified milk');
+        if (defNames.some(function(n){return n.includes('B12');})) tips.push('curd/dahi, paneer, or eggs');
+        if (defNames.some(function(n){return n.includes('Omega');})) tips.push('walnuts, flaxseeds, or fish');
+        if (defNames.some(function(n){return n.includes('Calcium');})) tips.push('curd, ragi, or paneer');
+        if (defNames.some(function(n){return n.includes('Iron');})) tips.push('palak, chana, or dates');
+        if (defNames.some(function(n){return n.includes('Zinc');})) tips.push('pumpkin seeds, chickpeas, or meat');
+        if (defNames.some(function(n){return n.includes('Folate');})) tips.push('methi, palak, or moong sprouts');
+        if (tips.length === 0) tips.push('add variety with dal, sabzi, and curd');
+        html += '<div class="bg-red-50 border border-red-200 rounded-lg p-3">' +
+          '<p class="text-sm font-semibold text-red-700">Low Nutrients in This Meal</p>' +
+          '<p class="text-xs text-red-600 mt-1">Your plate is low in: ' + lowList + '</p>' +
+          '<p class="text-xs text-gray-500 mt-1">Tip: Add ' + tips.slice(0,3).join(', ') + ' to boost these.</p>' +
+          '</div>';
+      }
+      if (excesses && excesses.length > 0) {
+        var exList = excesses.map(function(e){return e.nutrient + ' (' + e.percent + '%)';}).join(', ');
+        html += '<div class="bg-amber-50 border border-amber-200 rounded-lg p-3 ' + (deficiencies && deficiencies.length > 0 ? 'mt-2' : '') + '">' +
+          '<p class="text-sm font-semibold text-amber-700">High Nutrients</p>' +
+          '<p class="text-xs text-amber-600 mt-1">Exceeding daily limit: ' + exList + '</p>' +
+          '<p class="text-xs text-gray-500 mt-1">Consider reducing portion sizes or high-sodium/sugary items.</p>' +
+          '</div>';
+      }
+      section.innerHTML = html;
+    }
+
+    function showDishNutrients(dishId) {
+      if (!lastAnalysisData || !lastAnalysisData.dishes) return;
+      var dish = lastAnalysisData.dishes.find(function(d){return d.id === dishId;});
+      if (!dish) return;
+      var modal = document.getElementById('dishNutrientModal');
+      document.getElementById('dishNutrientTitle').textContent = dish.name;
+      var n = dish.nutrition;
+      var m = dish.micro || {};
+      var html = '<div class="mb-3"><p class="text-xs text-gray-400">' + dish.serving + ' | ' + (dish.veg ? 'Veg' : 'Non-Veg') + ' | Health Score: ' + dish.healthScore + '/10</p></div>';
+      html += '<h4 class="text-xs font-bold text-gray-500 uppercase mb-1">Macros</h4>' +
+        '<div class="grid grid-cols-5 gap-1 mb-3">' +
+        '<div class="bg-orange-50 rounded p-1.5 text-center"><p class="text-sm font-bold text-orange-700">' + n.cal + '</p><p class="text-xs text-gray-400">kcal</p></div>' +
+        '<div class="bg-blue-50 rounded p-1.5 text-center"><p class="text-sm font-bold text-blue-700">' + n.protein + 'g</p><p class="text-xs text-gray-400">Protein</p></div>' +
+        '<div class="bg-yellow-50 rounded p-1.5 text-center"><p class="text-sm font-bold text-yellow-700">' + n.carbs + 'g</p><p class="text-xs text-gray-400">Carbs</p></div>' +
+        '<div class="bg-red-50 rounded p-1.5 text-center"><p class="text-sm font-bold text-red-700">' + n.fat + 'g</p><p class="text-xs text-gray-400">Fat</p></div>' +
+        '<div class="bg-green-50 rounded p-1.5 text-center"><p class="text-sm font-bold text-green-700">' + n.fiber + 'g</p><p class="text-xs text-gray-400">Fiber</p></div>' +
+        '</div>';
+      html += '<h4 class="text-xs font-bold text-gray-500 uppercase mb-1">Minerals</h4><div class="space-y-1 mb-3">';
+      mineralKeys.forEach(function(k) {
+        var val = m[k] || 0;
+        var rdaVal = getRDA(k);
+        var unit = (fullRDA[k] && fullRDA[k].unit) || '';
+        html += buildNutrientBar(k, val, rdaVal, unit);
+      });
+      html += '</div><h4 class="text-xs font-bold text-gray-500 uppercase mb-1">Vitamins</h4><div class="space-y-1 mb-3">';
+      vitaminKeys.forEach(function(k) {
+        var val = m[k] || 0;
+        var rdaVal = getRDA(k);
+        var unit = (fullRDA[k] && fullRDA[k].unit) || '';
+        html += buildNutrientBar(k, val, rdaVal, unit);
+      });
+      html += '</div><h4 class="text-xs font-bold text-gray-500 uppercase mb-1">Other</h4><div class="space-y-1">';
+      otherKeys.forEach(function(k) {
+        var val = m[k] || 0;
+        var rdaVal = getRDA(k);
+        var unit = (fullRDA[k] && fullRDA[k].unit) || '';
+        html += buildNutrientBar(k, val, rdaVal, unit);
+      });
+      html += '</div>';
+      document.getElementById('dishNutrientContent').innerHTML = html;
+      modal.classList.remove('hidden');
+    }
+    function closeDishNutrientModal() {
+      document.getElementById('dishNutrientModal').classList.add('hidden');
+    }
 
     // ─── localStorage persistence for tracker ───
     function getTrackerDateKey() {
@@ -1468,52 +1682,66 @@
         giSection.classList.add('hidden');
       }
 
-      // Micronutrient Highlights
+      // Micronutrient Highlights (top-5 key nutrients summary)
       const microSection = document.getElementById('microHighlights');
-      if (data.dishes && data.dishes.some(d => d.micro)) {
+      if (data.microTotals) {
         microSection.classList.remove('hidden');
-        const microTotals = { iron: 0, calcium: 0, vitC: 0, vitB12: 0, folate: 0 };
-        data.dishes.forEach(d => {
-          if (d.micro) {
-            microTotals.iron += d.micro.iron || 0;
-            microTotals.calcium += d.micro.calcium || 0;
-            microTotals.vitC += d.micro.vitC || 0;
-            microTotals.vitB12 += d.micro.vitB12 || 0;
-            microTotals.folate += d.micro.folate || 0;
-          }
-        });
-        // RDA for micronutrients
+        const mt = data.microTotals;
         const isPregnant = currentDietGoal === 'pregnancy';
         const isLactating = currentDietGoal === 'lactation';
-        const microRDA = { iron: isPregnant ? 35 : isLactating ? 21 : 17, calcium: isPregnant || isLactating ? 1200 : 1000, vitC: isLactating ? 115 : 80, vitB12: isPregnant ? 2.6 : isLactating ? 2.8 : 2.4, folate: isPregnant ? 600 : isLactating ? 500 : 400 };
+        const microRDA = { iron: isPregnant ? 35 : isLactating ? 21 : getRDA('iron'), calcium: isPregnant || isLactating ? 1200 : getRDA('calcium'), vitC: isLactating ? 115 : getRDA('vitC'), vitB12: isPregnant ? 2.6 : isLactating ? 2.8 : getRDA('vitB12'), folate: isPregnant ? 600 : isLactating ? 500 : getRDA('folate'), vitD: getRDA('vitD'), zinc: getRDA('zinc'), omega3: getRDA('omega3') };
         const microItems = [
-          { key: 'iron', label: 'Iron', unit: 'mg', rda: microRDA.iron, icon: '🩸', color: 'text-red-600' },
-          { key: 'calcium', label: 'Calcium', unit: 'mg', rda: microRDA.calcium, icon: '🦴', color: 'text-blue-600' },
-          { key: 'vitC', label: 'Vitamin C', unit: 'mg', rda: microRDA.vitC, icon: '🍊', color: 'text-orange-600' },
-          { key: 'vitB12', label: 'Vitamin B12', unit: 'mcg', rda: microRDA.vitB12, icon: '🧬', color: 'text-purple-600' },
-          { key: 'folate', label: 'Folate', unit: 'mcg', rda: microRDA.folate, icon: '🌿', color: 'text-green-600' },
+          { key: 'iron', label: 'Iron', unit: 'mg', rda: microRDA.iron, icon: '\uD83E\uDE78', color: 'text-red-600' },
+          { key: 'calcium', label: 'Calcium', unit: 'mg', rda: microRDA.calcium, icon: '\uD83E\uDDB4', color: 'text-blue-600' },
+          { key: 'vitC', label: 'Vitamin C', unit: 'mg', rda: microRDA.vitC, icon: '\uD83C\uDF4A', color: 'text-orange-600' },
+          { key: 'vitB12', label: 'B12', unit: 'mcg', rda: microRDA.vitB12, icon: '\uD83E\uDDEC', color: 'text-purple-600' },
+          { key: 'folate', label: 'Folate', unit: 'mcg', rda: microRDA.folate, icon: '\uD83C\uDF3F', color: 'text-green-600' },
+          { key: 'vitD', label: 'Vit D', unit: 'mcg', rda: microRDA.vitD, icon: '\u2600\uFE0F', color: 'text-yellow-600' },
+          { key: 'zinc', label: 'Zinc', unit: 'mg', rda: microRDA.zinc, icon: '\uD83D\uDEE1\uFE0F', color: 'text-indigo-600' },
+          { key: 'omega3', label: 'Omega-3', unit: 'mg', rda: microRDA.omega3, icon: '\uD83D\uDC1F', color: 'text-cyan-600' },
         ];
         microSection.innerHTML = `
-          <h4 class="font-semibold text-gray-700 mb-3">🔬 Micronutrients in This Meal</h4>
-          <div class="grid grid-cols-5 gap-2">
+          <h4 class="font-semibold text-gray-700 mb-3">\uD83D\uDD2C Key Micronutrients in This Meal</h4>
+          <div class="grid grid-cols-4 md:grid-cols-8 gap-2">
             ${microItems.map(m => {
-              const val = microTotals[m.key];
+              const val = mt[m.key] || 0;
               const pct = Math.round((val / m.rda) * 100);
               const pctColor = pct >= 30 ? 'text-emerald-600' : pct >= 15 ? 'text-amber-600' : 'text-red-500';
               return `
                 <div class="bg-gray-50 rounded-lg p-2 text-center">
                   <span class="text-lg">${m.icon}</span>
-                  <p class="text-sm font-bold ${m.color}">${val.toFixed(1)}</p>
+                  <p class="text-sm font-bold ${m.color}">${val < 10 ? val.toFixed(1) : Math.round(val)}</p>
                   <p class="text-xs text-gray-400">${m.unit}</p>
                   <p class="text-xs font-medium ${pctColor}">${pct}% RDA</p>
                 </div>
               `;
             }).join('')}
           </div>
-          <p class="text-xs text-gray-400 mt-2">Based on Indian RDA for adults. One meal should ideally cover 25-40% of daily needs.</p>
+          <p class="text-xs text-gray-400 mt-2">Based on ICMR 2020 RDA. One meal should cover 25-40% of daily needs.</p>
         `;
+
+        // Render nutrient alerts
+        renderNutrientAlerts(data.deficiencies, data.excesses);
+
+        // Render full nutrition breakdown panel
+        renderFullNutritionPanel(data.microTotals);
+      } else if (data.dishes && data.dishes.some(d => d.micro)) {
+        // Fallback: compute from individual dishes
+        microSection.classList.remove('hidden');
+        const mt = {};
+        mineralKeys.concat(vitaminKeys).concat(otherKeys).forEach(k => { mt[k] = 0; });
+        data.dishes.forEach(d => {
+          if (d.micro) {
+            Object.keys(mt).forEach(k => { mt[k] += d.micro[k] || 0; });
+          }
+        });
+        renderNutrientAlerts([], []);
+        renderFullNutritionPanel(mt);
+        microSection.innerHTML = '<h4 class="font-semibold text-gray-700 mb-3">\uD83D\uDD2C Micronutrients</h4><p class="text-xs text-gray-400">See complete breakdown below.</p>';
       } else {
         microSection.classList.add('hidden');
+        document.getElementById('fullNutritionPanel').classList.add('hidden');
+        document.getElementById('nutrientAlerts').classList.add('hidden');
       }
 
       // Dadi ke Nuskhe
@@ -1589,18 +1817,21 @@
         document.getElementById('swapsSection').classList.add('hidden');
       }
 
-      // Per-dish list with GI badges
+      // Per-dish list with GI badges and nutrient info button
       document.getElementById('perDishList').innerHTML = data.dishes.map(d => {
         const scoreColor = d.healthScore >= 7 ? 'bg-emerald-100 text-emerald-700' : d.healthScore >= 4 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700';
         const vitStr = d.vitamins.slice(0, 4).join(', ');
         const giColor = d.gi === 'low' ? 'bg-emerald-100 text-emerald-700' : d.gi === 'medium' ? 'bg-amber-100 text-amber-700' : d.gi === 'high' ? 'bg-red-100 text-red-700' : '';
         const giBadge = d.gi ? `<span class="${giColor} text-xs px-1.5 py-0.5 rounded-full font-medium">${d.gi.toUpperCase()} GI</span>` : '';
         return `
-          <div class="bg-gray-50 rounded-lg p-3 flex items-center justify-between">
+          <div class="bg-gray-50 rounded-lg p-3 flex items-center justify-between cursor-pointer hover:bg-gray-100 transition" onclick="showDishNutrients(${d.id})">
             <div>
               <div class="flex items-center gap-1.5">
                 <p class="font-medium text-gray-800 text-sm">${d.name}</p>
                 ${giBadge}
+                <button class="text-gray-400 hover:text-emerald-600 ml-1" title="View full nutrients" onclick="event.stopPropagation();showDishNutrients(${d.id})">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </button>
               </div>
               <p class="text-xs text-gray-400">${d.serving} &middot; ${vitStr}</p>
             </div>
